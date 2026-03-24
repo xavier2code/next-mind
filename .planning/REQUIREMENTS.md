@@ -13,9 +13,9 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **CORE-02**: Users can authenticate via email/password and SSO providers
 - [ ] **CORE-03**: User sessions persist across browser refreshes with secure session management
 - [ ] **CORE-04**: System maintains conversation history with search and filtering capabilities
-- [ ] **CORE-05**: System provides REST API with rate limiting for external integrations
-- [ ] **CORE-06**: System logs all user actions with timestamps and user IDs for audit purposes
-- [ ] **CORE-07**: All data in transit and at rest is encrypted (TLS 1.3, AES-256)
+- [x] **CORE-05**: System provides REST API with rate limiting for external integrations
+- [x] **CORE-06**: System logs all user actions with timestamps and user IDs for audit purposes
+- [x] **CORE-07**: All data in transit and at rest is encrypted (TLS 1.3, AES-256)
 
 ### Chinese LLM Integration
 
@@ -141,9 +141,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CORE-02 | Phase 1 | Pending |
 | CORE-03 | Phase 1 | Pending |
 | CORE-04 | Phase 1 | Pending |
-| CORE-05 | Phase 1 | Pending |
-| CORE-06 | Phase 1 | Pending |
-| CORE-07 | Phase 1 | Pending |
+| CORE-05 | Phase 1 | Complete |
+| CORE-06 | Phase 1 | Complete |
+| CORE-07 | Phase 1 | Complete |
 | LLM-01 | Phase 1 | Pending |
 | LLM-02 | Phase 1 | Pending |
 | LLM-03 | Phase 1 | Pending |
