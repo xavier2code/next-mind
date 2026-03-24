@@ -19,12 +19,12 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Chinese LLM Integration
 
-- [ ] **LLM-01**: System supports Qwen3.5 model with official TypeScript SDK integration
-- [ ] **LLM-02**: System supports GLM (Zhipu AI) models via OpenAI-compatible API
-- [ ] **LLM-03**: System supports MiniMax M2.5 models with native pi-mono integration
-- [ ] **LLM-04**: System provides unified LLM API abstraction layer to isolate provider-specific implementations
-- [ ] **LLM-05**: System implements retry logic with exponential backoff for API rate limits (429 errors)
-- [ ] **LLM-06**: System handles provider-specific streaming parameters (e.g., `incremental_output: true`)
+- [x] **LLM-01**: System supports Qwen3.5 model with official TypeScript SDK integration
+- [x] **LLM-02**: System supports GLM (Zhipu AI) models via OpenAI-compatible API
+- [x] **LLM-03**: System supports MiniMax M2.5 models with native pi-mono integration
+- [x] **LLM-04**: System provides unified LLM API abstraction layer to isolate provider-specific implementations
+- [x] **LLM-05**: System implements retry logic with exponential backoff for API rate limits (429 errors)
+- [x] **LLM-06**: System handles provider-specific streaming parameters (e.g., `incremental_output: true`)
 - [ ] **LLM-07**: System provides model switching UI allowing users to select between available LLMs
 
 ### File Processing
@@ -89,7 +89,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [ ] **SEC-02**: System provides explicit state objects (agents know state, don't infer)
 - [ ] **SEC-03**: System implements verification checkpoints for multi-step operations
 - [ ] **SEC-04**: System limits agent chains to maximum 5 sequential steps before verification
-- [ ] **SEC-05**: System implements circuit breakers for failing operations (max 3 retries)
+- [x] **SEC-05**: System implements circuit breakers for failing operations (max 3 retries)
 - [ ] **SEC-06**: System provides real-time monitoring and alerting for security events
 
 ## v2 Requirements
@@ -144,18 +144,18 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CORE-05 | Phase 1 | Complete |
 | CORE-06 | Phase 1 | Complete |
 | CORE-07 | Phase 1 | Complete |
-| LLM-01 | Phase 1 | Pending |
-| LLM-02 | Phase 1 | Pending |
-| LLM-03 | Phase 1 | Pending |
-| LLM-04 | Phase 1 | Pending |
-| LLM-05 | Phase 1 | Pending |
-| LLM-06 | Phase 1 | Pending |
+| LLM-01 | Phase 1 | Complete |
+| LLM-02 | Phase 1 | Complete |
+| LLM-03 | Phase 1 | Complete |
+| LLM-04 | Phase 1 | Complete |
+| LLM-05 | Phase 1 | Complete |
+| LLM-06 | Phase 1 | Complete |
 | LLM-07 | Phase 1 | Pending |
 | SEC-01 | Phase 1 | Pending |
 | SEC-02 | Phase 1 | Pending |
 | SEC-03 | Phase 1 | Pending |
 | SEC-04 | Phase 1 | Pending |
-| SEC-05 | Phase 1 | Pending |
+| SEC-05 | Phase 1 | Complete |
 | SEC-06 | Phase 1 | Pending |
 | MCP-01 | Phase 2 | Pending |
 | MCP-02 | Phase 2 | Pending |
