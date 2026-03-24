@@ -4,6 +4,13 @@ import path from 'path';
 
 export default defineConfig({
   plugins: [react()],
+  oxc: {
+    // Enable legacy decorator support in OXC
+    tsconfigOptions: {
+      experimentalDecorators: true,
+      emitDecoratorMetadata: true,
+    },
+  },
   test: {
     environment: 'jsdom',
     globals: true,
