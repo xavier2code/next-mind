@@ -55,4 +55,7 @@ export type AuditAction =
   | 'chat_message'
   | 'conversation_create'
   | 'conversation_delete'
-  | 'model_switch';
+  | 'model_switch'
+  | 'tool_invocation'
+  | 'tool_approval'
+  | 'tool_rejection';
