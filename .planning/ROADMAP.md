@@ -47,14 +47,14 @@ Plans:
   3. AI can execute multiple skills in sequence for complex tasks
   4. Destructive operations (file deletion, system commands) require explicit user approval
   5. All MCP requests are authenticated and tools run with sandboxed permissions
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] 02-01: MCP server implementation with JSON-RPC 2.0
-- [ ] 02-02: Tool registry and resource manager
-- [ ] 02-03: Skills system with predefined capabilities
-- [ ] 02-04: Custom skill creation and orchestration
-- [ ] 02-05: Security controls and approval gates
+- [ ] 02-01: MCP server with JSON-RPC 2.0, session management, and tool registry (Wave 1)
+- [ ] 02-02: MCP Resources manager and Prompts templates (Wave 2, depends on 02-01)
+- [ ] 02-03: Bash execution sandbox with security controls (Wave 2, depends on 02-01)
+- [ ] 02-04: Skills system with decorator, executor, discovery, and predefined skills (Wave 3, depends on 02-01)
+- [ ] 02-05: Approval flow and skills discovery sidebar panel (Wave 4, depends on 02-04)
 
 ### Phase 3: Knowledge & Collaboration
 **Goal**: Teams can upload files, build shared knowledge bases, and collaborate through shared conversations
@@ -84,7 +84,7 @@ Phases execute in numeric order: 1 → 2 → 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Core Foundation | 5/5 | Complete | 01-01, 01-02, 01-03, 01-04, 01-05 |
-| 2. Tool Integration | 0/5 | Not started | - |
+| 2. Tool Integration | 0/5 | Planning | - |
 | 3. Knowledge & Collaboration | 0/5 | Not started | - |
 
 ---
