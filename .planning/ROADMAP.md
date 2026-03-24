@@ -28,14 +28,14 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. User session persists across browser refreshes
   4. User can search and filter conversation history
   5. User can switch between Qwen, GLM, and MiniMax models from the UI
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] 01-01: Project scaffolding and infrastructure setup
-- [ ] 01-02: Authentication and session management
-- [ ] 01-03: LLM gateway with Chinese model support
-- [ ] 01-04: Conversation UI and history
-- [ ] 01-05: Security hardening and audit logging
+- [ ] 01-01: Project scaffolding - Next.js 16, Drizzle ORM, shadcn/ui, test frameworks
+- [ ] 01-02: Authentication - Auth.js v5 with Google SSO and email/password
+- [ ] 01-03: LLM gateway - Unified API for Qwen, GLM, MiniMax with streaming
+- [ ] 01-04: Chat UI - ChatGPT-style interface with sidebar, model selector, markdown
+- [ ] 01-05: Security - Content filtering, audit logging, state management
 
 ### Phase 2: Tool Integration
 **Goal**: Users can extend AI capabilities through MCP tools and custom skills with security controls
