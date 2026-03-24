@@ -42,12 +42,12 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### MCP Protocol
 
-- [ ] **MCP-01**: System implements MCP server with JSON-RPC 2.0 compliance
-- [ ] **MCP-02**: System provides MCP Tools registry for agent tool access
+- [x] **MCP-01**: System implements MCP server with JSON-RPC 2.0 compliance
+- [x] **MCP-02**: System provides MCP Tools registry for agent tool access
 - [ ] **MCP-03**: System provides MCP Resources manager for file and data access
 - [ ] **MCP-04**: System provides MCP Prompts templates for reusable prompt patterns
 - [ ] **MCP-05**: System implements bash execution tool with sandboxing and permission controls
-- [ ] **MCP-06**: System requires authentication for all MCP requests (no anonymous access)
+- [x] **MCP-06**: System requires authentication for all MCP requests (no anonymous access)
 - [ ] **MCP-07**: System binds MCP server to localhost by default (not externally exposed)
 - [ ] **MCP-08**: System validates and sanitizes all inputs to MCP tools
 - [ ] **MCP-09**: System never runs MCP tools with root privileges
@@ -157,12 +157,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SEC-04 | Phase 1 | Complete |
 | SEC-05 | Phase 1 | Complete |
 | SEC-06 | Phase 1 | Complete |
-| MCP-01 | Phase 2 | Pending |
-| MCP-02 | Phase 2 | Pending |
+| MCP-01 | Phase 2 | Complete |
+| MCP-02 | Phase 2 | Complete |
 | MCP-03 | Phase 2 | Pending |
 | MCP-04 | Phase 2 | Pending |
 | MCP-05 | Phase 2 | Pending |
-| MCP-06 | Phase 2 | Pending |
+| MCP-06 | Phase 2 | Complete |
 | MCP-07 | Phase 2 | Pending |
 | MCP-08 | Phase 2 | Pending |
 | MCP-09 | Phase 2 | Pending |
