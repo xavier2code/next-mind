@@ -31,10 +31,10 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 5 plans
 
 Plans:
-- [ ] 01-01: Project scaffolding - Next.js 16, Drizzle ORM, shadcn/ui, test frameworks
-- [ ] 01-02: Authentication - Auth.js v5 with Google SSO and email/password
-- [ ] 01-03: LLM gateway - Unified API for Qwen, GLM, MiniMax with streaming
-- [ ] 01-04: Chat UI - ChatGPT-style interface with sidebar, model selector, markdown
+- [x] 01-01: Project scaffolding - Next.js 16, Drizzle ORM, shadcn/ui, test frameworks
+- [x] 01-02: Authentication - Auth.js v5 with Google SSO and email/password
+- [x] 01-03: LLM gateway - Unified API for Qwen, GLM, MiniMax with streaming
+- [x] 01-04: Chat UI - ChatGPT-style interface with sidebar, model selector, markdown
 - [ ] 01-05: Security - Content filtering, audit logging, state management
 
 ### Phase 2: Tool Integration
@@ -83,7 +83,7 @@ Phases execute in numeric order: 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Core Foundation | 0/5 | Not started | - |
+| 1. Core Foundation | 4/5 | In progress | 01-01, 01-02, 01-03, 01-04 |
 | 2. Tool Integration | 0/5 | Not started | - |
 | 3. Knowledge & Collaboration | 0/5 | Not started | - |
 

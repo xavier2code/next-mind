@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-stopped_at: Completed 01-03-PLAN.md LLM gateway
-last_updated: "2026-03-24T12:58:21.124Z"
+stopped_at: Completed 01-04-PLAN.md Conversation UI
+last_updated: "2026-03-24T13:15:00.000Z"
 progress:
   total_phases: 3
   completed_phases: 0
   total_plans: 5
-  completed_plans: 4
+  completed_plans: 5
 ---
 
 # Project State
@@ -24,7 +24,7 @@ See: .planning/PROJECT.md (updated 2026-03-24)
 ## Current Position
 
 Phase: 01 (core-foundation) — EXECUTING
-Plan: 4 of 5
+Plan: 5 of 5
 
 ## Performance Metrics
 
@@ -38,7 +38,7 @@ Plan: 4 of 5
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 1. Core Foundation | 0/5 | - | - |
+| 1. Core Foundation | 4/5 | - | - |
 | 2. Tool Integration | 0/5 | - | - |
 | 3. Knowledge & Collaboration | 0/5 | - | - |
 
@@ -49,6 +49,7 @@ Plan: 4 of 5
 
 *Updated after each plan completion*
 | Phase 01 P03 | 15 | 5 tasks | 11 files |
+| Phase 01 P04 | 45 | 5 tasks | 15 files |
 
 ## Accumulated Context
 
@@ -64,6 +65,10 @@ Recent decisions affecting current work:
 - pi-ai stream function for unified LLM interface across providers
 - Retry on 429/5xx errors with exponential backoff (max 3 retries)
 - Fire-and-forget audit logging (errors logged but don't fail operations)
+- Model preference persisted in localStorage for cross-session consistency
+- PostgreSQL full-text search with tsvector for conversation search
+- Collapsible sidebar (256px width) with ChatGPT-style pattern
+- Inline error display with retry option instead of toast notifications
 
 ### Pending Todos
 
@@ -75,8 +80,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-24T12:54:29.744Z
-Stopped at: Completed 01-03-PLAN.md LLM gateway
+Last session: 2026-03-24T13:15:00.000Z
+Stopped at: Completed 01-04-PLAN.md Conversation UI
 Resume file: None
 
 ---

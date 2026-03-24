@@ -9,10 +9,10 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Core Infrastructure
 
-- [ ] **CORE-01**: System provides ChatGPT-style conversation UI with streaming output, markdown rendering, and code highlighting
+- [x] **CORE-01**: System provides ChatGPT-style conversation UI with streaming output, markdown rendering, and code highlighting
 - [x] **CORE-02**: Users can authenticate via email/password and SSO providers
 - [x] **CORE-03**: User sessions persist across browser refreshes with secure session management
-- [ ] **CORE-04**: System maintains conversation history with search and filtering capabilities
+- [x] **CORE-04**: System maintains conversation history with search and filtering capabilities
 - [x] **CORE-05**: System provides REST API with rate limiting for external integrations
 - [x] **CORE-06**: System logs all user actions with timestamps and user IDs for audit purposes
 - [x] **CORE-07**: All data in transit and at rest is encrypted (TLS 1.3, AES-256)
@@ -25,7 +25,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **LLM-04**: System provides unified LLM API abstraction layer to isolate provider-specific implementations
 - [x] **LLM-05**: System implements retry logic with exponential backoff for API rate limits (429 errors)
 - [x] **LLM-06**: System handles provider-specific streaming parameters (e.g., `incremental_output: true`)
-- [ ] **LLM-07**: System provides model switching UI allowing users to select between available LLMs
+- [x] **LLM-07**: System provides model switching UI allowing users to select between available LLMs
 
 ### File Processing
 
@@ -137,10 +137,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CORE-01 | Phase 1 | Pending |
+| CORE-01 | Phase 1 | Complete |
 | CORE-02 | Phase 1 | Complete |
 | CORE-03 | Phase 1 | Complete |
-| CORE-04 | Phase 1 | Pending |
+| CORE-04 | Phase 1 | Complete |
 | CORE-05 | Phase 1 | Complete |
 | CORE-06 | Phase 1 | Complete |
 | CORE-07 | Phase 1 | Complete |
@@ -150,7 +150,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LLM-04 | Phase 1 | Complete |
 | LLM-05 | Phase 1 | Complete |
 | LLM-06 | Phase 1 | Complete |
-| LLM-07 | Phase 1 | Pending |
+| LLM-07 | Phase 1 | Complete |
 | SEC-01 | Phase 1 | Pending |
 | SEC-02 | Phase 1 | Pending |
 | SEC-03 | Phase 1 | Pending |
