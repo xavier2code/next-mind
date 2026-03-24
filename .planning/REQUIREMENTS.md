@@ -85,12 +85,12 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Security and Compliance
 
-- [ ] **SEC-01**: System implements content safety detection for sensitive or harmful content
-- [ ] **SEC-02**: System provides explicit state objects (agents know state, don't infer)
-- [ ] **SEC-03**: System implements verification checkpoints for multi-step operations
-- [ ] **SEC-04**: System limits agent chains to maximum 5 sequential steps before verification
+- [x] **SEC-01**: System implements content safety detection for sensitive or harmful content
+- [x] **SEC-02**: System provides explicit state objects (agents know state, don't infer)
+- [x] **SEC-03**: System implements verification checkpoints for multi-step operations
+- [x] **SEC-04**: System limits agent chains to maximum 5 sequential steps before verification
 - [x] **SEC-05**: System implements circuit breakers for failing operations (max 3 retries)
-- [ ] **SEC-06**: System provides real-time monitoring and alerting for security events
+- [x] **SEC-06**: System provides real-time monitoring and alerting for security events
 
 ## v2 Requirements
 
@@ -151,12 +151,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LLM-05 | Phase 1 | Complete |
 | LLM-06 | Phase 1 | Complete |
 | LLM-07 | Phase 1 | Complete |
-| SEC-01 | Phase 1 | Pending |
-| SEC-02 | Phase 1 | Pending |
-| SEC-03 | Phase 1 | Pending |
-| SEC-04 | Phase 1 | Pending |
+| SEC-01 | Phase 1 | Complete |
+| SEC-02 | Phase 1 | Complete |
+| SEC-03 | Phase 1 | Complete |
+| SEC-04 | Phase 1 | Complete |
 | SEC-05 | Phase 1 | Complete |
-| SEC-06 | Phase 1 | Pending |
+| SEC-06 | Phase 1 | Complete |
 | MCP-01 | Phase 2 | Pending |
 | MCP-02 | Phase 2 | Pending |
 | MCP-03 | Phase 2 | Pending |
