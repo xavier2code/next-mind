@@ -1,5 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpSession } from './types';
+import { createResourceManager } from './resources';
+import { createPromptManager } from './prompts';
 
 /**
  * Session-scoped MCP server registry
@@ -28,16 +30,33 @@ export function getOrCreateSessionServer(userId: string): McpServer {
     { capabilities: { tools: {} } }
   );
 
+  // Create session-scoped resource and prompt managers
+  const resourceManager = createResourceManager();
+  const promptManager = createPromptManager({ includeBuiltins: true });
+
   const session: McpSession = {
     id: `mcp-session-${userId}-${Date.now()}`,
     userId,
     server,
     createdAt: new Date(),
+    resourceManager,
+    promptManager,
   };
 
   mcpSessionRegistry.set(userId, session);
 
   return server;
+}
+
+/**
+ * Get the full session object for a user
+ * Returns the session with resource and prompt managers
+ *
+ * @param userId - The authenticated user's ID
+ * @returns McpSession or undefined if not found
+ */
+export function getSession(userId: string): McpSession | undefined {
+  return mcpSessionRegistry.get(userId);
 }
 
 /**
