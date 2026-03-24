@@ -10,8 +10,8 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Core Infrastructure
 
 - [ ] **CORE-01**: System provides ChatGPT-style conversation UI with streaming output, markdown rendering, and code highlighting
-- [ ] **CORE-02**: Users can authenticate via email/password and SSO providers
-- [ ] **CORE-03**: User sessions persist across browser refreshes with secure session management
+- [x] **CORE-02**: Users can authenticate via email/password and SSO providers
+- [x] **CORE-03**: User sessions persist across browser refreshes with secure session management
 - [ ] **CORE-04**: System maintains conversation history with search and filtering capabilities
 - [x] **CORE-05**: System provides REST API with rate limiting for external integrations
 - [x] **CORE-06**: System logs all user actions with timestamps and user IDs for audit purposes
@@ -138,8 +138,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | CORE-01 | Phase 1 | Pending |
-| CORE-02 | Phase 1 | Pending |
-| CORE-03 | Phase 1 | Pending |
+| CORE-02 | Phase 1 | Complete |
+| CORE-03 | Phase 1 | Complete |
 | CORE-04 | Phase 1 | Pending |
 | CORE-05 | Phase 1 | Complete |
 | CORE-06 | Phase 1 | Complete |
