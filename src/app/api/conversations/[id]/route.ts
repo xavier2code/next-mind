@@ -3,18 +3,25 @@ import { auth } from '@/auth';
 import { db } from '@/lib/db';
 import { conversations, messages } from '@/lib/db/schema';
 import { eq, and, asc } from 'drizzle-orm';
+import { logAudit, getClientInfo } from '@/lib/audit';
+import { logger, generateRequestId } from '@/lib/monitoring';
 
 // GET /api/conversations/[id] - Get conversation with messages
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const requestId = generateRequestId();
   const session = await auth();
+
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const userId = session.user.id;
   const { id } = await params;
+
+  logger.apiRequest(requestId, 'GET', `/api/conversations/${id}`, userId);
 
   try {
     // Get conversation
@@ -24,7 +31,7 @@ export async function GET(
       .where(
         and(
           eq(conversations.id, id),
-          eq(conversations.userId, session.user.id)
+          eq(conversations.userId, userId)
         )
       )
       .limit(1);
@@ -48,7 +55,12 @@ export async function GET(
       messages: conversationMessages,
     });
   } catch (error) {
-    console.error('Error fetching conversation:', error);
+    logger.error('api', 'Error fetching conversation', error instanceof Error ? error : undefined, {
+      requestId,
+      userId,
+      metadata: { conversationId: id },
+    });
+
     return NextResponse.json(
       { error: 'Failed to fetch conversation' },
       { status: 500 }
@@ -61,12 +73,17 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const requestId = generateRequestId();
   const session = await auth();
+
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const userId = session.user.id;
   const { id } = await params;
+
+  logger.apiRequest(requestId, 'DELETE', `/api/conversations/${id}`, userId);
 
   try {
     // Verify ownership and delete
@@ -75,7 +92,7 @@ export async function DELETE(
       .where(
         and(
           eq(conversations.id, id),
-          eq(conversations.userId, session.user.id)
+          eq(conversations.userId, userId)
         )
       )
       .returning();
@@ -87,9 +104,28 @@ export async function DELETE(
       );
     }
 
+    await logAudit({
+      userId,
+      action: 'conversation_delete',
+      resource: 'conversation',
+      resourceId: id,
+      metadata: { title: deleted.title },
+      ...getClientInfo(request),
+    });
+
+    logger.info('chat', 'Conversation deleted', {
+      userId,
+      metadata: { conversationId: id },
+    });
+
     return NextResponse.json({ success: true });
   } catch (error) {
-    console.error('Error deleting conversation:', error);
+    logger.error('api', 'Error deleting conversation', error instanceof Error ? error : undefined, {
+      requestId,
+      userId,
+      metadata: { conversationId: id },
+    });
+
     return NextResponse.json(
       { error: 'Failed to delete conversation' },
       { status: 500 }
@@ -102,15 +138,21 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const requestId = generateRequestId();
   const session = await auth();
+
   if (!session?.user?.id) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const userId = session.user.id;
   const { id } = await params;
-  const { title, modelId } = await request.json();
+
+  logger.apiRequest(requestId, 'PATCH', `/api/conversations/${id}`, userId);
 
   try {
+    const { title, modelId } = await request.json();
+
     const [updated] = await db
       .update(conversations)
       .set({
@@ -121,7 +163,7 @@ export async function PATCH(
       .where(
         and(
           eq(conversations.id, id),
-          eq(conversations.userId, session.user.id)
+          eq(conversations.userId, userId)
         )
       )
       .returning();
@@ -133,9 +175,23 @@ export async function PATCH(
       );
     }
 
+    await logAudit({
+      userId,
+      action: 'model_switch',
+      resource: 'conversation',
+      resourceId: id,
+      metadata: { title, modelId },
+      ...getClientInfo(request),
+    });
+
     return NextResponse.json({ conversation: updated });
   } catch (error) {
-    console.error('Error updating conversation:', error);
+    logger.error('api', 'Error updating conversation', error instanceof Error ? error : undefined, {
+      requestId,
+      userId,
+      metadata: { conversationId: id },
+    });
+
     return NextResponse.json(
       { error: 'Failed to update conversation' },
       { status: 500 }
