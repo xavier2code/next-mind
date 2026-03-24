@@ -1,0 +1,209 @@
+# Requirements: Next-Mind AI Agent Framework
+
+**Defined:** 2026-03-24
+**Core Value:** 让团队成员通过统一的对话界面，高效处理文件、管理知识、调用工具，完成80%以上的日常工作任务
+
+## v1 Requirements
+
+Requirements for initial release. Each maps to roadmap phases.
+
+### Core Infrastructure
+
+- [ ] **CORE-01**: System provides ChatGPT-style conversation UI with streaming output, markdown rendering, and code highlighting
+- [ ] **CORE-02**: Users can authenticate via email/password and SSO providers
+- [ ] **CORE-03**: User sessions persist across browser refreshes with secure session management
+- [ ] **CORE-04**: System maintains conversation history with search and filtering capabilities
+- [ ] **CORE-05**: System provides REST API with rate limiting for external integrations
+- [ ] **CORE-06**: System logs all user actions with timestamps and user IDs for audit purposes
+- [ ] **CORE-07**: All data in transit and at rest is encrypted (TLS 1.3, AES-256)
+
+### Chinese LLM Integration
+
+- [ ] **LLM-01**: System supports Qwen3.5 model with official TypeScript SDK integration
+- [ ] **LLM-02**: System supports GLM (Zhipu AI) models via OpenAI-compatible API
+- [ ] **LLM-03**: System supports MiniMax M2.5 models with native pi-mono integration
+- [ ] **LLM-04**: System provides unified LLM API abstraction layer to isolate provider-specific implementations
+- [ ] **LLM-05**: System implements retry logic with exponential backoff for API rate limits (429 errors)
+- [ ] **LLM-06**: System handles provider-specific streaming parameters (e.g., `incremental_output: true`)
+- [ ] **LLM-07**: System provides model switching UI allowing users to select between available LLMs
+
+### File Processing
+
+- [ ] **FILE-01**: Users can upload PDF files with automatic text extraction and OCR for scanned documents
+- [ ] **FILE-02**: Users can upload Word documents (.doc, .docx) with content extraction
+- [ ] **FILE-03**: Users can upload code files with syntax highlighting and language detection
+- [ ] **FILE-04**: Users can upload data files (Excel, CSV, JSON) with automatic parsing
+- [ ] **FILE-05**: Users can upload images and scanned documents with OCR text extraction
+- [ ] **FILE-06**: System performs file format conversion (PDF to Word, image to text, etc.)
+- [ ] **FILE-07**: System extracts key information and summaries from uploaded files
+- [ ] **FILE-08**: System automatically classifies and tags uploaded files based on content
+- [ ] **FILE-09**: Users can modify file content through natural language instructions
+- [ ] **FILE-10**: System stores uploaded files in cloud storage with secure access controls
+
+### MCP Protocol
+
+- [ ] **MCP-01**: System implements MCP server with JSON-RPC 2.0 compliance
+- [ ] **MCP-02**: System provides MCP Tools registry for agent tool access
+- [ ] **MCP-03**: System provides MCP Resources manager for file and data access
+- [ ] **MCP-04**: System provides MCP Prompts templates for reusable prompt patterns
+- [ ] **MCP-05**: System implements bash execution tool with sandboxing and permission controls
+- [ ] **MCP-06**: System requires authentication for all MCP requests (no anonymous access)
+- [ ] **MCP-07**: System binds MCP server to localhost by default (not externally exposed)
+- [ ] **MCP-08**: System validates and sanitizes all inputs to MCP tools
+- [ ] **MCP-09**: System never runs MCP tools with root privileges
+
+### RAG Knowledge System
+
+- [ ] **RAG-01**: System processes uploaded documents into 400-800 token chunks respecting document structure
+- [ ] **RAG-02**: System generates embeddings for document chunks using Chinese-optimized embedding model
+- [ ] **RAG-03**: System stores embeddings in Qdrant vector database with metadata
+- [ ] **RAG-04**: System performs hybrid retrieval combining semantic and keyword search
+- [ ] **RAG-05**: System assembles retrieved context with citations and source attribution
+- [ ] **RAG-06**: System retrieves from conversation history with semantic search
+- [ ] **RAG-07**: System retrieves from external knowledge bases (configurable connectors)
+- [ ] **RAG-08**: System retrieves from web resources via search API integration
+- [ ] **RAG-09**: System tracks retrieval quality metrics (precision@k) for continuous improvement
+
+### Skills System
+
+- [ ] **SKILL-01**: System provides predefined skills for common tasks (file processing, data analysis, web search)
+- [ ] **SKILL-02**: Users can create custom skills through UI or configuration files
+- [ ] **SKILL-03**: System supports skill orchestration for combining multiple skills in sequence
+- [ ] **SKILL-04**: System implements skill execution with action budgets and approval gates
+- [ ] **SKILL-05**: System requires human approval for destructive operations (file deletion, system commands)
+- [ ] **SKILL-06**: System provides skill discovery and browsing interface
+- [ ] **SKILL-07**: System supports skill versioning and dependency management
+
+### Team Knowledge Base
+
+- [ ] **TEAM-01**: System provides team workspaces with shared file libraries
+- [ ] **TEAM-02**: Team members can share conversations for collaborative context
+- [ ] **TEAM-03**: System implements role-based access control (admin, member, viewer)
+- [ ] **TEAM-04**: System provides team-level API access with scoped permissions
+- [ ] **TEAM-05**: System enables team knowledge sharing through shared RAG indexes
+- [ ] **TEAM-06**: System tracks team usage metrics and resource consumption
+
+### Security and Compliance
+
+- [ ] **SEC-01**: System implements content safety detection for sensitive or harmful content
+- [ ] **SEC-02**: System provides explicit state objects (agents know state, don't infer)
+- [ ] **SEC-03**: System implements verification checkpoints for multi-step operations
+- [ ] **SEC-04**: System limits agent chains to maximum 5 sequential steps before verification
+- [ ] **SEC-05**: System implements circuit breakers for failing operations (max 3 retries)
+- [ ] **SEC-06**: System provides real-time monitoring and alerting for security events
+
+## v2 Requirements
+
+Deferred to future release. Tracked but not in current roadmap.
+
+### A2A Multi-Agent
+
+- **A2A-01**: System implements Planner agent for task decomposition
+- **A2A-02**: System implements Executor agent for task execution
+- **A2A-03**: System implements Verifier agent for result validation
+- **A2A-04**: System implements Critic agent for quality review
+- **A2A-05**: System provides supervisor-worker pattern for agent coordination
+- **A2A-06**: System implements A2A protocol for agent-to-agent communication
+- **A2A-07**: System provides structured output contracts between agents
+
+### Skills Marketplace
+
+- **MKT-01**: System provides skills marketplace for team skill sharing
+- **MKT-02**: System enables skill rating and reviews
+- **MKT-03**: System supports skill installation and updates from marketplace
+- **MKT-04**: System provides skill usage analytics
+
+### Advanced RAG
+
+- **ARAG-01**: System implements Graph-RAG for knowledge graph integration
+- **ARAG-02**: System implements Hybrid RAG with multiple retrieval strategies
+- **ARAG-03**: System provides agentic document extraction with multimodal understanding
+
+## Out of Scope
+
+Explicitly excluded. Documented to prevent scope creep.
+
+| Feature | Reason |
+|---------|--------|
+| Private deployment | Initial focus on public cloud; can extend later |
+| Mobile native apps | Web-first approach; mobile responsive UI is sufficient |
+| Real-time audio/video | Not core to team AI assistant value proposition |
+| Multi-tenant isolation | Initial single-team use; enterprise features later |
+| Real-time collaboration (Google Docs style) | High complexity; async collaboration sufficient for v1 |
+
+## Traceability
+
+Which phases cover which requirements. Updated during roadmap creation.
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| CORE-01 | Phase 1 | Pending |
+| CORE-02 | Phase 1 | Pending |
+| CORE-03 | Phase 1 | Pending |
+| CORE-04 | Phase 1 | Pending |
+| CORE-05 | Phase 1 | Pending |
+| CORE-06 | Phase 1 | Pending |
+| CORE-07 | Phase 1 | Pending |
+| LLM-01 | Phase 1 | Pending |
+| LLM-02 | Phase 1 | Pending |
+| LLM-03 | Phase 1 | Pending |
+| LLM-04 | Phase 1 | Pending |
+| LLM-05 | Phase 1 | Pending |
+| LLM-06 | Phase 1 | Pending |
+| LLM-07 | Phase 1 | Pending |
+| FILE-01 | Phase 3 | Pending |
+| FILE-02 | Phase 3 | Pending |
+| FILE-03 | Phase 3 | Pending |
+| FILE-04 | Phase 3 | Pending |
+| FILE-05 | Phase 3 | Pending |
+| FILE-06 | Phase 3 | Pending |
+| FILE-07 | Phase 3 | Pending |
+| FILE-08 | Phase 3 | Pending |
+| FILE-09 | Phase 3 | Pending |
+| FILE-10 | Phase 3 | Pending |
+| MCP-01 | Phase 2 | Pending |
+| MCP-02 | Phase 2 | Pending |
+| MCP-03 | Phase 2 | Pending |
+| MCP-04 | Phase 2 | Pending |
+| MCP-05 | Phase 2 | Pending |
+| MCP-06 | Phase 2 | Pending |
+| MCP-07 | Phase 2 | Pending |
+| MCP-08 | Phase 2 | Pending |
+| MCP-09 | Phase 2 | Pending |
+| RAG-01 | Phase 3 | Pending |
+| RAG-02 | Phase 3 | Pending |
+| RAG-03 | Phase 3 | Pending |
+| RAG-04 | Phase 3 | Pending |
+| RAG-05 | Phase 3 | Pending |
+| RAG-06 | Phase 3 | Pending |
+| RAG-07 | Phase 3 | Pending |
+| RAG-08 | Phase 3 | Pending |
+| RAG-09 | Phase 3 | Pending |
+| SKILL-01 | Phase 2 | Pending |
+| SKILL-02 | Phase 2 | Pending |
+| SKILL-03 | Phase 2 | Pending |
+| SKILL-04 | Phase 2 | Pending |
+| SKILL-05 | Phase 2 | Pending |
+| SKILL-06 | Phase 2 | Pending |
+| SKILL-07 | Phase 2 | Pending |
+| TEAM-01 | Phase 5 | Pending |
+| TEAM-02 | Phase 5 | Pending |
+| TEAM-03 | Phase 5 | Pending |
+| TEAM-04 | Phase 5 | Pending |
+| TEAM-05 | Phase 5 | Pending |
+| TEAM-06 | Phase 5 | Pending |
+| SEC-01 | Phase 1 | Pending |
+| SEC-02 | Phase 1 | Pending |
+| SEC-03 | Phase 1 | Pending |
+| SEC-04 | Phase 1 | Pending |
+| SEC-05 | Phase 1 | Pending |
+| SEC-06 | Phase 1 | Pending |
+
+**Coverage:**
+- v1 requirements: 59 total
+- Mapped to phases: 59
+- Unmapped: 0 ✓
+
+---
+*Requirements defined: 2026-03-24*
+*Last updated: 2026-03-24 after initial definition*
