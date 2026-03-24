@@ -151,6 +151,28 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LLM-05 | Phase 1 | Pending |
 | LLM-06 | Phase 1 | Pending |
 | LLM-07 | Phase 1 | Pending |
+| SEC-01 | Phase 1 | Pending |
+| SEC-02 | Phase 1 | Pending |
+| SEC-03 | Phase 1 | Pending |
+| SEC-04 | Phase 1 | Pending |
+| SEC-05 | Phase 1 | Pending |
+| SEC-06 | Phase 1 | Pending |
+| MCP-01 | Phase 2 | Pending |
+| MCP-02 | Phase 2 | Pending |
+| MCP-03 | Phase 2 | Pending |
+| MCP-04 | Phase 2 | Pending |
+| MCP-05 | Phase 2 | Pending |
+| MCP-06 | Phase 2 | Pending |
+| MCP-07 | Phase 2 | Pending |
+| MCP-08 | Phase 2 | Pending |
+| MCP-09 | Phase 2 | Pending |
+| SKILL-01 | Phase 2 | Pending |
+| SKILL-02 | Phase 2 | Pending |
+| SKILL-03 | Phase 2 | Pending |
+| SKILL-04 | Phase 2 | Pending |
+| SKILL-05 | Phase 2 | Pending |
+| SKILL-06 | Phase 2 | Pending |
+| SKILL-07 | Phase 2 | Pending |
 | FILE-01 | Phase 3 | Pending |
 | FILE-02 | Phase 3 | Pending |
 | FILE-03 | Phase 3 | Pending |
@@ -161,15 +183,6 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FILE-08 | Phase 3 | Pending |
 | FILE-09 | Phase 3 | Pending |
 | FILE-10 | Phase 3 | Pending |
-| MCP-01 | Phase 2 | Pending |
-| MCP-02 | Phase 2 | Pending |
-| MCP-03 | Phase 2 | Pending |
-| MCP-04 | Phase 2 | Pending |
-| MCP-05 | Phase 2 | Pending |
-| MCP-06 | Phase 2 | Pending |
-| MCP-07 | Phase 2 | Pending |
-| MCP-08 | Phase 2 | Pending |
-| MCP-09 | Phase 2 | Pending |
 | RAG-01 | Phase 3 | Pending |
 | RAG-02 | Phase 3 | Pending |
 | RAG-03 | Phase 3 | Pending |
@@ -179,31 +192,18 @@ Which phases cover which requirements. Updated during roadmap creation.
 | RAG-07 | Phase 3 | Pending |
 | RAG-08 | Phase 3 | Pending |
 | RAG-09 | Phase 3 | Pending |
-| SKILL-01 | Phase 2 | Pending |
-| SKILL-02 | Phase 2 | Pending |
-| SKILL-03 | Phase 2 | Pending |
-| SKILL-04 | Phase 2 | Pending |
-| SKILL-05 | Phase 2 | Pending |
-| SKILL-06 | Phase 2 | Pending |
-| SKILL-07 | Phase 2 | Pending |
-| TEAM-01 | Phase 5 | Pending |
-| TEAM-02 | Phase 5 | Pending |
-| TEAM-03 | Phase 5 | Pending |
-| TEAM-04 | Phase 5 | Pending |
-| TEAM-05 | Phase 5 | Pending |
-| TEAM-06 | Phase 5 | Pending |
-| SEC-01 | Phase 1 | Pending |
-| SEC-02 | Phase 1 | Pending |
-| SEC-03 | Phase 1 | Pending |
-| SEC-04 | Phase 1 | Pending |
-| SEC-05 | Phase 1 | Pending |
-| SEC-06 | Phase 1 | Pending |
+| TEAM-01 | Phase 3 | Pending |
+| TEAM-02 | Phase 3 | Pending |
+| TEAM-03 | Phase 3 | Pending |
+| TEAM-04 | Phase 3 | Pending |
+| TEAM-05 | Phase 3 | Pending |
+| TEAM-06 | Phase 3 | Pending |
 
 **Coverage:**
 - v1 requirements: 59 total
 - Mapped to phases: 59
-- Unmapped: 0 ✓
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-24*
-*Last updated: 2026-03-24 after initial definition*
+*Last updated: 2026-03-24 after roadmap creation*
