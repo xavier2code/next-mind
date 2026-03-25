@@ -239,16 +239,77 @@ v1.0 MVP 已发布的需求。
 
 ## Traceability
 
-需求到阶段的映射。在路线图创建时更新。
+需求到阶段的映射。
+
+### v1.1 Requirements Mapping
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (v1.1 需求待路线图创建后映射) | - | Pending |
+| DELEG-01 | Phase 3 | Pending |
+| DELEG-02 | Phase 3 | Pending |
+| DELEG-03 | Phase 3 | Pending |
+| DELEG-04 | Phase 3 | Pending |
+| DELEG-05 | Phase 3 | Pending |
+| DELEG-06 | Phase 3 | Pending |
+| DELEG-07 | Phase 3 | Pending |
+| DELEG-08 | Phase 3 | Pending |
+| DELEG-09 | Phase 3 | Pending |
+| DELEG-10 | Phase 3 | Pending |
+| ATYPE-01 | Phase 3 | Pending |
+| ATYPE-02 | Phase 3 | Pending |
+| ATYPE-03 | Phase 3 | Pending |
+| ATYPE-04 | Phase 3 | Pending |
+| ATYPE-05 | Phase 3 | Pending |
+| ATYPE-06 | Phase 3 | Pending |
+| ATYPE-07 | Phase 3 | Pending |
+| INTG-01 | Phase 3 | Pending |
+| INTG-02 | Phase 3 | Pending |
+| INTG-03 | Phase 3 | Pending |
+| INTG-04 | Phase 3 | Pending |
+| INTG-05 | Phase 3 | Pending |
+| ORCH-01 | Phase 4 | Pending |
+| ORCH-02 | Phase 4 | Pending |
+| ORCH-03 | Phase 4 | Pending |
+| ORCH-04 | Phase 4 | Pending |
+| ORCH-05 | Phase 4 | Pending |
+| ORCH-06 | Phase 4 | Pending |
+| COMM-01 | Phase 4 | Pending |
+| COMM-02 | Phase 4 | Pending |
+| COMM-03 | Phase 4 | Pending |
+| COMM-04 | Phase 4 | Pending |
+| COMM-05 | Phase 4 | Pending |
+| COMM-06 | Phase 4 | Pending |
+| CTRL-01 | Phase 5 | Pending |
+| CTRL-02 | Phase 5 | Pending |
+| CTRL-03 | Phase 5 | Pending |
+| CTRL-04 | Phase 5 | Pending |
+| CTRL-05 | Phase 5 | Pending |
+| CTRL-06 | Phase 5 | Pending |
+| RSLT-01 | Phase 5 | Pending |
+| RSLT-02 | Phase 5 | Pending |
+| RSLT-03 | Phase 5 | Pending |
+| RSLT-04 | Phase 5 | Pending |
+| RSLT-05 | Phase 5 | Pending |
+| VIS-01 | Phase 6 | Pending |
+| VIS-02 | Phase 6 | Pending |
+| VIS-03 | Phase 6 | Pending |
+| VIS-04 | Phase 6 | Pending |
+| VIS-05 | Phase 6 | Pending |
 
 **v1.1 Coverage:**
 - v1.1 requirements: 50 total
-- Mapped to phases: 0
-- Unmapped: 50 ⚠️
+- Mapped to phases: 50
+- Unmapped: 0 ✓
+
+### v1 Requirements Mapping (Complete)
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| CORE-01~07 | Phase 1 | Complete |
+| LLM-01~07 | Phase 1 | Complete |
+| MCP-01~02, MCP-06 | Phase 2 | Complete |
+| SKILL-04~06 | Phase 2 | Complete |
+| SEC-01~06 | Phase 2 | Complete |
 
 **v1 Coverage:**
 - v1 requirements: 59 total
@@ -257,4 +318,4 @@ v1.0 MVP 已发布的需求。
 
 ---
 *Requirements defined: 2026-03-24*
-*Last updated: 2026-03-25 after v1.1 requirements gathering*
+*Last updated: 2026-03-25 after v1.1 roadmap creation*
