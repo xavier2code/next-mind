@@ -93,10 +93,10 @@ Agent 间通信机制。
 
 与现有系统集成。
 
-- [ ] **INTG-01**: A2A 系统复用现有 Skills 基础设施
-- [ ] **INTG-02**: 子 Agent 可以调用现有 MCP 工具
-- [ ] **INTG-03**: 敏感操作复用现有审批流程
-- [ ] **INTG-04**: 多 Agent 操作记录到审计日志
+- [x] **INTG-01**: A2A 系统复用现有 Skills 基础设施
+- [x] **INTG-02**: 子 Agent 可以调用现有 MCP 工具
+- [x] **INTG-03**: 敏感操作复用现有审批流程
+- [x] **INTG-04**: 多 Agent 操作记录到审计日志
 - [ ] **INTG-05**: 与现有对话 UI 无缝集成
 
 ---
@@ -262,10 +262,10 @@ v1.0 MVP 已发布的需求。
 | ATYPE-05 | Phase 3 | Complete |
 | ATYPE-06 | Phase 3 | Complete |
 | ATYPE-07 | Phase 3 | Complete |
-| INTG-01 | Phase 3 | Pending |
-| INTG-02 | Phase 3 | Pending |
-| INTG-03 | Phase 3 | Pending |
-| INTG-04 | Phase 3 | Pending |
+| INTG-01 | Phase 3 | Complete |
+| INTG-02 | Phase 3 | Complete |
+| INTG-03 | Phase 3 | Complete |
+| INTG-04 | Phase 3 | Complete |
 | INTG-05 | Phase 3 | Pending |
 | ORCH-01 | Phase 4 | Pending |
 | ORCH-02 | Phase 4 | Pending |
