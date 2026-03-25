@@ -1,203 +1,176 @@
 # Project Research Summary
 
-**Project:** Next-Mind
-**Domain:** AI Agent Collaboration Platform
-**Researched:** 2026-03-24
+**Project:** Next-Mind (AI Agent Collaboration Platform)
+**Domain:** AI Agent Framework with A2A Multi-Agent Integration
+**Researched:** 2026-03-25
 **Confidence:** HIGH
 
 ## Executive Summary
 
-Next-Mind is a team-oriented AI agent collaboration platform optimized for Chinese LLM providers (Qwen, GLM, MiniMax) while supporting full MCP protocol integration for tool access. The research indicates this product should be built on the pi-mono framework (TypeScript-native with native MiniMax support) combined with Next.js 15 for the ChatGPT-style web interface, PostgreSQL for structured data, and Qdrant for vector-based RAG.
+Next-Mind is an AI agent collaboration platform built on pi-mono (TypeScript-first LLM framework) with native support for Chinese LLMs (Qwen, GLM, MiniMax). The v1.0 platform is complete with ChatGPT-style UI, MCP protocol implementation, Skills system, and approval workflows. The v1.1 milestone focuses on adding A2A (Agent-to-Agent) multi-agent collaboration for task decomposition and delegation.
 
-The recommended approach prioritizes a **single-team MVP first** with proven architectural patterns (ReAct loop, explicit state management, supervisor-worker topology) before advancing to multi-agent A2A orchestration. Chinese LLM integration is a core differentiator offering 30-50% cost advantage over Western providers, but requires careful attention to API quirks and provider-specific configurations.
+Research reveals that multi-agent systems have a 93-95% failure rate before production, primarily due to coordination and design issues rather than technical problems. The recommended approach follows Anthropic's orchestrator-worker pattern: a lead agent decomposes complex tasks into subtasks with clear boundaries, delegates to specialized sub-agents (File, Search, Code, Custom), and aggregates results. Critical success factors include: typed schemas for all agent communication (avoid natural language ambiguity), structured sharing protocols between agents, independent verification of outputs, and checkpoint/resume capability for long-running tasks.
 
-The key risks center on **compound reliability decay** in multi-agent systems (failure rates of 41-86% without proper architecture) and **MCP security blind spots** (492 servers found publicly exposed without authentication). These must be addressed from Phase 1 through explicit state objects, verification checkpoints, and security-by-default configurations.
+Key risks include the "more agents = more capability" fallacy (coordination overhead often exceeds benefits), specification ambiguity (41.77% of failures), and compounding error cascades across agent handoffs. Mitigation requires JSON schemas for all inputs/outputs, circuit breakers at each handoff, and explicit completion criteria verified by an independent judge agent.
 
 ## Key Findings
 
 ### Recommended Stack
 
-The project has already selected pi-mono as its foundation, which provides a unified LLM API abstraction (pi-ai) and stateful agent runtime (pi-agent-core) with native MiniMax support. This choice is validated by research showing pi-mono's lightweight nature and TypeScript-first approach suit Chinese LLM integration better than LangChain's Python-heavy ecosystem.
+The platform uses pi-mono (@mariozechner/pi-ai, @mariozechner/pi-agent-core) as the unified LLM layer with native MiniMax support and OpenAI-compatible API for Qwen/GLM. Next.js 15 with App Router provides the full-stack web framework. PostgreSQL with Drizzle ORM handles persistence, with Qdrant for vector storage in RAG scenarios.
 
 **Core technologies:**
-- **@mariozechner/pi-ai (0.61.x):** Unified LLM API with multi-provider support, token tracking, TypeBox schemas
-- **@mariozechner/pi-agent-core (0.61.x):** Agent runtime with dual-layer loop (steering + follow-up), lifecycle hooks
+- **pi-mono (0.61.x):** Unified LLM API with multi-provider support, TypeBox schemas for tools, streaming events -- already selected by project
 - **Next.js 15:** Full-stack framework with App Router for secure API key handling, Vercel AI SDK integration
-- **PostgreSQL 16 + Qdrant 1.12:** Hybrid storage - relational for users/conversations, vector for RAG embeddings
-- **Drizzle ORM:** TypeScript-native ORM with 700ms faster serverless cold starts than Prisma
-- **Auth.js 5.x:** Industry-standard authentication with OAuth and session management
-- **LlamaIndex.TS + Unstructured.io:** RAG framework with 35% retrieval accuracy boost, 64+ file type support
+- **PostgreSQL 16 + Drizzle ORM:** Battle-tested relational DB with minimal bundle size (~7.4kb), 700ms faster cold starts than Prisma
+- **Qdrant 1.12.x:** Dedicated vector database for RAG, better HNSW optimization at scale than pgvector
+
+**Supporting libraries:**
+- **Vercel AI SDK 4.x:** Streaming chat UI, tool calling UI patterns
+- **shadcn/ui:** ChatGPT-style interface components, Tailwind v4 support
+- **LlamaIndex.TS 0.7.x:** RAG framework with 35% boost in retrieval accuracy
+- **Auth.js 5.x:** Authentication with OAuth, session management
+- **@modelcontextprotocol/sdk:** MCP protocol implementation for tool/resource access
 
 ### Expected Features
 
-The feature landscape reveals a clear separation between MVP requirements and future enhancements. Chinese LLM optimization and team collaboration are the primary differentiators against competitors like Dify, LangChain, and CrewAI.
+**Must have (table stakes for v1.1 A2A):**
+- Task Decomposition Engine -- Lead agent breaks complex requests into subtasks with clear boundaries
+- Agent Registry -- Track available sub-agents and their capabilities
+- Basic Sub-Agent Types (File, Search) -- Specialized agents with domain-optimized prompts
+- Sequential Execution -- Run sub-agents one after another with state persistence
+- Result Aggregation (Merge) -- Combine sub-agent outputs into coherent response
+- Basic Progress Status -- Show which agents are running, completed, failed
 
-**Must have (table stakes):**
-- ChatGPT-style conversation UI with streaming, markdown, code highlighting
-- User authentication with SSO support, conversation history and persistence
-- File upload and basic RAG (document Q&A with citation)
-- Multi-model LLM support via unified API abstraction
-- API access with rate limiting, audit logging, data encryption
-
-**Should have (competitive):**
-- Chinese LLM optimization (Qwen/GLM/MiniMax) for 30-50% cost advantage
-- Full MCP protocol implementation for tool interoperability
-- Team knowledge base with shared RAG across conversations
-- Skills system with predefined and custom capabilities
-- Session management with state persistence and resumption
+**Should have (competitive differentiators):**
+- Parallel Execution -- Run independent sub-agents simultaneously (90% time reduction)
+- Dependency Analysis -- Determine task dependencies automatically for smart scheduling
+- All Four Agent Types -- Add Code and Custom agent types
+- Enhanced Result Handling -- Compare mode, summarize mode, user selection
 
 **Defer (v2+):**
-- A2A multi-agent collaboration (requires MCP foundation first)
-- Skills marketplace (requires skills system maturity)
-- Graph-RAG / Hybrid RAG (requires basic RAG validation)
-- Agentic document extraction (requires multimodal LLM capabilities)
+- Skills marketplace -- Requires skills system maturity, community building
+- Graph-RAG / Hybrid RAG -- Adds significant complexity
+- Mobile native apps -- Web-first validated; mobile as enhancement
+- Multi-tenancy -- Single-team focus validated first
 
 ### Architecture Approach
 
-The architecture follows a layered pattern with clear boundaries: Presentation Layer (Web UI, REST API, WebSocket), Application Layer (Auth, Session, Audit), Agent Core Layer (pi-mono orchestration with dual-loop), Integration Layer (LLM Gateway, File Handler, RAG Engine), and Data Layer (PostgreSQL, Qdrant, Object Storage).
+The architecture extends the existing v1.0 system (LLM Gateway, MCP Server, Skills System, Approval Flow) with a new A2A layer. Sub-agents ARE specialized skills -- the existing skill system becomes the foundation for agent capabilities, minimizing code duplication.
 
 **Major components:**
-1. **Agent Loop (pi-agent-core):** Dual-layer loop handling steering (interruptions) and follow-up (continuations) for interactive scenarios
-2. **MCP Protocol Layer:** Tools registry, resources manager, prompt templates, skills system - JSON-RPC 2.0 compliant
-3. **RAG Engine:** Document ingestion, chunking (400-800 tokens), embedding generation, similarity search, context assembly
-4. **Session Manager:** Conversation state, message history, context window management with explicit state objects
+1. **Agent Registry** -- Registration, discovery, capability mapping; extends existing `SkillMetadata` pattern
+2. **Task Queue** -- Task enqueue/dequeue with priority and retry logic
+3. **Communication Bus** -- Pub/sub messaging between agents with structured message types
+4. **Result Aggregator** -- Merge, compare, summarize results from parallel/sequential agents
+5. **Workflow Engine** -- Multi-agent workflow orchestration with state persistence
+
+**Key integration points:**
+- Skills System: Sub-agents extend `AgentMetadata` from `SkillMetadata`
+- MCP Server: Agents exposed as MCP tools via `agent_${id}` naming
+- Approval Flow: Delegation requires approval via `AgentApprovalStateMachine`
+- Database: New tables for `agents`, `agentTasks`, `agentMessages`, `workflows`
 
 ### Critical Pitfalls
 
-Research identified 12 critical pitfalls, with the following being most impactful for this project:
+1. **Specification Ambiguity (41.77% of failures)** -- Agents cannot infer context; treat specifications like API contracts with JSON schemas for ALL inputs/outputs, explicit action constraints, discriminated unions for validatable options.
 
-1. **Compound Reliability Decay:** Multi-agent systems with 10+ steps fail 2/3 of the time even with 95% individual success. Avoid by keeping chains under 5 steps, adding verification checkpoints at steps 3 and 5.
+2. **Compounding Error Cascade (17x amplification)** -- Errors compound across handoffs; implement structured communication protocols with schema validation, circuit breakers at each boundary, shared memory with TTL, and independent verification.
 
-2. **Invisible State (LLM Memory Assumption):** LLMs approximate state, they don't track it. Use explicit state objects stored and passed intentionally - agents should know, not infer.
+3. **"More Agents = More Capability" Fallacy** -- Multi-agent coordination yields highest returns only when single-agent baseline is below 45% success rate; start with clear justification, use read-only sub-agents first, implement clear ownership model.
 
-3. **MCP Security Blind Spots:** 492 MCP servers found publicly exposed without authentication. Require auth for every request, default to localhost binding, validate all inputs, never run with root privileges.
+4. **Weak Verification (13.48% of failures)** -- Garbage in, garbage out with more steps; add independent judge agent with isolated prompts and context, multi-level verification (low-level correctness + high-level objectives), external knowledge sources.
 
-4. **Monolithic Mega-Prompt:** Prompts exceeding 200+ lines cause models to skip steps. Split into multi-agent system with supervisor pattern, keep individual prompts under 50 actionable instructions.
-
-5. **Chinese LLM Integration Gotchas:** Different API conventions, CN vs international endpoints, provider-specific streaming parameters. Implement retry logic with exponential backoff, verify endpoint matches key version.
+5. **Context Window Exhaustion** -- Token duplication rates of 53-86% across frameworks; implement context compression, TTL for shared state, priority-based retention, agent-scoped context windows.
 
 ## Implications for Roadmap
 
-Based on combined research, suggested phase structure:
+Based on research, suggested phase structure for v1.1 A2A milestone:
 
-### Phase 1: Core Foundation
-**Rationale:** Establish secure, reliable foundation before adding complexity. State management, security, and proven patterns must be in place first.
-**Delivers:** Working agent with single LLM, basic UI, authentication, and explicit state management
-**Addresses:** User authentication, conversation history, single Chinese LLM (MiniMax), ChatGPT-style UI
-**Avoids:** Invisible state pitfall, MCP security blind spots, monolithic mega-prompt, context window mismanagement
+### Phase 1: Foundation & Task Decomposition
+**Rationale:** Must establish agent types, registry, and database schema before any multi-agent execution can occur. Addresses specification ambiguity pitfall with typed schemas from the start.
+**Delivers:** Agent type definitions, registry, database schema, task decomposition engine
+**Addresses:** Task Decomposition, Agent Registry, Basic Sub-Agent Types
+**Avoids:** Specification Ambiguity (typed schemas from day one)
 
-**Key deliverables:**
-- pi-ai LLM gateway with MiniMax integration
-- pi-agent-core basic ReAct loop (no steering yet)
-- Next.js web UI with Auth.js authentication
-- PostgreSQL schema for users, conversations, messages
-- Audit logging and rate limiting
+### Phase 2: Core Execution & Communication
+**Rationale:** With foundation in place, build execution engine and communication bus. Addresses compounding errors with structured protocols.
+**Delivers:** Agent executor, task queue, communication bus, LLM context handler
+**Uses:** pi-mono streaming, existing Skills executor patterns
+**Implements:** Sequential Execution, Result Aggregation (Merge)
+**Avoids:** Compounding Error Cascade (circuit breakers, structured messaging), Context Window Exhaustion (TTL, compression)
 
-### Phase 2: Tool Integration (MCP)
-**Rationale:** With foundation stable, add MCP protocol for tool access. This enables the agent to do useful work beyond conversation.
-**Delivers:** MCP server/client implementation with authenticated tool execution
-**Uses:** @modelcontextprotocol/sdk, TypeBox schemas
-**Implements:** MCP Protocol Layer from architecture
+### Phase 3: Verification & Progress
+**Rationale:** Add independent verification layer and user-facing progress. Addresses weak verification pitfall.
+**Delivers:** Independent judge agent, progress status, completion checklists, workflow state persistence
+**Addresses:** Basic Progress Status, Error Recovery
+**Avoids:** Weak Verification (independent judge), Premature Termination (completion checklists)
 
-**Key deliverables:**
-- MCP server with tool registry, resources, prompts
-- Input validation and sanitization for all tools
-- Permission controls and action budgets
-- Basic tools: file read/write, bash execution
-- Security audit: localhost binding, auth required
+### Phase 4: Parallel Execution & Smart Scheduling
+**Rationale:** With sequential execution validated, add parallelism for independent tasks. Research shows 3-5 subagents in parallel = up to 90% time reduction.
+**Delivers:** Parallel execution, dependency analysis, auto-scheduling, all four agent types
+**Uses:** Promise.all patterns, Task Queue concurrency
+**Implements:** Parallel Execution, Dependency Analysis, Auto-Scheduling
 
-### Phase 3: RAG Knowledge System
-**Rationale:** Document processing and retrieval adds significant value for team collaboration use case.
-**Delivers:** Document upload, processing, embedding, and retrieval with citation
-**Uses:** LlamaIndex.TS, Unstructured.io, Qdrant
-**Implements:** RAG Engine from architecture
-
-**Key deliverables:**
-- File upload and processing (PDF, Word, images)
-- Document chunking with structure awareness
-- Qdrant vector store integration
-- Hybrid retrieval (semantic + keyword)
-- Retrieval quality metrics (precision@k)
-
-### Phase 4: Multi-Agent Foundation
-**Rationale:** With tools and RAG working, introduce role-based agents with supervisor pattern. Avoids compound reliability decay.
-**Delivers:** Planner, Executor, Verifier agents with structured communication
-**Uses:** pi-agent-core dual-layer loop, A2A protocol concepts
-**Implements:** Agent Orchestration Layer
-
-**Key deliverables:**
-- Supervisor-Worker pattern implementation
-- Verification checkpoints at step 3 and 5
-- Structured output contracts between agents
-- Maximum 3 retries per agent, circuit breakers
-- End-to-end reliability testing (target 95%+)
-
-### Phase 5: Team Collaboration
-**Rationale:** Multi-user features require the platform to be stable first. Shared knowledge builds on proven RAG.
-**Delivers:** Team knowledge base, shared RAG, collaboration features
-**Uses:** Existing RAG Engine, Session Manager
-**Implements:** Team features from FEATURES.md
-
-**Key deliverables:**
-- Team workspaces and shared file library
-- Shared conversation history for team context
-- Permission controls by role
-- Team-level API access
+### Phase 5: Advanced Features & Polish
+**Rationale:** Final features for competitive differentiation and UX.
+**Delivers:** Enhanced result handling (compare, summarize, select), checkpoint/resume, agent cards, workflow progress UI
+**Addresses:** Result Comparison Mode, Checkpoint/Resume, Agent Card Discovery
 
 ### Phase Ordering Rationale
 
-- **Foundation first:** State management, security, and proven patterns must be established before adding complexity - research shows 40% of agentic AI projects fail due to architectural shortcuts
-- **MCP before A2A:** MCP handles agent-to-tool communication; A2A handles agent-to-agent. MCP foundation enables future A2A implementation
-- **RAG before multi-agent:** Document understanding is higher value for team collaboration than complex agent orchestration
-- **Verification from start:** Compound reliability decay is prevented by verification checkpoints built into multi-agent architecture from Phase 4
+- **Foundation first:** Database schema and types are dependencies for all other components
+- **Execution before parallelism:** Sequential execution validates core patterns before adding complexity
+- **Verification before scale:** Independent judge catches issues before parallel execution amplifies them
+- **Communication last among core:** Inter-agent messaging is valuable but secondary to basic delegation
 
 ### Research Flags
 
 Phases likely needing deeper research during planning:
-- **Phase 2 (MCP):** Tool design patterns, schema best practices - while MCP is well-documented, tool schema design has subtle pitfalls
-- **Phase 4 (Multi-Agent):** A2A protocol integration - Linux Foundation standard is new (April 2025), patterns still emerging
+- **Phase 4:** Dependency analysis algorithms for auto-scheduling -- may need research on graph-based task planning
+- **Phase 5:** Checkpoint/resume patterns for long-running tasks -- durable state management strategies
 
 Phases with standard patterns (skip research-phase):
-- **Phase 1 (Foundation):** Well-documented patterns for Next.js, Auth.js, PostgreSQL, pi-mono
-- **Phase 3 (RAG):** LlamaIndex.TS and Qdrant have established patterns with good documentation
+- **Phase 1:** Well-documented patterns for registry and schema design, follows existing Skills system
+- **Phase 2:** Executor and queue patterns are standard, communication bus follows pub/sub patterns
+- **Phase 3:** Verification patterns documented in MAST study and Anthropic research
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
 | Stack | HIGH | pi-mono verified via official NPM/GitHub, other technologies verified via official docs and 2025 ecosystem research |
-| Features | HIGH | Competitor analysis covers LangChain, CrewAI, AutoGen, Dify; feature prioritization based on user expectation research |
-| Architecture | HIGH | Multi-agent system architecture patterns well-documented, pi-mono architecture analyzed in depth |
-| Pitfalls | HIGH | Primary sources include IBM Watsonx team, Google DeepMind research, MAST study, academic papers |
+| Features | HIGH | Primary sources include Anthropic multi-agent research, Google A2A protocol docs, MAST failure taxonomy study |
+| Architecture | HIGH | Based on direct analysis of existing codebase plus official MCP/A2A documentation |
+| Pitfalls | HIGH | MAST study (arXiv 2503.13657v2) analyzed 200+ traces, GitHub Blog official patterns, Augment Code industry research |
 
 **Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **A2A Protocol Maturity:** Linux Foundation standard donated April 2025 - patterns still emerging. Plan for potential API changes during Phase 4 implementation.
-- **Chinese LLM API Stability:** Provider-specific quirks documented but may change. Implement abstraction layer early to isolate changes.
-- **Skills System Standardization:** SKILL.md standard emerging but not finalized. Phase 3 skills implementation should be flexible to accommodate standard evolution.
+- **Dependency analysis algorithm:** Phase 4 may need specific graph-based task planning research; recommend `/gsd:research-phase` when planning that phase
+- **Checkpoint/resume state management:** Phase 5 durable state patterns need validation; consider Redis vs PostgreSQL trade-offs at scale
+- **Rate limit coordination:** Multi-agent scenarios hitting same LLM APIs simultaneously -- need exponential backoff coordination strategy
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- pi-mono GitHub and NPM - https://github.com/badlogic/pi-mono, https://www.npmjs.com/package/@mariozechner/pi-ai
-- MCP Official Documentation - https://modelcontextprotocol.io/
-- A2A Protocol Official Documentation - https://a2a-protocol.org/latest/
-- AI Agent Anti-Patterns (IBM Watsonx) - https://achan2013.medium.com/ai-agent-anti-patterns-part-1-architectural-pitfalls-that-break-enterprise-agents-before-they-32d211dded43
-- Multi-Agent System Architecture Guide 2026 - https://www.clickittech.com/ai/multi-agent-system-architecture/
+- **Anthropic Engineering** -- [How we built our multi-agent research system](https://www.anthropic.com/engineering/multi-agent-research-system) -- Architecture, prompting principles, evaluation methods
+- **Google Developers Blog** -- [Announcing the Agent2Agent Protocol (A2A)](https://developers.googleblog.com/en/a2a-a-new-era-of-agent-interoperability/) -- Official A2A specification, design principles
+- **arXiv 2503.13657v2** -- [MAST: Multi-Agent System Failure Taxonomy](https://arxiv.org/html/2503.13657v2) -- 200+ traces analyzed, 14 failure modes identified
+- **GitHub Blog** -- [Multi-agent workflows often fail](https://github.blog/ai-and-ml/generative-ai/multi-agent-workflows-often-fail-heres-how-to-engineer-ones-that-dont/) -- Official engineering patterns
+- **pi-mono GitHub/NPM** -- Verified 2026-03-24, version 0.61.1 published
 
 ### Secondary (MEDIUM confidence)
-- Google DeepMind Multi-Agent Research - "Towards a Science of Scaling Agent Systems" (December 2025)
-- MAST Study - Multi-Agent Systems Failure Taxonomy (March 2025)
-- LlamaIndex.TS Documentation - https://developers.llamaindex.ai/typescript/framework/
-- Qdrant Documentation and Pricing - https://qdrant.tech/pricing/
+- **Augment Code** -- [Why Multi-Agent LLM Systems Fail](https://www.augmentcode.com/guides/why-multi-agent-llm-systems-fail-and-how-to-fix-them) -- 41-86.7% failure rates, prevention strategies
+- **Galileo AI** -- [Multi-Agent Coordination Strategies](https://galileo.ai/blog/multi-agent-coordination-strategies) -- 10 coordination strategies, token duplication data
+- **OneReach AI** -- [MCP vs A2A Protocols](https://onereach.ai/blog/guide-choosing-mcp-vs-a2a-protocols/) -- Protocol comparison, enterprise considerations
+- **LangGraph Documentation** -- [Multi-Agent Workflows](https://blog.langchain.com/langgraph-multi-agent-workflows/) -- Official patterns
 
-### Tertiary (contextual)
-- Chinese LLM comparisons (MiniMax M2.7 vs GLM-5 vs Claude) - Medium
-- Enterprise AI Platform comparisons (LangChain vs CrewAI vs AutoGen) - Multiple sources
-- RAG implementation best practices - ChatRAG, DataNucleus
+### Tertiary (LOW confidence)
+- **Medium articles** -- Production patterns, framework comparisons -- needs validation against primary sources
+- **Industry blog posts** -- Competitor analysis, feature matrices -- useful for context but not definitive
 
 ---
-*Research completed: 2026-03-24*
+*Research completed: 2026-03-25*
 *Ready for roadmap: yes*

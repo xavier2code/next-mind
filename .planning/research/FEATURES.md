@@ -1,10 +1,246 @@
 # Feature Research
 
 **Domain:** AI Agent Collaboration Platform
-**Researched:** 2026-03-24
+**Researched:** 2026-03-25 (Updated for v1.1 A2A milestone)
 **Confidence:** HIGH
 
-## Feature Landscape
+---
+
+## v1.1 A2A Multi-Agent Collaboration Features
+
+This section covers NEW features for the v1.1 milestone: adding A2A multi-agent collaboration (task decomposition & delegation) to the existing platform.
+
+### Executive Summary
+
+Key findings from A2A multi-agent research:
+- **Multi-agent systems excel at breadth-first queries** - Anthropic's research shows 90.2% improvement over single-agent for parallel exploration tasks
+- **Token usage explains 80% of performance variance** - distributing work across agents with separate context windows scales capacity
+- **93-95% of AI agent projects fail before production** - mostly due to coordination/design issues, not technical problems
+- **A2A and MCP are complementary protocols** - MCP connects agents to tools/data, A2A enables agent-to-agent collaboration
+
+### Table Stakes for A2A (Users Expect These)
+
+Features users assume exist in any multi-agent system. Missing these = product feels incomplete or unreliable.
+
+| Feature | Why Expected | Complexity | Notes |
+|---------|--------------|------------|-------|
+| **Task Decomposition** | Users expect the main agent to break complex requests into subtasks automatically | HIGH | Requires LLM-based planning; must produce clear task boundaries to prevent duplicate work |
+| **Sub-Agent Spawning** | Users expect the system to create and manage multiple specialized agents | MEDIUM | Leverage existing Skills/MCP infrastructure; need agent lifecycle management |
+| **Progress Visibility** | Users need to see what agents are doing, especially for long-running tasks | MEDIUM | Real-time status updates, not just final results; prevent "black box" perception |
+| **Result Aggregation** | Users expect combined, coherent outputs from multiple agents | MEDIUM | Must synthesize results without losing information or creating contradictions |
+| **Error Recovery** | Users expect graceful handling when sub-agents fail | MEDIUM | Resume from checkpoints, not restart from beginning; let agents adapt to failures |
+| **Human Intervention** | Users expect to be able to intervene, correct, or redirect agents | LOW | Already have approval flow; extend for multi-agent context |
+
+### Differentiators for A2A (Competitive Advantage)
+
+Features that set the product apart. Not required, but valuable for v1.1.
+
+| Feature | Value Proposition | Complexity | Notes |
+|---------|-------------------|------------|-------|
+| **Smart Scheduling (Auto Sequential/Parallel)** | Automatically determines optimal execution order based on task dependencies | HIGH | Uses dependency graph analysis; saves user from manual orchestration |
+| **Four Specialized Agent Types** | File Processing, Search, Code, Custom agents with domain-optimized prompts | MEDIUM | Each type has tailored tools, prompts, and output formats |
+| **Inter-Agent Messaging** | Agents can request context from each other, share findings, coordinate | HIGH | Enables collaborative problem-solving beyond simple delegation |
+| **Result Comparison Mode** | Present multiple agent results side-by-side for user selection | MEDIUM | Useful when agents produce different approaches to same task |
+| **Agent Card / Capability Discovery** | Standardized declaration of agent capabilities for dynamic routing | LOW | A2A protocol pattern; enables flexible agent ecosystems |
+| **Checkpoint/Resume** | Long-running research can be paused and resumed without losing progress | HIGH | Critical for tasks that may take hours; requires durable state |
+
+### Anti-Features for A2A (Commonly Requested, Often Problematic)
+
+Features that seem good but create problems in multi-agent systems.
+
+| Feature | Why Requested | Why Problematic | Alternative |
+|---------|---------------|-----------------|-------------|
+| **Unlimited Parallel Agents** | More agents = faster results, right? | Token burn (15x more than chat), coordination overhead, duplicate work, conflicting results | Scale effort to task complexity (Anthropic: 1 agent for simple, 2-4 for comparison, 10+ for complex research) |
+| **Real-Time Agent-to-Agent Chat** | Users want to "watch agents collaborate" | Creates bottlenecks, adds complexity, agents aren't great at real-time coordination | Asynchronous delegation with status notifications; lead agent coordinates |
+| **Shared Memory Between All Agents** | Agents should "know what each other knows" | Context pollution, conflicting information, privacy concerns | Separate context windows with controlled information flow; lead agent synthesizes |
+| **Fully Autonomous Delegation** | "Just handle it, don't bother me" | 79% of failures are design/coordination issues; runaway agents; no accountability | Human-in-the-loop at key decision points; effort budgets; clear escalation triggers |
+| **Complex DAG Workflows** | Visual workflow builders, intricate branching | Maintenance nightmare, hard to debug, over-engineering for most use cases | Simple orchestrator-worker pattern; parallel subagents with lead agent coordination |
+| **Agent "Learning" From Each Other** | Agents should improve by observing peers | Cross-contamination of errors, emergent bad behaviors, hard to debug | Explicit knowledge sharing through structured outputs; no implicit behavioral learning |
+
+### A2A Feature Dependencies
+
+```
+Task Decomposition
+    └──requires──> Agent Registry / Capability Discovery
+                       └──requires──> Agent Card Schema
+
+Smart Scheduling
+    └──requires──> Task Decomposition (to analyze dependencies)
+    └──requires──> Dependency Graph Builder
+
+Sub-Agent Spawning
+    └──requires──> Agent Registry
+    └──requires──> Existing Skills/MCP Infrastructure (already built)
+
+Result Aggregation
+    └──requires──> Sub-Agent Spawning (to get results)
+    └──requires──> Output Schema Standardization
+
+Inter-Agent Messaging
+    └──requires──> Agent Registry
+    └──requires──> Message Bus / Event System
+
+Human Intervention
+    └──requires──> Progress Visibility (to know when to intervene)
+    └──enhances──> Existing Approval Flow (already built)
+
+Process Visibility
+    └──requires──> Status Notification System
+    └──requires──> Event Stream / SSE
+```
+
+### Dependency Notes for A2A
+
+- **Task Decomposition requires Agent Registry:** The lead agent needs to know what sub-agents exist and their capabilities before it can decompose tasks effectively
+- **Smart Scheduling requires Task Decomposition:** Cannot determine parallel vs sequential without understanding task dependencies
+- **Sub-Agent Spawning leverages existing Skills/MCP:** The v1.0 Skills system provides the execution layer; sub-agents are specialized skill executors
+- **Result Aggregation requires Output Schema:** Agents must produce structured outputs that can be merged, compared, or summarized
+- **Inter-Agent Messaging requires Message Bus:** Need infrastructure for agents to communicate asynchronously
+- **Human Intervention enhances existing Approval Flow:** Extend v1.0 approval mechanism for multi-agent context (pause specific sub-agent, redirect research, provide guidance)
+
+### A2A Feature Categories (For Roadmap Phases)
+
+**Category 1: Core Delegation (Foundation)**
+- Task decomposition with clear task boundaries
+- Basic sub-agent spawning (2-3 agent types)
+- Sequential execution with result aggregation
+- Simple progress status
+
+**Category 2: Smart Orchestration (Optimization)**
+- Parallel execution
+- Dependency analysis for auto-scheduling
+- All four agent types (File, Search, Code, Custom)
+- Enhanced result handling (merge, compare, summarize)
+
+**Category 3: Communication & Control (Advanced)**
+- Inter-agent messaging
+- Context requests between agents
+- Human intervention hooks
+- Checkpoint/resume for long tasks
+
+**Category 4: Visibility & Polish (UX)**
+- Rich process visualization
+- Real-time status streaming
+- Agent card / capability discovery
+- Result selection UI
+
+### A2A MVP Definition (v1.1 Scope)
+
+**Phase 1: Core Delegation (Must Have)**
+
+Minimum viable multi-agent - what's needed to validate the delegation concept.
+
+- [ ] Task Decomposition Engine — Lead agent breaks complex requests into subtasks
+- [ ] Agent Registry — Track available sub-agents and their capabilities
+- [ ] Basic Sub-Agent Types (2-3) — File Processing, Search (Code/Custom can be v1.2)
+- [ ] Sequential Execution — Run sub-agents one after another
+- [ ] Result Aggregation (Merge) — Combine sub-agent outputs into coherent response
+- [ ] Basic Progress Status — Show which agents are running, completed, failed
+
+**Phase 2: Smart Orchestration (Should Have)**
+
+Add once core delegation works reliably.
+
+- [ ] Parallel Execution — Run independent sub-agents simultaneously
+- [ ] Dependency Analysis — Determine task dependencies automatically
+- [ ] Auto-Scheduling — Choose sequential vs parallel based on dependencies
+- [ ] All Four Agent Types — Add Code and Custom agent types
+- [ ] Enhanced Result Handling — Compare mode, summarize mode, user selection
+
+**Phase 3: Communication & Control (Enhancement)**
+
+Advanced features for complex workflows.
+
+- [ ] Inter-Agent Messaging — Agents can communicate findings to each other
+- [ ] Context Requests — Sub-agents can request additional context from lead agent
+- [ ] Human Intervention Hooks — Pause, redirect, provide guidance mid-execution
+- [ ] Checkpoint/Resume — Save state for long-running tasks
+
+### A2A Feature Prioritization Matrix
+
+| Feature | User Value | Implementation Cost | Priority |
+|---------|------------|---------------------|----------|
+| Task Decomposition | HIGH | HIGH | P1 |
+| Agent Registry | HIGH | MEDIUM | P1 |
+| Basic Sub-Agent Types | HIGH | MEDIUM | P1 |
+| Sequential Execution | HIGH | LOW | P1 |
+| Result Aggregation | HIGH | MEDIUM | P1 |
+| Basic Progress Status | HIGH | LOW | P1 |
+| Parallel Execution | MEDIUM | MEDIUM | P2 |
+| Dependency Analysis | MEDIUM | HIGH | P2 |
+| Auto-Scheduling | MEDIUM | HIGH | P2 |
+| All Four Agent Types | MEDIUM | MEDIUM | P2 |
+| Enhanced Result Handling | MEDIUM | MEDIUM | P2 |
+| Inter-Agent Messaging | LOW | HIGH | P3 |
+| Context Requests | LOW | MEDIUM | P3 |
+| Human Intervention Hooks | MEDIUM | MEDIUM | P3 |
+| Checkpoint/Resume | LOW | HIGH | P3 |
+
+**Priority key:**
+- P1: Must have for v1.1 MVP (core delegation working)
+- P2: Should have, add once core is validated
+- P3: Nice to have, future consideration
+
+### Key Design Principles for A2A (From Research)
+
+**From Anthropic's Multi-Agent Research System:**
+
+1. **Scale effort to query complexity** — Simple fact-finding: 1 agent, 3-10 tool calls. Direct comparisons: 2-4 subagents, 10-15 calls each. Complex research: 10+ subagents with clear division of labor
+2. **Teach the orchestrator how to delegate** — Each subagent needs: objective, output format, tool/source guidance, clear task boundaries
+3. **Parallel tool calling transforms speed** — 3-5 subagents in parallel + 3+ tools in parallel = up to 90% time reduction
+4. **Start wide, then narrow down** — Begin with broad queries, evaluate what's available, then progressively narrow
+5. **Agents are stateful and errors compound** — Need resume from checkpoints, not restart from beginning
+
+**From Google's A2A Protocol:**
+
+1. **Capability discovery via Agent Cards** — JSON format declaring capabilities and endpoints
+2. **Task lifecycle management** — Tasks have states: submitted, processing, complete
+3. **Modality agnostic** — Support text, audio, video (though text is primary for v1.1)
+4. **Secure by default** — OAuth-based authentication, encrypted transport
+
+**From Multi-Agent Failure Analysis:**
+
+1. **93-95% failure rate before production** — Most failures are coordination/design issues, not technical
+2. **41-86% fail in production** — Need robust error handling and recovery
+3. **79% of failures are NOT technical** — They're design and coordination problems
+4. **Near-total failure for 3+ agent coordination** — Dynamic ad-hoc coordination is hard; use structured delegation
+
+### A2A Competitor Feature Analysis
+
+| Feature | LangGraph | CrewAI | Anthropic Research | Our Approach (v1.1) |
+|---------|-----------|--------|-------------------|---------------------|
+| Architecture | Graph-based state machine | Role-based agents | Orchestrator-worker | Orchestrator-worker (simpler) |
+| Parallelization | Explicit edges | Sequential by default | 3-5 subagents parallel | Phase 2: Parallel execution |
+| Task Decomposition | Manual graph design | Automatic roles | Lead agent decomposes | LLM-based decomposition |
+| Agent Types | Custom nodes | Role definitions | Specialized subagents | 4 types: File, Search, Code, Custom |
+| Result Handling | State aggregation | Task output | Lead agent synthesizes | Merge, compare, summarize, select |
+| Protocol | Custom | Custom | MCP + internal | MCP (existing) + A2A patterns |
+
+**Our differentiator:** Simplicity and integration with existing v1.0 infrastructure (Skills, MCP, Approval Flow). Not trying to be a general-purpose framework like LangGraph or CrewAI.
+
+### A2A Sources
+
+**Primary Sources (HIGH Confidence):**
+- [Anthropic: How we built our multi-agent research system](https://www.anthropic.com/engineering/multi-agent-research-system) - Detailed architecture, prompting principles, evaluation methods
+- [Google: Announcing the Agent2Agent Protocol (A2A)](https://developers.googleblog.com/en/a2a-a-new-era-of-agent-interoperability/) - Official A2A specification, design principles
+- [OneReach: MCP vs A2A Protocols for Multi-Agent Collaboration](https://onereach.ai/blog/guide-choosing-mcp-vs-a2a-protocols/) - Protocol comparison, enterprise considerations
+
+**Secondary Sources (MEDIUM Confidence):**
+- [arXiv: DynTaskMAS - Dynamic Task Graph-driven Framework](https://arxiv.org/html/2503.07675v1) - Asynchronous parallel execution patterns
+- [arXiv: GAP - Graph-based Agent Planning](https://arxiv.org/html/2510.25320v1) - Task dependency modeling
+- [Swarm Signal: Multi-Agent Coordination Failure Modes](https://swarmsignal.net/multi-agent-coordination-failure-modes-and-mitigation/) - Failure patterns and mitigations
+- [Langflow: Complete Guide to AI Agent Frameworks 2025](https://www.langflow.org/blog/the-complete-guide-to-choosing-an-ai-agent-framework-in-2025) - Framework comparison
+
+**Additional Context (LOW Confidence - Web Search Only):**
+- [Medium: Agentic AI in Production - 10 Patterns That Ship](https://medium.com/@ThinkingLoop/d3-1-agentic-ai-in-production-10-patterns-that-ship-in-2025-d9c367827e58) - Production patterns
+- [Claude Code: Sub-agents Documentation](https://code.claude.com/docs/en/sub-agents) - Specialized subagent patterns
+- [Google ADK: Multi-agent Systems](https://google.github.io/adk-docs/agents/multi-agents/) - Agent hierarchy patterns
+
+---
+
+## Platform-Wide Features (v1.0 Foundation)
+
+This section covers features for the overall platform, including what's already built and future roadmap.
 
 ### Table Stakes (Users Expect These)
 
@@ -103,9 +339,9 @@ ChatGPT-Style UI
 - **Chinese LLM Support has no conflicts**: Unified API abstraction (pi-ai) enables model switching without affecting other features.
 - **UI enhances all features**: The ChatGPT-style interface is the unified entry point for all capabilities.
 
-## MVP Definition
+## Platform MVP Definition
 
-### Launch With (v1)
+### Launch With (v1) - COMPLETED
 
 Minimum viable product - what's needed to validate the concept.
 
@@ -118,35 +354,30 @@ Minimum viable product - what's needed to validate the concept.
 - [x] API access with authentication - Integration path for power users
 - [x] Audit logging - Enterprise requirement
 - [x] Data encryption - Security baseline
+- [x] MCP protocol implementation - Tool integration foundation
+- [x] Skills system (predefined + custom) - Extensibility
+- [x] Permission controls & approval flow - Security boundaries
 
-**Rationale:** These features form the minimal viable product that delivers the core value (team AI assistant with file processing and knowledge retrieval). Users can authenticate, upload files, ask questions, and get answers - validating the fundamental use case.
+**Status:** v1.0 MVP released.
 
 ### Add After Validation (v1.x)
 
 Features to add once core is working.
 
-- [ ] Additional Chinese LLMs (GLM-5, other MiniMax models) - Trigger: User demand for specific models
-- [ ] MCP protocol implementation - Trigger: User request for tool integrations
-- [ ] Skills system (predefined + custom) - Trigger: Repetitive task patterns identified
+- [x] Additional Chinese LLMs (GLM-5, other MiniMax models) - Trigger: User demand for specific models
 - [ ] Team knowledge base (shared RAG) - Trigger: Multiple users working on similar content
-- [ ] Session management & resumption - Trigger: Long-running task complaints
 - [ ] Rate limiting & quotas - Trigger: Cost management needs
-- [ ] Permission controls - Trigger: Team role differentiation needs
-
-**Rationale:** These features enhance the core experience but are not required for initial validation. They address scalability, extensibility, and team collaboration needs that emerge after basic usage patterns are established.
+- [ ] **A2A multi-agent collaboration (v1.1 current milestone)** - Requires MCP foundation; complex orchestration
 
 ### Future Consideration (v2+)
 
 Features to defer until product-market fit is established.
 
-- [ ] A2A multi-agent collaboration - Requires MCP foundation; complex orchestration
 - [ ] Skills marketplace - Requires skills system maturity; community building
 - [ ] Graph-RAG / Hybrid RAG - Requires basic RAG validation; adds significant complexity
 - [ ] Agentic document extraction - Requires multimodal LLM capabilities; specialized processing
 - [ ] Mobile native apps - Web-first validated; mobile as enhancement
 - [ ] Multi-tenancy - Single-team focus validated first
-
-**Rationale:** These are powerful features but require significant infrastructure and user validation. A2A needs MCP working first. Skills marketplace needs a skills system with users. Advanced RAG needs basic RAG proven. Focus on getting core value working before adding complexity.
 
 ## Feature Prioritization Matrix
 
@@ -173,7 +404,7 @@ Features to defer until product-market fit is established.
 | Agentic document extraction | MEDIUM | HIGH | P3 |
 
 **Priority key:**
-- P1: Must have for launch (MVP)
+- P1: Must have for launch (MVP) - DONE
 - P2: Should have, add when possible (v1.x)
 - P3: Nice to have, future consideration (v2+)
 
@@ -185,8 +416,8 @@ Features to defer until product-market fit is established.
 | LLM abstraction | Yes (unified) | Yes | Yes | Yes | Yes (pi-ai) |
 | Chinese LLMs | Limited | Limited | Limited | Good | Native (primary) |
 | MCP support | Yes | Via extension | Via extension | Partial | Full implementation |
-| A2A support | Via LangGraph | No | Native (different protocol) | No | Planned (v2+) |
-| Skills/Tools | Chains/Tools | Tasks | Conversations | Workflows | Skills system (planned) |
+| A2A support | Via LangGraph | No | Native (different protocol) | No | Planned (v1.1) |
+| Skills/Tools | Chains/Tools | Tasks | Conversations | Workflows | Skills system (implemented) |
 | RAG | Strong (LlamaIndex) | Basic | Basic | Good | Native (file + knowledge base) |
 | UI | No (library) | No | No | Yes (low-code) | Yes (ChatGPT-style) |
 | API | No (library) | No | No | Yes | Yes |
@@ -200,7 +431,7 @@ Features to defer until product-market fit is established.
 4. **Unified interface** - ChatGPT-style UI for all features; no context switching
 5. **File processing focus** - Beyond basic upload; document understanding and organization
 
-## Sources
+## Platform Sources
 
 ### Framework Comparisons
 - [Propelius AI - LangChain vs CrewAI vs AutoGen Guide 2026](https://propelius.ai/blogs/langchain-crewai-autogen-comparison-2026/)
@@ -251,4 +482,4 @@ Features to defer until product-market fit is established.
 
 ---
 *Feature research for: AI Agent Collaboration Platform*
-*Researched: 2026-03-24*
+*Researched: 2026-03-24 (Platform), 2026-03-25 (A2A Multi-Agent)*

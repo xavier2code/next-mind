@@ -1,145 +1,640 @@
-# Architecture Research: AI Agent Framework
+# Architecture Research: AI Agent Framework with A2A Multi-Agent Integration
 
 **Domain:** AI Agent Collaboration Platform (Next-Mind)
 **Framework Base:** pi-mono (TypeScript)
-**Researched:** 2026-03-24
+**Researched:** 2026-03-25 (Updated for v1.1 A2A)
 **Confidence:** HIGH
 
 ---
 
-## Standard Architecture
+## Existing Architecture Overview
 
-### System Overview
+### Current System Structure (v1.0)
 
 ```
-+-----------------------------------------------------------------------------+
-|                           PRESENTATION LAYER                                 |
-|  +------------------+    +------------------+    +------------------+        |
-|  |    Web UI        |    |    REST API      |    |   WebSocket      |        |
-|  |  (ChatGPT-style) |    |    Gateway       |    |   Real-time      |        |
-|  +--------+---------+    +--------+---------+    +--------+---------+        |
-|           |                       |                       |                  |
-+-----------+-----------------------+-----------------------+------------------+
-|                           APPLICATION LAYER                                  |
-|  +------------------+    +------------------+    +------------------+        |
-|  |  Auth Service    |    |  Session Manager |    |  Audit Logger    |        |
-|  |  (JWT/OAuth2)    |    |  (Conversation)  |    |  (Compliance)    |        |
-|  +--------+---------+    +--------+---------+    +--------+---------+        |
-|           |                       |                       |                  |
-+-----------+-----------------------+-----------------------+------------------+
-|                           AGENT CORE LAYER (pi-mono)                         |
-|  +-----------------------------------------------------------------------+  |
-|  |                        Orchestration Layer                             |  |
-|  |  +-------------+  +-------------+  +-------------+  +-------------+   |  |
-|  |  |   Planner   |  |  Executor   |  |  Verifier   |  |  Critic     |   |  |
-|  |  |   Agent     |  |   Agent     |  |   Agent     |  |  Agent      |   |  |
-|  |  +------+------+  +------+------+  +------+------+  +------+------+   |  |
-|  |         |                |                |                |          |  |
-|  +---------+----------------+----------------+----------------+----------+  |
-|  |                     Agent Loop (Dual-Layer)                             |  |
-|  |         [Steering Queue] + [Follow-up Queue]                            |  |
-|  +---------+----------------+----------------+----------------+----------+  |
-|  |                          MCP Protocol Layer                             |  |
-|  |  +-------------+  +-------------+  +-------------+  +-------------+   |  |
-|  |  |   Tools     |  |  Resources  |  |   Prompts   |  |   Skills    |   |  |
-|  |  |  Registry   |  |   Manager   |  |  Templates  |  |   System    |   |  |
-|  |  +-------------+  +-------------+  +-------------+  +-------------+   |  |
-|  +-----------------------------------------------------------------------+  |
-+-----------------------------------------------------------------------------+
-|                           INTEGRATION LAYER                                  |
-|  +------------------+    +------------------+    +------------------+        |
-|  |   LLM Gateway    |    |   File Handler   |    |   RAG Engine     |        |
-|  |  (Multi-Model)   |    |  (OCR/Parse)     |    |  (Vector DB)     |        |
-|  |  Qwen/GLM/MinMax |    |  PDF/Doc/Image   |    |  Embedding       |        |
-|  +--------+---------+    +--------+---------+    +--------+---------+        |
-|           |                       |                       |                  |
-+-----------+-----------------------+-----------------------+------------------+
-|                           DATA LAYER                                         |
-|  +------------------+    +------------------+    +------------------+        |
-|  |  PostgreSQL      |    |  Vector Store    |    |  Object Storage  |        |
-|  |  (Relational)    |    |  (Embeddings)    |    |  (Files/Artifacts)|       |
-|  +------------------+    +------------------+    +------------------+        |
-+-----------------------------------------------------------------------------+
++------------------------------------------------------------------+
+|                        Next.js App Router                         |
++------------------------------------------------------------------+
+|  +------------+  +------------+  +------------+  +--------------+ |
+|  | /api/chat  |  | /api/mcp   |  |/api/skills |  |/api/approval | |
+|  +-----+------+  +-----+------+  +-----+------+  +-------+------+ |
+|        |              |               |                   |        |
++--------|--------------|---------------|-------------------|--------+
+         |              |               |                   |
++--------v--------------v---------------v-------------------v--------+
+|                            Core Services                           |
++-------------------------------------------------------------------+
+|  +----------+  +-----------+  +-----------+  +-----------------+  |
+|  |LLM Gate- |  | MCP Server|  |  Skills   |  | Approval State  |  |
+|  |   way    |  |(JSON-RPC) |  |  System   |  |    Machine      |  |
+|  +----------+  +-----------+  +-----------+  +-----------------+  |
+|  |Qwen/GLM/ |  |Tool Reg.  |  |Decorator  |  |ApprovalRequest  |  |
+|  |MiniMax   |  |Resource   |  |Discovery  |  |StateMachine     |  |
+|  |          |  |Prompts    |  |Executor   |  |                 |  |
+|  +----------+  +-----------+  |Orchestr.  |  +-----------------+  |
+|                              +-----------+                       |
++-------------------------------------------------------------------+
+|                          Data Layer                               |
++-------------------------------------------------------------------+
+|  +-----------------+  +------------------+  +-------------------+ |
+|  |   PostgreSQL    |  |   Drizzle ORM    |  |   Auth.js v5      | |
+|  | users/sessions  |  |   Schema         |  |   Sessions        | |
+|  | conversations   |  |                  |  |                   | |
+|  | messages        |  |                  |  |                   | |
+|  | audit_logs      |  |                  |  |                   | |
+|  +-----------------+  +------------------+  +-------------------+ |
++-------------------------------------------------------------------+
 ```
 
-### Component Responsibilities
+### Key Existing Components
 
-| Component | Responsibility | Typical Implementation |
-|-----------|----------------|------------------------|
-| **Web UI** | ChatGPT-style conversation interface, file upload, artifact rendering | React/Next.js, streaming responses |
-| **REST API Gateway** | External API access, rate limiting, request validation | Fastify/Express, OpenAPI spec |
-| **Auth Service** | User authentication, authorization, session tokens | JWT, OAuth2, RBAC |
-| **Session Manager** | Conversation state, message history, context window management | In-memory + persistent store |
-| **Audit Logger** | Compliance logging, action tracking, traceability | Structured logs, immutable store |
-| **Planner Agent** | Decompose objectives, create task graphs, assign work | LLM-powered planning |
-| **Executor Agent** | Carry out actions, call tools, interact with external systems | Tool orchestration |
-| **Verifier Agent** | Validate outputs against constraints, safety checks | Rule-based + LLM validation |
-| **Critic Agent** | Evaluate quality, challenge assumptions, provide feedback | Adversarial prompting |
-| **Agent Loop** | Core reasoning cycle: perceive -> reason -> act -> observe | pi-mono dual-layer loop |
-| **MCP Protocol** | Standardized tool/resource/prompt interface | JSON-RPC 2.0 |
-| **Skills System** | Predefined capabilities, custom skills, skill orchestration | Plugin architecture |
-| **LLM Gateway** | Multi-provider abstraction, model routing, cost tracking | pi-ai unified API |
-| **File Handler** | Document parsing, OCR, format conversion, extraction | Docling, LlamaParse, OCR |
-| **RAG Engine** | Embedding generation, similarity search, knowledge retrieval | Vector DB + embeddings |
+| Component | File | Responsibility | Integration Points |
+|-----------|------|----------------|-------------------|
+| LLM Gateway | `src/lib/llm/index.ts` | Multi-provider streaming chat | Used by `/api/chat` |
+| MCP Server | `src/lib/mcp/server.ts` | JSON-RPC 2.0 protocol handler | Session-scoped, tool registry |
+| Tool Registry | `src/lib/mcp/registry.ts` | Tool registration & execution | Zod schemas, handler execution |
+| Skill Types | `src/lib/skills/types.ts` | `SkillMetadata`, `SkillContext`, `SkillResult` | Foundation for all skills |
+| Skill Discovery | `src/lib/skills/discovery.ts` | Decorator-based skill registration | `registerSkill()`, `discoverSkills()` |
+| Skill Executor | `src/lib/skills/executor.ts` | Skill execution with timeout/approval | Uses registry, approval flow |
+| Skill Orchestrator | `src/lib/skills/orchestration.ts` | Sequential skill execution | `executePlan()` with steps |
+| Approval State | `src/lib/approval/state.ts` | State machine for approvals | `ApprovalStateMachine` |
+| DB Schema | `src/lib/db/schema.ts` | Drizzle ORM definitions | users, sessions, conversations, messages |
+
+---
+
+## A2A Multi-Agent Integration Architecture (v1.1)
+
+### System Overview with A2A Components
+
+```
++------------------------------------------------------------------+
+|                        Next.js App Router                         |
++------------------------------------------------------------------+
+|  +------------+  +------------+  +------------+  +--------------+ |
+|  |/api/chat   |  |/api/mcp    |  |/api/skills |  |/api/agents   | |
+|  +-----+------+  +-----+------+  +-----+------+  +-------+------+ |
+|        |              |               |               | NEW        |
++--------|--------------|---------------|---------------|-----------+
+         |              |               |               |
++--------v--------------v---------------v---------------v-----------+
+|                            Core Services                           |
++-------------------------------------------------------------------+
+|                         EXISTING                                  |
+|  +----------+  +-----------+  +-----------+  +-----------------+  |
+|  |LLM Gate- |  | MCP Server|  |  Skills   |  | Approval State  |  |
+|  |   way    |  |(JSON-RPC) |  |  System   |  |    Machine      |  |
+|  +----------+  +-----------+  +-----------+  +-----------------+  |
++-------------------------------------------------------------------+
+|                         NEW - A2A Layer                           |
+|  +----------------+  +----------------+  +---------------------+  |
+|  | Agent Registry |  | Task Queue     |  | Communication Bus   |  |
+|  | - register()   |  | - enqueue()    |  | - publish()         |  |
+|  | - discover()   |  | - dequeue()    |  | - subscribe()       |  |
+|  | - getAgent()   |  | - getStatus()  |  | - broadcast()       |  |
+|  +----------------+  +----------------+  +---------------------+  |
+|  +----------------+  +----------------+  +---------------------+  |
+|  | Agent Lifecycle|  | Result Aggreg. |  | Workflow State      |  |
+|  | - spawn()      |  | - merge()      |  | - saveState()       |  |
+|  | - terminate()  |  | - compare()    |  | - loadState()       |  |
+|  | - healthCheck()|  | - summarize()  |  | - trackProgress()   |  |
+|  +----------------+  +----------------+  +---------------------+  |
++-------------------------------------------------------------------+
+|                          Data Layer                               |
++-------------------------------------------------------------------+
+|  +-----------------+                                              |
+|  |   PostgreSQL    |  NEW TABLES: agents, agent_tasks,           |
+|  |   + NEW         |  agent_messages, workflows, workflow_steps  |
+|  +-----------------+                                              |
++-------------------------------------------------------------------+
+```
+
+### New Component Responsibilities
+
+| Component | Responsibility | Communicates With | Integration Type |
+|-----------|---------------|-------------------|------------------|
+| Agent Registry | Agent registration, discovery, capability mapping | Skills (as agent implementations), Workflow Engine | Uses existing `SkillMetadata` pattern |
+| Task Queue | Task enqueue, dequeue, priority, retry | Agent Registry, Communication Bus | New component |
+| Communication Bus | Pub/sub messaging between agents | Task Queue, Result Aggregator | New component |
+| Result Aggregator | Merge, compare, summarize results | Communication Bus, Workflow State | New component |
+| Workflow State | Persist multi-step workflow state | PostgreSQL, Agent Registry | Extends existing schema |
+| Agent Lifecycle | Spawn, terminate, health monitoring | Agent Registry, Task Queue | New component |
+
+---
+
+## Integration Points with Existing Architecture
+
+### 1. Skills System Integration (HIGH Priority)
+
+**Current:** Skills are discovered via decorator pattern and executed sequentially by `SkillOrchestrator`.
+
+**Integration:** Sub-agents ARE specialized skills. The existing skill system becomes the foundation for agent capabilities.
+
+```typescript
+// src/lib/agents/types.ts - extends existing SkillMetadata
+import type { SkillMetadata, SkillContext, SkillResult } from '@/lib/skills/types';
+
+export interface AgentMetadata extends SkillMetadata {
+  /** Agent type classification */
+  agentType: 'file' | 'search' | 'code' | 'custom';
+  /** Whether this agent can spawn sub-agents */
+  canDelegate: boolean;
+  /** Maximum concurrent tasks this agent can handle */
+  maxConcurrency: number;
+  /** Timeout for agent initialization */
+  initTimeout: number;
+}
+
+export interface AgentContext extends SkillContext {
+  /** Parent agent ID if spawned by another agent */
+  parentAgentId?: string;
+  /** Workflow ID for tracking multi-agent tasks */
+  workflowId: string;
+  /** Communication channel for inter-agent messaging */
+  communicationChannel: string;
+}
+
+export interface AgentResult extends SkillResult {
+  /** Agent ID that produced this result */
+  agentId: string;
+  /** Execution time in ms */
+  duration: number;
+  /** Child agent results if delegation occurred */
+  childResults?: AgentResult[];
+}
+```
+
+**Files to Modify:**
+- `src/lib/skills/types.ts` - Add agent-specific interfaces (non-breaking)
+- `src/lib/skills/discovery.ts` - Support agent discovery alongside skills
+
+**Files to Create:**
+- `src/lib/agents/types.ts` - Agent-specific types extending skills
+- `src/lib/agents/registry.ts` - Agent registry (similar to skill registry)
+- `src/lib/agents/discovery.ts` - Agent discovery from skill modules
+
+### 2. MCP Server Integration (MEDIUM Priority)
+
+**Current:** MCP provides tools via JSON-RPC 2.0 with session-scoped tool registry.
+
+**Integration:** Expose agents as MCP tools. The host agent becomes an MCP tool that can orchestrate sub-agents.
+
+```typescript
+// src/lib/mcp/agent-tools.ts - register agents as MCP tools
+import type { McpTool } from '@/lib/mcp/types';
+import { getAgentRegistry } from '@/lib/agents/registry';
+
+export function registerAgentTools(registry: ToolRegistry): void {
+  const agents = getAgentRegistry().listAgents();
+
+  for (const agent of agents) {
+    registry.registerTool({
+      name: `agent_${agent.metadata.id}`,
+      description: agent.metadata.description,
+      inputSchema: z.object(agent.metadata.inputSchema),
+      handler: async (args) => {
+        const result = await executeAgent(agent.metadata.id, args, context);
+        return {
+          content: [{ type: 'text', text: JSON.stringify(result) }],
+        };
+      },
+    });
+  }
+}
+```
+
+**Files to Modify:**
+- `src/lib/mcp/session.ts` - Include agent registry in session
+- `src/app/api/mcp/route.ts` - Register agent tools on session creation
+
+**Files to Create:**
+- `src/lib/mcp/agent-tools.ts` - Agent-as-MCP-tool registration
+
+### 3. LLM Gateway Integration (MEDIUM Priority)
+
+**Current:** `streamChat()` provides streaming completion with provider abstraction.
+
+**Integration:** Each agent needs its own LLM context. Host agent orchestrates by generating delegation prompts.
+
+```typescript
+// src/lib/agents/llm-context.ts
+import { streamChat, type StreamChatOptions } from '@/lib/llm';
+
+export interface AgentLLMContext {
+  /** Agent-specific system prompt */
+  systemPrompt: string;
+  /** Delegated task description */
+  taskPrompt: string;
+  /** Context from parent agent */
+  parentContext?: string;
+}
+
+export async function executeAgentLLM(
+  agent: AgentMetadata,
+  context: AgentLLMContext,
+  options: Partial<StreamChatOptions>
+): Promise<ReadableStream> {
+  return streamChat({
+    modelId: options.modelId ?? 'qwen3.5-turbo',
+    messages: [
+      { role: 'system', content: context.systemPrompt },
+      { role: 'user', content: context.taskPrompt },
+    ],
+    ...options,
+  });
+}
+```
+
+**Files to Create:**
+- `src/lib/agents/llm-context.ts` - Agent-specific LLM context handling
+
+### 4. Approval Flow Integration (HIGH Priority)
+
+**Current:** `ApprovalStateMachine` handles skill approval requests with pending/approved/rejected states.
+
+**Integration:** Multi-agent workflows may require aggregated approvals. Extend approval flow for agent delegation.
+
+```typescript
+// src/lib/approval/agent-approval.ts
+import { ApprovalStateMachine, type ApprovalRequest } from './state';
+
+export interface AgentDelegationApproval extends ApprovalRequest {
+  /** Agent being delegated to */
+  targetAgentId: string;
+  /** Task being delegated */
+  delegatedTask: string;
+  /** Parent agent requesting delegation */
+  parentAgentId: string;
+}
+
+export class AgentApprovalStateMachine extends ApprovalStateMachine {
+  createDelegationApproval(params: {
+    targetAgentId: string;
+    parentAgentId: string;
+    task: string;
+    userId: string;
+    sessionId: string;
+  }): AgentDelegationApproval {
+    return this.createRequest({
+      skillId: `agent_delegation_${params.targetAgentId}`,
+      skillName: `Agent Delegation: ${params.targetAgentId}`,
+      action: `Delegate task to ${params.targetAgentId}`,
+      details: params.task,
+      input: { task: params.task },
+      userId: params.userId,
+      sessionId: params.sessionId,
+    }) as AgentDelegationApproval;
+  }
+}
+```
+
+**Files to Modify:**
+- `src/lib/approval/types.ts` - Add `AgentDelegationApproval` type
+- `src/lib/approval/state.ts` - Extend for agent delegation approvals
+
+**Files to Create:**
+- `src/lib/approval/agent-approval.ts` - Agent-specific approval handling
+
+### 5. Database Schema Extension (HIGH Priority)
+
+**Current:** Schema has `users`, `sessions`, `conversations`, `messages`, `audit_logs`.
+
+**Integration:** Add tables for agents, tasks, workflows, and inter-agent messages.
+
+```typescript
+// src/lib/db/schema.ts - additions
+import { pgTable, text, timestamp, jsonb, integer, boolean, index } from 'drizzle-orm/pg-core';
+
+// Agent definitions (registered agents)
+export const agents = pgTable('agent', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  agentType: text('agent_type').notNull(), // 'file' | 'search' | 'code' | 'custom'
+  description: text('description').notNull(),
+  capabilities: jsonb('capabilities').$type<string[]>().notNull(),
+  config: jsonb('config').$type<Record<string, unknown>>(),
+  isActive: boolean('is_active').default(true).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  agentTypeIdx: index('agent_type_idx').on(table.agentType),
+}));
+
+// Agent tasks (individual task executions)
+export const agentTasks = pgTable('agent_task', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  agentId: text('agent_id').notNull().references(() => agents.id, { onDelete: 'cascade' }),
+  workflowId: text('workflow_id').references(() => workflows.id, { onDelete: 'set null' }),
+  parentTaskId: text('parent_task_id'), // For nested delegation
+  status: text('status').notNull().default('pending'), // pending | running | completed | failed
+  input: jsonb('input').$type<unknown>().notNull(),
+  output: jsonb('output').$type<unknown>(),
+  error: text('error'),
+  startedAt: timestamp('started_at'),
+  completedAt: timestamp('completed_at'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+  agentIdIdx: index('agent_task_agent_idx').on(table.agentId),
+  workflowIdIdx: index('agent_task_workflow_idx').on(table.workflowId),
+  statusIdx: index('agent_task_status_idx').on(table.status),
+}));
+
+// Inter-agent messages
+export const agentMessages = pgTable('agent_message', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  fromAgentId: text('from_agent_id').notNull(),
+  toAgentId: text('to_agent_id').notNull(),
+  workflowId: text('workflow_id').references(() => workflows.id, { onDelete: 'cascade' }),
+  messageType: text('message_type').notNull(), // 'request' | 'response' | 'notification' | 'context_request'
+  payload: jsonb('payload').$type<unknown>().notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+  workflowIdIdx: index('agent_message_workflow_idx').on(table.workflowId),
+  fromAgentIdx: index('agent_message_from_idx').on(table.fromAgentId),
+}));
+
+// Multi-agent workflows
+export const workflows = pgTable('workflow', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  conversationId: text('conversation_id').references(() => conversations.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  status: text('status').notNull().default('pending'), // pending | running | completed | failed | cancelled
+  executionMode: text('execution_mode').notNull(), // 'sequential' | 'parallel' | 'adaptive'
+  currentStep: integer('current_step').default(0),
+  totalSteps: integer('total_steps').notNull(),
+  result: jsonb('result').$type<unknown>(),
+  error: text('error'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  completedAt: timestamp('completed_at'),
+}, (table) => ({
+  conversationIdIdx: index('workflow_conversation_idx').on(table.conversationId),
+  userIdIdx: index('workflow_user_idx').on(table.userId),
+  statusIdx: index('workflow_status_idx').on(table.status),
+}));
+
+// Type exports
+export type Agent = typeof agents.$inferSelect;
+export type NewAgent = typeof agents.$inferInsert;
+export type AgentTask = typeof agentTasks.$inferSelect;
+export type NewAgentTask = typeof agentTasks.$inferInsert;
+export type AgentMessage = typeof agentMessages.$inferSelect;
+export type Workflow = typeof workflows.$inferSelect;
+export type NewWorkflow = typeof workflows.$inferInsert;
+```
+
+**Files to Modify:**
+- `src/lib/db/schema.ts` - Add new tables
 
 ---
 
 ## Recommended Project Structure
 
 ```
-next-mind/
-+-- packages/
-|   +-- core/                    # Core agent framework (pi-mono based)
-|   |   +-- ai/                  # LLM abstraction layer (pi-ai)
-|   |   +-- agent/               # Agent loop and orchestration (pi-agent-core)
-|   |   +-- mcp/                 # MCP protocol implementation
-|   |   +-- skills/              # Skills system core
-|   |   +-- rag/                 # RAG engine
-|   |   +-- file-processor/      # File handling and parsing
-|   |
-|   +-- api/                     # REST API server
-|   |   +-- routes/              # API endpoints
-|   |   +-- middleware/          # Auth, rate limiting, validation
-|   |   +-- services/            # Business logic services
-|   |
-|   +-- web/                     # Web UI (Next.js)
-|   |   +-- app/                 # Next.js app router
-|   |   +-- components/          # React components
-|   |   +-- hooks/               # Custom hooks for agent interaction
-|   |   +-- lib/                 # Client-side utilities
-|   |
-|   +-- shared/                  # Shared utilities and types
-|       +-- types/               # TypeScript type definitions
-|       +-- utils/               # Common utilities
-|       +-- constants/           # Configuration constants
-|
-+-- services/                    # Standalone services
-|   +-- auth/                    # Authentication service
-|   +-- audit/                   # Audit logging service
-|   +-- embedding/               # Embedding generation worker
-|
-+-- infrastructure/              # Deployment configuration
-|   +-- docker/                  # Docker configurations
-|   +-- k8s/                     # Kubernetes manifests
-|
-+-- docs/                        # Documentation
-+-- tests/                       # Integration tests
+src/
++-- lib/
+|   +-- agents/                 # NEW - Agent system
+|   |   +-- types.ts            # Agent types extending SkillTypes
+|   |   +-- registry.ts         # Agent registration/discovery
+|   |   +-- lifecycle.ts        # Agent spawn/terminate/health
+|   |   +-- executor.ts         # Agent execution engine
+|   |   +-- llm-context.ts      # Agent-specific LLM handling
+|   |   +-- task-queue.ts       # Task queue management
+|   |   +-- communication.ts    # Inter-agent message bus
+|   |   +-- result-aggregator.ts# Result merge/compare/summarize
+|   |   +-- workflow-engine.ts  # Multi-agent workflow orchestration
+|   |   +-- predefined/         # Predefined agent implementations
+|   |       +-- file-agent.ts
+|   |       +-- search-agent.ts
+|   |       +-- code-agent.ts
+|   +-- skills/                 # EXISTING - Extended for agent support
+|   |   +-- types.ts            # MODIFY: Add agent interfaces
+|   |   +-- discovery.ts        # MODIFY: Support agent discovery
+|   |   +-- executor.ts         # KEEP: Used by agent executor
+|   |   +-- orchestration.ts    # KEEP: Sequential execution
+|   +-- mcp/                    # EXISTING - Extended for agent tools
+|   |   +-- agent-tools.ts      # NEW: Agent-as-MCP-tool registration
+|   |   +-- session.ts          # MODIFY: Include agent registry
+|   +-- approval/               # EXISTING - Extended for agent delegation
+|   |   +-- agent-approval.ts   # NEW: Agent-specific approvals
+|   |   +-- types.ts            # MODIFY: Add delegation types
+|   +-- db/
+|   |   +-- schema.ts           # MODIFY: Add agent/workflow tables
++-- app/
+|   +-- api/
+|   |   +-- agents/             # NEW - Agent API endpoints
+|   |   |   +-- route.ts        # List/register agents
+|   |   |   +-- [id]/
+|   |   |       +-- route.ts    # Get/execute specific agent
+|   |   +-- workflows/          # NEW - Workflow API endpoints
+|   |   |   +-- route.ts        # Create/list workflows
+|   |   |   +-- [id]/
+|   |   |       +-- route.ts    # Get/cancel workflow
+|   |   |       +-- steps/
+|   |   |           +-- route.ts # Get workflow steps
++-- agents/                     # NEW - Agent definitions (like skills/)
+    +-- file-agent.ts           # File processing agent
+    +-- search-agent.ts         # Web search agent
+    +-- code-agent.ts           # Code analysis agent
 ```
 
 ### Structure Rationale
 
-- **packages/core/**: Contains pi-mono-based agent framework, isolated from UI/API concerns
-- **packages/api/**: REST API as separate package for independent scaling and testing
-- **packages/web/**: Next.js application for ChatGPT-style interface
-- **packages/shared/**: Eliminates code duplication between packages
-- **services/**: Background workers and standalone services
-- **infrastructure/**: Infrastructure-as-code for deployment
+- **lib/agents/**: Core agent infrastructure, mirrors lib/skills pattern for consistency
+- **agents/**: Agent definitions as first-class citizens alongside skills
+- **api/agents/** and **api/workflows/**: REST endpoints for agent interaction
+- **lib/mcp/agent-tools.ts**: Bridges agents to MCP protocol
 
 ---
 
 ## Architectural Patterns
 
-### Pattern 1: Dual-Layer Agent Loop (pi-mono Core)
+### Pattern 1: Agent-as-Skill Extension
+
+**What:** Agents extend the existing skill system with delegation capability.
+
+**When to use:** All sub-agents should follow this pattern for consistency.
+
+**Trade-offs:**
+- Pros: Reuses existing discovery/execution infrastructure, minimal code duplication
+- Cons: Skills may need to be more stateful for agent use cases
+
+```typescript
+// src/lib/agents/decorator.ts
+import 'reflect-metadata';
+import type { AgentMetadata, AgentFunction, AgentContext, AgentResult } from './types';
+
+const AGENT_METADATA_KEY = Symbol('agent:metadata');
+
+export function agent(metadata: Omit<AgentMetadata, 'inputSchema' | 'timeout' | 'requiresApproval' | 'destructiveActions' | 'dependencies'>): MethodDecorator {
+  return (target: object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<unknown>) => {
+    const existingSchema = Reflect.getMetadata('skill:inputSchema', target, propertyKey) ?? {};
+
+    const fullMetadata: AgentMetadata = {
+      ...metadata,
+      inputSchema: existingSchema,
+      timeout: 60000, // Default 1 minute for agents
+      requiresApproval: metadata.canDelegate, // Delegation requires approval
+      destructiveActions: [],
+      dependencies: [],
+    };
+
+    Reflect.defineMetadata(AGENT_METADATA_KEY, fullMetadata, target, propertyKey);
+  };
+}
+
+export function getAgentMetadata(target: object, propertyKey: string): AgentMetadata | undefined {
+  return Reflect.getMetadata(AGENT_METADATA_KEY, target, propertyKey);
+}
+```
+
+### Pattern 2: Event-Driven Communication Bus
+
+**What:** Agents communicate via publish/subscribe channels rather than direct calls.
+
+**When to use:** All inter-agent communication should use the bus.
+
+**Trade-offs:**
+- Pros: Decoupled agents, easier debugging, supports parallel execution
+- Cons: Additional complexity, eventual consistency considerations
+
+```typescript
+// src/lib/agents/communication.ts
+import type { AgentMessage } from '@/lib/db/schema';
+
+type MessageHandler = (message: AgentMessage) => Promise<void>;
+
+export class AgentCommunicationBus {
+  private channels: Map<string, Set<MessageHandler>> = new Map();
+  private messageLog: AgentMessage[] = [];
+
+  subscribe(channel: string, handler: MessageHandler): () => void {
+    if (!this.channels.has(channel)) {
+      this.channels.set(channel, new Set());
+    }
+    this.channels.get(channel)!.add(handler);
+
+    return () => {
+      this.channels.get(channel)?.delete(handler);
+    };
+  }
+
+  async publish(message: Omit<AgentMessage, 'id' | 'createdAt'>): Promise<void> {
+    const fullMessage: AgentMessage = {
+      ...message,
+      id: crypto.randomUUID(),
+      createdAt: new Date(),
+    };
+
+    this.messageLog.push(fullMessage);
+
+    // Persist to database (fire-and-forget)
+    this.persistMessage(fullMessage).catch(console.error);
+
+    // Notify subscribers
+    const channelKey = `${message.workflowId}:${message.toAgentId}`;
+    const handlers = this.channels.get(channelKey) ?? new Set();
+
+    await Promise.all(
+      Array.from(handlers).map(handler => handler(fullMessage))
+    );
+  }
+
+  private async persistMessage(message: AgentMessage): Promise<void> {
+    // Implementation would use Drizzle to insert into agentMessages table
+  }
+}
+
+export const communicationBus = new AgentCommunicationBus();
+```
+
+### Pattern 3: Result Aggregation Pipeline
+
+**What:** Standardized approach to combining results from multiple agents.
+
+**When to use:** When host agent needs to combine parallel/sequential results.
+
+**Trade-offs:**
+- Pros: Consistent result handling, supports multiple aggregation strategies
+- Cons: May over-engineer simple cases
+
+```typescript
+// src/lib/agents/result-aggregator.ts
+import type { AgentResult } from './types';
+
+export type AggregationStrategy = 'merge' | 'compare' | 'summarize' | 'select_best';
+
+export interface AggregationConfig {
+  strategy: AggregationStrategy;
+  /** For 'select_best', the criteria to compare */
+  selectionCriteria?: 'fastest' | 'highest_confidence' | 'most_comprehensive';
+}
+
+export class ResultAggregator {
+  async aggregate(results: AgentResult[], config: AggregationConfig): Promise<AgentResult> {
+    switch (config.strategy) {
+      case 'merge':
+        return this.mergeResults(results);
+      case 'compare':
+        return this.compareResults(results);
+      case 'summarize':
+        return this.summarizeResults(results);
+      case 'select_best':
+        return this.selectBestResult(results, config.selectionCriteria ?? 'fastest');
+    }
+  }
+
+  private mergeResults(results: AgentResult[]): AgentResult {
+    const mergedData = results.map(r => r.data);
+    return {
+      success: results.every(r => r.success),
+      data: mergedData,
+      agentId: 'aggregator',
+      duration: Math.max(...results.map(r => r.duration)),
+      childResults: results,
+    };
+  }
+
+  private compareResults(results: AgentResult[]): AgentResult {
+    return {
+      success: true,
+      data: {
+        comparison: results.map(r => ({
+          agentId: r.agentId,
+          success: r.success,
+          summary: this.summarizeData(r.data),
+        })),
+      },
+      agentId: 'aggregator',
+      duration: Math.max(...results.map(r => r.duration)),
+    };
+  }
+
+  private summarizeResults(results: AgentResult[]): AgentResult {
+    // Would typically call LLM to summarize
+    return {
+      success: results.every(r => r.success),
+      data: { summary: 'Aggregated result', count: results.length },
+      agentId: 'aggregator',
+      duration: Math.max(...results.map(r => r.duration)),
+    };
+  }
+
+  private selectBestResult(results: AgentResult[], criteria: string): AgentResult {
+    if (criteria === 'fastest') {
+      return results.reduce((best, curr) =>
+        curr.duration < best.duration ? curr : best
+      );
+    }
+    // Other criteria would need more sophisticated evaluation
+    return results[0];
+  }
+
+  private summarizeData(data: unknown): string {
+    return typeof data === 'string' ? data.slice(0, 100) : JSON.stringify(data).slice(0, 100);
+  }
+}
+```
+
+### Pattern 4: Dual-Layer Agent Loop (pi-mono Core) - EXISTING
 
 **What:** A two-level loop architecture that separates "steering" (interruptions) from "follow-up" (continuations).
 
@@ -149,82 +644,7 @@ next-mind/
 - Pros: Clean separation of interrupt vs. continue semantics, responsive to user input
 - Cons: More complex than simple ReAct loop, requires careful state management
 
-```
-// Outer loop: Handle follow-up messages (when agent is about to stop)
-while (true) {
-    let hasMoreToolCalls = true;
-
-    // Inner loop: Handle tool calls + steering messages (interruptions)
-    while (hasMoreToolCalls || pendingMessages.length > 0) {
-        // Inject pending steering messages
-        if (pendingMessages.length > 0) {
-            context.messages.push(...pendingMessages);
-            pendingMessages = [];
-        }
-
-        // Call LLM
-        const message = await streamAssistantResponse(context);
-
-        // Execute tools, checking for steering after each
-        const toolCalls = message.content.filter(c => c.type === "toolCall");
-        hasMoreToolCalls = toolCalls.length > 0;
-
-        if (hasMoreToolCalls) {
-            const result = await executeToolCalls(tools, getSteeringMessages);
-            // Steering messages cause remaining tools to be skipped
-        }
-
-        pendingMessages = await getSteeringMessages() || [];
-    }
-
-    // Check for follow-up messages before truly stopping
-    const followUp = await getFollowUpMessages() || [];
-    if (followUp.length > 0) {
-        pendingMessages = followUp;
-        continue;  // Start new round
-    }
-    break;  // Truly done
-}
-```
-
-### Pattern 2: MCP (Model Context Protocol) Integration
-
-**What:** Standardized protocol for connecting AI models to external tools, resources, and prompts using JSON-RPC 2.0.
-
-**When to use:** When building systems that require multiple tools, need model-agnostic integration, or want ecosystem compatibility.
-
-**Trade-offs:**
-- Pros: Vendor-neutral, enables model swapping without rewriting integrations, growing ecosystem
-- Cons: Protocol overhead, learning curve for MCP server development
-
-**Three Primitives:**
-
-| Primitive | Control | Purpose |
-|-----------|---------|---------|
-| **Tools** | Model-controlled | Functions AI can invoke (APIs, databases, actions) |
-| **Resources** | Application-controlled | Data AI can read (files, records, context) |
-| **Prompts** | User-controlled | Reusable templates for structured interactions |
-
-```
-// MCP Server Example (Tools)
-@mcp.tool()
-async def query_database(sql: str) -> str:
-    """Execute a read-only SQL query against the analytics database."""
-    # Input validation
-    if not sql.strip().upper().startswith("SELECT"):
-        return "Only SELECT queries are allowed"
-
-    result = await db.execute(sql)
-    return format_result(result)
-
-// MCP Resource Example
-@mcp.resource("config://settings")
-async def get_settings() -> str:
-    """Return current configuration."""
-    return json.dumps(config)
-```
-
-### Pattern 3: A2A (Agent-to-Agent) Collaboration
+### Pattern 5: A2A (Agent-to-Agent) Collaboration
 
 **What:** Protocol for multi-agent communication enabling specialized agents to collaborate on complex tasks.
 
@@ -243,121 +663,50 @@ async def get_settings() -> str:
 | **Fan-out/Fan-in** | Parallel execution, result aggregation | Research, analysis |
 | **Hierarchical** | Nested delegation | Complex planning |
 
-### Pattern 4: RAG (Retrieval-Augmented Generation) Architecture
-
-**What:** Architecture combining vector similarity search with LLM generation for knowledge-grounded responses.
-
-**When to use:** When agents need access to large knowledge bases, document collections, or historical context.
-
-**Trade-offs:**
-- Pros: Reduces hallucinations, enables access to proprietary knowledge
-- Cons: Retrieval quality affects output quality, latency overhead
-
-**Pipeline:**
-
-```
-[Document Ingestion]
-     |
-     v
-[Text Extraction] --> [Chunking] --> [Embedding Generation]
-                                            |
-                                            v
-                                     [Vector Store]
-                                            |
-[User Query] --> [Query Embedding] --> [Similarity Search]
-                                            |
-                                            v
-                                    [Retrieved Chunks]
-                                            |
-                                            v
-                                    [Context Assembly]
-                                            |
-                                            v
-                                    [LLM Generation]
-```
-
-### Pattern 5: Role-Based Agent Design
-
-**What:** Assigning specialized roles to agents (Planner, Executor, Verifier, Critic) to mirror human team structures.
-
-**When to use:** Long-running, tool-heavy workflows where separation of planning, execution, and validation improves reliability.
-
-**Trade-offs:**
-- Pros: Improved reliability, interpretability, maintainability
-- Cons: More agents to manage, coordination complexity
-
-| Role | Responsibility | Tool Access |
-|------|----------------|-------------|
-| **Planner** | Decompose objectives, create task graphs | Read-only |
-| **Executor** | Execute actions, call APIs | Write + Read |
-| **Verifier** | Validate outputs, enforce constraints | Read-only |
-| **Critic** | Challenge assumptions, evaluate quality | Read-only |
-
 ---
 
 ## Data Flow
 
-### Request Flow
+### Multi-Agent Workflow Execution Flow
 
 ```
-[User Message]
-     |
-     v
-[Auth Middleware] --> Validate JWT/Session
-     |
-     v
-[Session Manager] --> Load/Create Conversation
-     |
-     v
-[Agent Loop] --> [Planner Agent] --> Analyze & Plan
-     |                  |
-     v                  v
-[Executor Agent] <-- [Task Queue]
-     |
-     v
-[MCP Tools] --> External APIs / File System / Database
-     |
-     v
-[Verifier Agent] --> Validate Results
-     |
-     v
-[Critic Agent] --> Quality Check (optional)
-     |
-     v
-[Response Stream] --> WebSocket / SSE --> [Web UI]
-     |
-     v
-[Audit Logger] --> Log all actions for compliance
-```
-
-### State Management
-
-```
-[Session State] (PostgreSQL)
-     |
-     +-- Conversation History
-     +-- User Preferences
-     +-- Permission Context
-     |
-[Agent State] (In-Memory + Checkpoints)
-     |
-     +-- Message Queue (steering/follow-up)
-     +-- Tool Results Buffer
-     +-- Execution Checkpoints
-     |
-[Knowledge State] (Vector Store)
-     |
-     +-- Document Embeddings
-     +-- Conversation Embeddings
-     +-- External Knowledge Index
+[User Request]
+    |
+    v
+[Chat API] --> [Host Agent Selection]
+    |                |
+    v                v
+[LLM Gateway]   [Agent Registry]
+    |                |
+    v                v
+[Task Decomposition] --> [Workflow Engine]
+    |                         |
+    v                         v
+[Delegation Decision]   [Task Queue]
+    |                         |
+    +--------+--------+-------+
+             |        |
+             v        v
+     [Sub-Agent 1] [Sub-Agent 2] ... (parallel or sequential)
+             |        |
+             v        v
+        [Result]  [Result]
+             |        |
+             +--------+
+                  |
+                  v
+         [Result Aggregator]
+                  |
+                  v
+         [Final Response]
 ```
 
 ### Key Data Flows
 
-1. **Conversation Flow:** User message -> Session -> Agent Loop -> LLM -> Tools -> Response -> Audit Log
-2. **RAG Flow:** Query -> Embedding -> Vector Search -> Context Assembly -> LLM Generation
-3. **File Processing Flow:** Upload -> Storage -> OCR/Parse -> Chunk -> Embed -> Vector Store
-4. **Multi-Agent Flow:** Task -> Planner -> Executor(s) -> Verifier -> Aggregator -> Response
+1. **Task Delegation Flow:** Host agent receives user request -> LLM decomposes task -> Workflow engine creates task queue -> Sub-agents dequeue and execute
+2. **Inter-Agent Communication:** Agent publishes message to channel -> Bus routes to target -> Target agent handles via subscription
+3. **Result Aggregation Flow:** Sub-agents complete -> Results collected -> Aggregator applies strategy -> Host agent receives combined result
+4. **Approval Flow Extension:** Delegation requires approval -> Extended state machine creates delegation approval -> User approves/rejects -> Execution continues or stops
 
 ---
 
@@ -365,30 +714,52 @@ async def get_settings() -> str:
 
 | Scale | Architecture Adjustments |
 |-------|--------------------------|
-| 0-1k users | Monolith acceptable. Single API server, single agent instance, PostgreSQL + single vector store. |
-| 1k-10k users | Separate API and Agent workers. Add Redis for session caching. Consider read replicas for PostgreSQL. |
-| 10k-100k users | Horizontal scaling of API servers. Agent workers with load balancing. Vector store sharding. |
-| 100k+ users | Full microservices. Dedicated LLM gateway with caching. Multi-region deployment. Async job queues for heavy processing. |
+| 1-50 users (current) | In-memory task queue, single-process agents, PostgreSQL for persistence |
+| 50-500 users | Redis for task queue and pub/sub, connection pooling for LLM providers |
+| 500+ users | Horizontal scaling with stateless agent workers, distributed task queue (BullMQ), read replicas |
 
 ### Scaling Priorities
 
-1. **First bottleneck:** LLM API latency and costs. Mitigation: Response caching, streaming, smaller models for simple tasks.
-2. **Second bottleneck:** Vector search latency. Mitigation: Index optimization, approximate nearest neighbor, caching.
-3. **Third bottleneck:** Session state management. Mitigation: Redis clustering, session partitioning.
+1. **First bottleneck:** LLM API rate limits - implement request queuing and batching
+2. **Second bottleneck:** Agent execution concurrency - limit concurrent agents per user, implement fair scheduling
 
 ---
 
-## Anti-Patterns
+## Anti-Patterns to Avoid
 
-### Anti-Pattern 1: Single Agent for Everything
+### Anti-Pattern 1: Agents Calling LLM Directly Without Gateway
 
-**What people do:** Build one monolithic agent that handles planning, execution, validation, and all tool interactions.
+**What people do:** Sub-agents make direct API calls to LLM providers.
 
-**Why it's wrong:** Prompt bloat, context window exhaustion, difficult to debug, single point of failure.
+**Why it's wrong:** Bypasses retry logic, monitoring, and provider abstraction in LLM Gateway.
 
-**Do this instead:** Use role-based agent design with specialized agents for planning, execution, and validation.
+**Do this instead:** All agents use `streamChat()` from `src/lib/llm/index.ts`.
 
-### Anti-Pattern 2: Unstructured Agent Communication
+### Anti-Pattern 2: Synchronous Agent Execution for Parallel Tasks
+
+**What people do:** Execute sub-agents sequentially when tasks are independent.
+
+**Why it's wrong:** Wastes time, poor user experience for parallelizable tasks.
+
+**Do this instead:** Use `Promise.all()` with Task Queue for independent tasks, track in Workflow Engine.
+
+### Anti-Pattern 3: Storing Agent State in Memory Only
+
+**What people do:** Keep workflow state in memory without database persistence.
+
+**Why it's wrong:** Lost state on restart, no audit trail, cannot resume interrupted workflows.
+
+**Do this instead:** Persist all workflow state to PostgreSQL via new schema tables.
+
+### Anti-Pattern 4: Bypassing Approval Flow for Agent Delegation
+
+**What people do:** Allow agents to delegate without user approval.
+
+**Why it's wrong:** Security risk - malicious prompts could spawn unlimited sub-agents.
+
+**Do this instead:** All delegation requires approval via extended `AgentApprovalStateMachine`.
+
+### Anti-Pattern 5: Unstructured Agent Communication
 
 **What people do:** Let agents communicate via free-form natural language without contracts.
 
@@ -396,154 +767,42 @@ async def get_settings() -> str:
 
 **Do this instead:** Use structured outputs with JSON schemas, versioned contracts between agents.
 
-### Anti-Pattern 3: Missing Iteration Limits
-
-**What people do:** Allow agent loops to run indefinitely until completion.
-
-**Why it's wrong:** Infinite loops, runaway costs, resource exhaustion.
-
-**Do this instead:** Implement max_iterations (e.g., 20), cost budgets, convergence criteria, and human escalation paths.
-
-### Anti-Pattern 4: Shared Memory Without Validation
-
-**What people do:** Allow all agents to read/write to shared memory without validation.
-
-**Why it's wrong:** Memory contamination, error propagation, reduced reasoning diversity.
-
-**Do this instead:** Use hybrid approach - shared memory for validated information, isolated memory for reasoning/exploration.
-
-### Anti-Pattern 5: Tool Access Without Scoping
-
-**What people do:** Give all agents access to all tools.
-
-**Why it's wrong:** Security risks, unintended actions, difficult audit trails.
-
-**Do this instead:** Apply least-privilege principle - each agent only has tools it absolutely needs.
-
 ---
 
-## Integration Points
+## Build Order
 
-### External Services
+Based on dependencies and integration points:
 
-| Service | Integration Pattern | Notes |
-|---------|---------------------|-------|
-| **Qwen3.5 / GLM / MinMax** | LLM Gateway (pi-ai) | Unified API abstraction, streaming support |
-| **Cloud Storage** | MCP Resource | File upload/download, artifact storage |
-| **Vector Database** | RAG Engine | Milvus/Pinecone/Qdrant for embeddings |
-| **OCR Service** | File Processor | Document parsing, text extraction |
-| **Email/Notification** | MCP Tool | Async notifications, alerts |
+### Phase 1: Foundation (Week 1-2)
+1. **Database Schema Extension** - Add `agents`, `agentTasks`, `agentMessages`, `workflows` tables
+2. **Agent Types** - Create `src/lib/agents/types.ts` extending skill types
+3. **Agent Registry** - Create `src/lib/agents/registry.ts` (similar to skill registry pattern)
+4. **Agent Decorator** - Create `src/lib/agents/decorator.ts` for agent definition
 
-### Internal Boundaries
+### Phase 2: Core Execution (Week 2-3)
+5. **Agent Executor** - Create `src/lib/agents/executor.ts` (extends skill executor)
+6. **Task Queue** - Create `src/lib/agents/task-queue.ts` (in-memory initially)
+7. **LLM Context Handler** - Create `src/lib/agents/llm-context.ts`
 
-| Boundary | Communication | Notes |
-|----------|---------------|-------|
-| Web UI <-> API | REST + WebSocket | Streaming responses, real-time updates |
-| API <-> Agent Core | Direct function calls | Same process, shared memory |
-| Agent <-> MCP Tools | JSON-RPC 2.0 | Protocol-compliant tool invocation |
-| Agent <-> RAG | Async API | Non-blocking retrieval |
-| Agent <-> File Processor | Message Queue | Background processing for large files |
+### Phase 3: Communication & Workflow (Week 3-4)
+8. **Communication Bus** - Create `src/lib/agents/communication.ts`
+9. **Workflow Engine** - Create `src/lib/agents/workflow-engine.ts`
+10. **Result Aggregator** - Create `src/lib/agents/result-aggregator.ts`
 
----
+### Phase 4: Integration (Week 4-5)
+11. **MCP Agent Tools** - Create `src/lib/mcp/agent-tools.ts`
+12. **Agent Approval Extension** - Create `src/lib/approval/agent-approval.ts`
+13. **API Endpoints** - Create `/api/agents` and `/api/workflows` routes
 
-## Security Architecture
+### Phase 5: Predefined Agents (Week 5-6)
+14. **File Agent** - Create `src/agents/file-agent.ts`
+15. **Search Agent** - Create `src/agents/search-agent.ts`
+16. **Code Agent** - Create `src/agents/code-agent.ts`
 
-### Authentication Flow
-
-```
-[User] --> [OAuth2/JWT] --> [Auth Service]
-                                |
-                                v
-                         [Token Validation]
-                                |
-                                v
-                         [Session Creation]
-                                |
-                                v
-                         [Permission Context]
-                                |
-                                v
-                         [Agent Context Injection]
-```
-
-### Security Layers
-
-| Layer | Mechanism | Purpose |
-|-------|-----------|---------|
-| **Transport** | TLS 1.3 | Encrypted communication |
-| **Authentication** | OAuth2 / JWT | User identity verification |
-| **Authorization** | RBAC | Permission-based access control |
-| **Data** | AES-256 encryption | At-rest encryption |
-| **Audit** | Immutable logs | Compliance and traceability |
-
-### Content Safety
-
-| Check | Trigger | Action |
-|-------|---------|--------|
-| **Input Filtering** | User message received | Sanitize, detect injection |
-| **Prompt Injection** | Before LLM call | Isolate system prompts |
-| **Output Filtering** | LLM response generated | Content safety scan |
-| **Tool Validation** | Before tool execution | Validate parameters, check permissions |
-
----
-
-## Audit and Observability
-
-### What to Log
-
-| Event Type | Data Captured | Retention |
-|------------|---------------|-----------|
-| **Authentication** | User ID, timestamp, IP, success/failure | 90 days |
-| **Conversation** | Message content, agent decisions, tool calls | Per policy |
-| **Tool Execution** | Tool name, parameters, result, duration | 90 days |
-| **Errors** | Stack trace, context, recovery action | 90 days |
-| **Performance** | Latency, token usage, cost | 30 days |
-
-### Observability Stack
-
-```
-[Application] --> [Structured Logs] --> [Log Aggregator]
-                       |
-                       v
-              [Metrics Exporter] --> [Time-Series DB]
-                       |
-                       v
-              [Trace Collector] --> [Distributed Tracing]
-```
-
----
-
-## Build Order Implications
-
-Based on component dependencies, recommended implementation order:
-
-### Phase 1: Foundation
-1. **LLM Gateway (pi-ai)** - Core abstraction for multi-model support
-2. **Agent Loop (pi-agent-core)** - Basic ReAct loop without steering
-3. **Session Manager** - Conversation persistence
-4. **Auth Service** - Basic authentication
-
-### Phase 2: Core Features
-5. **MCP Protocol** - Tool/resource/prompt infrastructure
-6. **Basic Tools** - File read/write, bash execution
-7. **Web UI** - ChatGPT-style conversation interface
-8. **Audit Logger** - Basic logging for compliance
-
-### Phase 3: Intelligence
-9. **RAG Engine** - Vector store, embedding, retrieval
-10. **File Processor** - Document parsing, OCR
-11. **Skills System** - Predefined and custom skills
-12. **Dual-Layer Loop** - Steering and follow-up support
-
-### Phase 4: Multi-Agent
-13. **Role-Based Agents** - Planner, Executor, Verifier, Critic
-14. **A2A Communication** - Agent-to-agent messaging
-15. **Orchestration Layer** - Task assignment, coordination
-
-### Phase 5: Enterprise
-16. **Advanced Security** - Content safety, encryption
-17. **Scalability** - Horizontal scaling, caching
-18. **API Gateway** - External API access, rate limiting
+### Phase 6: UI & Testing (Week 6-7)
+17. **Agent Panel UI** - Extend sidebar to show agents
+18. **Workflow Progress UI** - Display multi-agent execution progress
+19. **Integration Tests** - End-to-end multi-agent workflow tests
 
 ---
 
@@ -551,22 +810,23 @@ Based on component dependencies, recommended implementation order:
 
 ### Official Documentation
 - [MCP Official Documentation](https://modelcontextprotocol.io/development/roadmap) - Model Context Protocol specification
-- [pi-mono Architecture Analysis](https://zhuanlan.zhihu.com/p/2007047649933693864) - Deep dive into pi-mono agent loop design
+- [Announcing the Agent2Agent Protocol (A2A)](https://developers.googleblog.com/en/a2a-a-new-era-of-agent-interoperability/) - HIGH confidence (official announcement)
+- [LangGraph Multi-Agent Workflows](https://blog.langchain.com/langgraph-multi-agent-workflows/) - HIGH confidence (official documentation)
+- [Command: A New Tool for Multi-Agent Architectures in LangGraph](https://blog.langchain.com/command-a-new-tool-for-multi-agent-architectures-in-langgraph/) - HIGH confidence
 
 ### Architecture Guides
-- [Multi-Agent System Architecture Guide 2026](https://www.clickittech.com/ai/multi-agent-system-architecture/) - Comprehensive MAS architecture (HIGH confidence)
-- [AI Architecture Patterns 101](https://aipmguru.substack.com/p/ai-architecture-patterns-101-workflows) - Workflows, Agents, MCP, A2A patterns (HIGH confidence)
-- [MCP Complete Guide 2026](https://www.sitepoint.com/model-context-protocol-mcp/) - MCP architecture and implementation (HIGH confidence)
+- [Building Scalable Multi-Agent Systems: Integrating MCP and A2A Protocols](https://medium.com/@ashispapu/building-scalable-multi-agent-systems-integrating-mcp-and-a2a-protocols-dbdfd590ae97) - MEDIUM confidence (practical implementation guide)
+- [Multi-Agent System Architecture Guide 2026](https://www.clickittech.com/ai/multi-agent-system-architecture/) - HIGH confidence
+- [MCP and A2A: A Tale of Two Protocols](https://mcpmarket.com/news/2da90308-b24e-466c-a8f9-97a0e24d021f) - MEDIUM confidence
 
 ### Research Papers
 - [AgentTrace: Structured Logging Framework](https://arxiv.org/abs/2602.10133) - Agent audit and tracing
 - [AI Agent Systems Survey](https://arxiv.org/html/2601.13671v1) - MCP and A2A as dual foundation
 
-### Framework Comparisons
-- [Reddit: AI Agent Framework Comparison 2026](https://www.reddit.com/r/LangChain/comments/1rnc2u9/comprehensive_comparison_of_every_ai_agent/) - Community comparison
-- [Top 9 AI Agent Frameworks 2026](https://www.capsolver.com/blog/AI/top-9-ai-agent-frameworks-in-2026) - Framework selection guide
+### Existing Codebase
+- Direct analysis of `src/lib/skills/`, `src/lib/mcp/`, `src/lib/approval/`, `src/lib/db/schema.ts` - HIGH confidence
 
 ---
 
-*Architecture research for: AI Agent Framework (Next-Mind)*
-*Researched: 2026-03-24*
+*Architecture research for: AI Agent Framework (Next-Mind) with A2A Multi-Agent Integration*
+*Researched: 2026-03-25*
