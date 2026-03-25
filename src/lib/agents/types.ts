@@ -85,3 +85,54 @@ export interface DecompositionResult {
   /** Optional complexity estimate */
   estimatedComplexity?: 'low' | 'medium' | 'high';
 }
+
+/**
+ * Agent Skill Context - Extended SkillContext for sub-agent execution
+ *
+ * Extends the base SkillContext with workflow and task tracking
+ * for multi-agent coordination.
+ */
+export interface AgentSkillContext {
+  /** ID of the user invoking the skill */
+  userId: string;
+  /** ID of the current session */
+  sessionId: string;
+  /** Optional conversation ID for context */
+  conversationId?: string;
+  /** Results from previous skill executions in the same workflow */
+  previousResults: Map<string, { success: boolean; data?: unknown; error?: string; metadata?: Record<string, unknown> }>;
+  /** ID of the workflow this task belongs to */
+  workflowId: string;
+  /** ID of the parent task (if this is a subtask) */
+  parentTaskId?: string;
+  /** Type of agent executing this task */
+  agentType: AgentType;
+}
+
+/**
+ * Create an AgentSkillContext for sub-agent execution.
+ *
+ * @param userId - The user ID
+ * @param sessionId - The session ID
+ * @param workflowId - The workflow ID
+ * @param agentType - The agent type
+ * @param options - Optional conversationId and parentTaskId
+ * @returns An AgentSkillContext instance
+ */
+export function createAgentSkillContext(
+  userId: string,
+  sessionId: string,
+  workflowId: string,
+  agentType: AgentType,
+  options?: { conversationId?: string; parentTaskId?: string }
+): AgentSkillContext {
+  return {
+    userId,
+    sessionId,
+    conversationId: options?.conversationId,
+    previousResults: new Map(),
+    workflowId,
+    parentTaskId: options?.parentTaskId,
+    agentType,
+  };
+}
