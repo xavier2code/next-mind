@@ -150,7 +150,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       ...getClientInfo(request),
     });
 
-    logger.info('approval', `Approval ${approved ? 'granted' : 'rejected'}`, {
+    logger.info('security', `Approval ${approved ? 'granted' : 'rejected'}`, {
       userId,
       metadata: {
         requestId: bodyRequestId,
