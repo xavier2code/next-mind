@@ -1,39 +1,20 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import {
-  ListToolsRequestSchema,
-  CallToolRequestSchema,
-} from '@modelcontextprotocol/sdk/types.js';
 
 /**
  * Create a configured MCP server instance
  *
- * @param sessionId - Unique identifier for this server session
- * @returns Configured McpServer with request handlers
+ * @param _sessionId - Unique identifier for this server session (unused but kept for API compatibility)
+ * @returns Configured McpServer with capabilities
  */
-export function createMcpServer(sessionId: string): McpServer {
+export function createMcpServer(_sessionId: string): McpServer {
   const server = new McpServer(
     { name: 'next-mind-mcp', version: '1.0.0' },
     { capabilities: { tools: {} } }
   );
 
-  // Set up request handlers for tools
-  server.setRequestHandler(ListToolsRequestSchema, async () => {
-    // Will be connected to ToolRegistry in session.ts
-    return { tools: [] };
-  });
-
-  server.setRequestHandler(CallToolRequestSchema, async (request) => {
-    // Will be connected to ToolRegistry.executeTool in session.ts
-    return {
-      content: [
-        {
-          type: 'text' as const,
-          text: `Tool execution not yet configured for session ${sessionId}`,
-        },
-      ],
-      isError: true,
-    };
-  });
+  // Note: Tool registration is handled via ToolRegistry and route.ts
+  // The MCP SDK's McpServer class provides tool() method for registration
+  // Route handlers in /api/mcp/route.ts handle tools/list and tools/call
 
   return server;
 }

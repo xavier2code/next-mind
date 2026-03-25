@@ -249,6 +249,7 @@ export async function executeBash(
     HOME: process.env.HOME || '',
     USER: process.env.USER || '',
     LANG: process.env.LANG || 'en_US.UTF-8',
+    NODE_ENV: process.env.NODE_ENV || 'production',
   };
 
   // Execute command using execFile (safer than exec)

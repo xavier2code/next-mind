@@ -102,12 +102,17 @@ export async function POST(request: NextRequest): Promise<NextResponse<JsonRpcRe
     );
   }
 
-  // Authenticate user
+  // Authenticate user session
   const session = await auth();
   if (!session?.user?.id) {
-    logger.apiRequest(requestId, 'POST', '/api/mcp');
-    logger.securityEvent('Unauthenticated MCP attempt', undefined);
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    return NextResponse.json(
+      {
+        jsonrpc: '2.0',
+        error: JSON_RPC_ERRORS.UNAUTHORIZED,
+        id: null,
+      },
+      { status: 401 }
+    );
   }
 
   const userId = session.user.id;

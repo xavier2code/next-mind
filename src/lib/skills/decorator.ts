@@ -60,7 +60,7 @@ export function skill(metadata: SkillMetadata) {
   validateSemver(metadata.version);
 
   return function (
-    target: unknown,
+    target: object,
     propertyKey: string,
     descriptor: PropertyDescriptor
   ): PropertyDescriptor {
@@ -98,7 +98,7 @@ export function skill(metadata: SkillMetadata) {
  * ```
  */
 export function getSkillMetadata(
-  target: unknown,
+  target: object,
   propertyKey: string
 ): SkillMetadata | undefined {
   return Reflect.getMetadata(SKILL_METADATA_KEY, target, propertyKey);
