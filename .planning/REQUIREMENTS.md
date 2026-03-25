@@ -13,15 +13,15 @@
 
 基础多 Agent 协作能力，验证委派概念。
 
-- [ ] **DELEG-01**: 用户可以向主 Agent 发送复杂任务请求
-- [ ] **DELEG-02**: 主 Agent 自动将复杂任务分解为多个子任务
+- [x] **DELEG-01**: 用户可以向主 Agent 发送复杂任务请求
+- [x] **DELEG-02**: 主 Agent 自动将复杂任务分解为多个子任务
 - [x] **DELEG-03**: 系统维护可用的子 Agent 注册表及其能力描述
-- [ ] **DELEG-04**: 子任务分配给合适的子 Agent 类型执行
+- [x] **DELEG-04**: 子任务分配给合适的子 Agent 类型执行
 - [ ] **DELEG-05**: 子 Agent 按顺序执行（基础模式）
-- [ ] **DELEG-06**: 主 Agent 收集所有子 Agent 结果并聚合
-- [ ] **DELEG-07**: 聚合结果以连贯的方式呈现给用户
-- [ ] **DELEG-08**: 用户可以看到当前活跃的 Agent 及其状态
-- [ ] **DELEG-09**: 子 Agent 执行失败时系统进行错误恢复
+- [x] **DELEG-06**: 主 Agent 收集所有子 Agent 结果并聚合
+- [x] **DELEG-07**: 聚合结果以连贯的方式呈现给用户
+- [x] **DELEG-08**: 用户可以看到当前活跃的 Agent 及其状态
+- [x] **DELEG-09**: 子 Agent 执行失败时系统进行错误恢复
 - [x] **DELEG-10**: 数据库新增 Agent、Task、Workflow 相关表结构
 
 ### Agent Types (Agent 类型)
@@ -245,15 +245,15 @@ v1.0 MVP 已发布的需求。
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DELEG-01 | Phase 3 | Pending |
-| DELEG-02 | Phase 3 | Pending |
+| DELEG-01 | Phase 3 | Complete |
+| DELEG-02 | Phase 3 | Complete |
 | DELEG-03 | Phase 3 | Complete |
-| DELEG-04 | Phase 3 | Pending |
+| DELEG-04 | Phase 3 | Complete |
 | DELEG-05 | Phase 3 | Pending |
-| DELEG-06 | Phase 3 | Pending |
-| DELEG-07 | Phase 3 | Pending |
-| DELEG-08 | Phase 3 | Pending |
-| DELEG-09 | Phase 3 | Pending |
+| DELEG-06 | Phase 3 | Complete |
+| DELEG-07 | Phase 3 | Complete |
+| DELEG-08 | Phase 3 | Complete |
+| DELEG-09 | Phase 3 | Complete |
 | DELEG-10 | Phase 3 | Complete |
 | ATYPE-01 | Phase 3 | Complete |
 | ATYPE-02 | Phase 3 | Complete |
