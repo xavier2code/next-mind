@@ -37,6 +37,7 @@ export interface SkillsPanelProps {
 interface SkillItemProps {
   skill: SkillData;
   onSelect?: (skillId: string) => void;
+  disabled?: boolean;
 }
 
 /**
@@ -53,13 +54,16 @@ const CATEGORY_COLORS: Record<string, string> = {
 /**
  * Individual skill item component
  */
-function SkillItem({ skill, onSelect }: SkillItemProps) {
+function SkillItem({ skill, onSelect, disabled }: SkillItemProps) {
   const categoryColor = CATEGORY_COLORS[skill.category] || CATEGORY_COLORS.custom;
 
   return (
     <div
-      className="group flex items-start gap-3 rounded-lg px-3 py-2 cursor-pointer transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800"
-      onClick={() => onSelect?.(skill.id)}
+      className={cn(
+        'group flex items-start gap-3 rounded-lg px-3 py-2 cursor-pointer transition-colors hover:bg-zinc-100 dark:hover:bg-zinc-800',
+        disabled && 'opacity-50 pointer-events-none'
+      )}
+      onClick={() => !disabled && onSelect?.(skill.id)}
     >
       {/* Skill info */}
       <div className="flex-1 min-w-0">
@@ -101,6 +105,56 @@ export function SkillsPanel({ onSkillSelect, className }: SkillsPanelProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [pendingSkill, setPendingSkill] = useState<SkillData | null>(null);
+  const [isExecuting, setIsExecuting] = useState(false);
+
+  /**
+   * Execute a skill via the API
+   */
+  async function executeSkill(skillId: string, input?: unknown): Promise<{ success: boolean; error?: string }> {
+    try {
+      const response = await fetch('/api/skills', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ skillId, input: input ?? {} }),
+      });
+
+      const data = await response.json();
+      return { success: data.success, error: data.error };
+    } catch (err) {
+      return { success: false, error: err instanceof Error ? err.message : 'Failed to execute skill' };
+    }
+  }
+
+  /**
+   * Handle skill selection - triggers execution or shows approval prompt
+   */
+  async function handleSkillSelect(skillId: string) {
+    const skill = skills.find((s) => s.id === skillId);
+    if (!skill) return;
+
+    if (skill.requiresApproval) {
+      // Show approval prompt first (parent component handles this)
+      setPendingSkill(skill);
+      if (onSkillSelect) {
+        onSkillSelect(skillId);
+      }
+    } else {
+      // Execute directly
+      setIsExecuting(true);
+      const result = await executeSkill(skillId);
+      setIsExecuting(false);
+
+      if (onSkillSelect) {
+        onSkillSelect(skillId);
+      }
+
+      // Could show toast/notification here based on result
+      if (!result.success) {
+        console.error('Skill execution failed:', result.error);
+      }
+    }
+  }
 
   // Fetch skills on mount
   useEffect(() => {
@@ -230,7 +284,8 @@ export function SkillsPanel({ onSkillSelect, className }: SkillsPanelProps) {
                   <SkillItem
                     key={skill.id}
                     skill={skill}
-                    onSelect={onSkillSelect}
+                    onSelect={handleSkillSelect}
+                    disabled={isExecuting}
                   />
                 ))}
               </div>
