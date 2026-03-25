@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import { getOrCreateSessionServer, getSession } from '@/lib/mcp/session';
+import { getOrCreateSessionServer, getSession, getSessionRegistry } from '@/lib/mcp/session';
 import { logAudit, getClientInfo } from '@/lib/audit';
 import { logger, generateRequestId } from '@/lib/monitoring';
 import { createResourceManager, type ResourceManager } from '@/lib/mcp/resources';
@@ -230,17 +230,34 @@ export async function POST(request: NextRequest): Promise<NextResponse<JsonRpcRe
           // Log error but don't fail
         });
 
-        // For now, return a placeholder response
-        // The actual tool execution will be connected to the registry
-        result = {
-          content: [
+        // Get the session's tool registry and execute the tool
+        const registry = getSessionRegistry(userId);
+        if (!registry) {
+          return NextResponse.json(
             {
-              type: 'text',
-              text: `Tool "${toolName}" execution not yet implemented`,
+              jsonrpc: '2.0',
+              error: JSON_RPC_ERRORS.INTERNAL_ERROR,
+              id: body.id ?? null,
             },
-          ],
-          isError: true,
-        };
+            { status: 200 }
+          );
+        }
+
+        // Check if tool exists
+        const tool = registry.getTool(toolName);
+        if (!tool) {
+          return NextResponse.json(
+            {
+              jsonrpc: '2.0',
+              error: JSON_RPC_ERRORS.METHOD_NOT_FOUND,
+              id: body.id ?? null,
+            },
+            { status: 200 }
+          );
+        }
+
+        // Execute the tool
+        result = await registry.executeTool(toolName, toolArgs);
         break;
       }
 

@@ -2,6 +2,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpSession } from './types';
 import { createResourceManager } from './resources';
 import { createPromptManager } from './prompts';
+import { createToolRegistry, type ToolRegistry } from './registry';
 
 /**
  * Session-scoped MCP server registry
@@ -30,9 +31,10 @@ export function getOrCreateSessionServer(userId: string): McpServer {
     { capabilities: { tools: {} } }
   );
 
-  // Create session-scoped resource and prompt managers
+  // Create session-scoped resource, prompt managers, and tool registry
   const resourceManager = createResourceManager();
   const promptManager = createPromptManager({ includeBuiltins: true });
+  const registry = createToolRegistry();
 
   const session: McpSession = {
     id: `mcp-session-${userId}-${Date.now()}`,
@@ -41,6 +43,7 @@ export function getOrCreateSessionServer(userId: string): McpServer {
     createdAt: new Date(),
     resourceManager,
     promptManager,
+    registry,
   };
 
   mcpSessionRegistry.set(userId, session);
@@ -57,6 +60,17 @@ export function getOrCreateSessionServer(userId: string): McpServer {
  */
 export function getSession(userId: string): McpSession | undefined {
   return mcpSessionRegistry.get(userId);
+}
+
+/**
+ * Get the tool registry for a user's session
+ *
+ * @param userId - The authenticated user's ID
+ * @returns ToolRegistry or undefined if session not found
+ */
+export function getSessionRegistry(userId: string): ToolRegistry | undefined {
+  const session = mcpSessionRegistry.get(userId);
+  return session?.registry;
 }
 
 /**

@@ -2,6 +2,7 @@ import type { ZodSchema } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ResourceManager } from './resources';
 import type { PromptManager } from './prompts';
+import type { ToolRegistry } from './registry';
 
 /**
  * MCP Tool timeout in milliseconds
@@ -41,4 +42,6 @@ export interface McpSession {
   resourceManager: ResourceManager;
   /** Session-scoped prompt manager */
   promptManager: PromptManager;
+  /** Session-scoped tool registry */
+  registry: ToolRegistry;
 }
