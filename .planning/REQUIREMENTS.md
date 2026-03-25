@@ -22,7 +22,7 @@
 - [ ] **DELEG-07**: 聚合结果以连贯的方式呈现给用户
 - [ ] **DELEG-08**: 用户可以看到当前活跃的 Agent 及其状态
 - [ ] **DELEG-09**: 子 Agent 执行失败时系统进行错误恢复
-- [ ] **DELEG-10**: 数据库新增 Agent、Task、Workflow 相关表结构
+- [x] **DELEG-10**: 数据库新增 Agent、Task、Workflow 相关表结构
 
 ### Agent Types (Agent 类型)
 
@@ -254,7 +254,7 @@ v1.0 MVP 已发布的需求。
 | DELEG-07 | Phase 3 | Pending |
 | DELEG-08 | Phase 3 | Pending |
 | DELEG-09 | Phase 3 | Pending |
-| DELEG-10 | Phase 3 | Pending |
+| DELEG-10 | Phase 3 | Complete |
 | ATYPE-01 | Phase 3 | Pending |
 | ATYPE-02 | Phase 3 | Pending |
 | ATYPE-03 | Phase 3 | Pending |
