@@ -15,7 +15,7 @@
 
 - [ ] **DELEG-01**: 用户可以向主 Agent 发送复杂任务请求
 - [ ] **DELEG-02**: 主 Agent 自动将复杂任务分解为多个子任务
-- [ ] **DELEG-03**: 系统维护可用的子 Agent 注册表及其能力描述
+- [x] **DELEG-03**: 系统维护可用的子 Agent 注册表及其能力描述
 - [ ] **DELEG-04**: 子任务分配给合适的子 Agent 类型执行
 - [ ] **DELEG-05**: 子 Agent 按顺序执行（基础模式）
 - [ ] **DELEG-06**: 主 Agent 收集所有子 Agent 结果并聚合
@@ -28,13 +28,13 @@
 
 四种专业子 Agent 类型。
 
-- [ ] **ATYPE-01**: 文件处理 Agent — 处理 PDF/Word/图片/代码文件
-- [ ] **ATYPE-02**: 搜索 Agent — 执行网络搜索、知识库检索
-- [ ] **ATYPE-03**: 代码 Agent — 代码生成、审查、重构任务
-- [ ] **ATYPE-04**: 自定义 Agent — 用户定义的专用 Agent 类型
-- [ ] **ATYPE-05**: 每种 Agent 类型有专用的系统提示词
-- [ ] **ATYPE-06**: 每种 Agent 类型有专属的工具集
-- [ ] **ATYPE-07**: Agent 能力通过 Agent Card (JSON) 声明
+- [x] **ATYPE-01**: 文件处理 Agent — 处理 PDF/Word/图片/代码文件
+- [x] **ATYPE-02**: 搜索 Agent — 执行网络搜索、知识库检索
+- [x] **ATYPE-03**: 代码 Agent — 代码生成、审查、重构任务
+- [x] **ATYPE-04**: 自定义 Agent — 用户定义的专用 Agent 类型
+- [x] **ATYPE-05**: 每种 Agent 类型有专用的系统提示词
+- [x] **ATYPE-06**: 每种 Agent 类型有专属的工具集
+- [x] **ATYPE-07**: Agent 能力通过 Agent Card (JSON) 声明
 
 ### Smart Orchestration (智能编排)
 
@@ -247,7 +247,7 @@ v1.0 MVP 已发布的需求。
 |-------------|-------|--------|
 | DELEG-01 | Phase 3 | Pending |
 | DELEG-02 | Phase 3 | Pending |
-| DELEG-03 | Phase 3 | Pending |
+| DELEG-03 | Phase 3 | Complete |
 | DELEG-04 | Phase 3 | Pending |
 | DELEG-05 | Phase 3 | Pending |
 | DELEG-06 | Phase 3 | Pending |
@@ -255,13 +255,13 @@ v1.0 MVP 已发布的需求。
 | DELEG-08 | Phase 3 | Pending |
 | DELEG-09 | Phase 3 | Pending |
 | DELEG-10 | Phase 3 | Complete |
-| ATYPE-01 | Phase 3 | Pending |
-| ATYPE-02 | Phase 3 | Pending |
-| ATYPE-03 | Phase 3 | Pending |
-| ATYPE-04 | Phase 3 | Pending |
-| ATYPE-05 | Phase 3 | Pending |
-| ATYPE-06 | Phase 3 | Pending |
-| ATYPE-07 | Phase 3 | Pending |
+| ATYPE-01 | Phase 3 | Complete |
+| ATYPE-02 | Phase 3 | Complete |
+| ATYPE-03 | Phase 3 | Complete |
+| ATYPE-04 | Phase 3 | Complete |
+| ATYPE-05 | Phase 3 | Complete |
+| ATYPE-06 | Phase 3 | Complete |
+| ATYPE-07 | Phase 3 | Complete |
 | INTG-01 | Phase 3 | Pending |
 | INTG-02 | Phase 3 | Pending |
 | INTG-03 | Phase 3 | Pending |
