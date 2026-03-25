@@ -9,11 +9,16 @@ describe('A2A Infrastructure Migration', () => {
     expect(existsSync(drizzleDir)).toBe(true);
 
     const files = readdirSync(drizzleDir);
-    const migrationFile = files.find(f =>
-      f.includes('agent') || f.includes('workflow') || f.includes('task')
-    );
+    // Look for any SQL file that contains the agent table creation
+    const sqlFiles = files.filter(f => f.endsWith('.sql'));
+    expect(sqlFiles.length).toBeGreaterThan(0);
 
-    expect(migrationFile).toBeDefined();
+    // Check that at least one SQL file contains agent table
+    const hasAgentMigration = sqlFiles.some(f => {
+      const content = readFileSync(join(drizzleDir, f), 'utf-8');
+      return content.toLowerCase().includes('create table') && content.toLowerCase().includes('"agent"');
+    });
+    expect(hasAgentMigration).toBe(true);
   });
 
   it('should have migration SQL that creates agent table', () => {
