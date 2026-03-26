@@ -87,7 +87,7 @@ Agent 间通信机制。
 - [x] **VIS-02**: 每个 Agent 显示当前状态（运行中/完成/失败）
 - [ ] **VIS-03**: 工作流整体进度指示
 - [x] **VIS-04**: Agent 执行日志可查看（可选展开）
-- [ ] **VIS-05**: 过程信息简洁展示（不过度干扰）
+- [x] **VIS-05**: 过程信息简洁展示（不过度干扰）
 
 ### Integration (系统集成)
 
@@ -294,7 +294,7 @@ v1.0 MVP 已发布的需求。
 | VIS-02 | Phase 6 | Complete |
 | VIS-03 | Phase 6 | Pending |
 | VIS-04 | Phase 6 | Complete |
-| VIS-05 | Phase 6 | Pending |
+| VIS-05 | Phase 6 | Complete |
 
 **v1.1 Coverage:**
 - v1.1 requirements: 50 total
