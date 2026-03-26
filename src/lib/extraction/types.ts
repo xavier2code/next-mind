@@ -2,7 +2,7 @@
  * Content extraction type contracts.
  *
  * All file-type extractors implement the Extractor interface.
- * The dispatcher (Plan 02) routes files to the correct extractor
+ * The dispatcher routes files to the correct extractor
  * based on file type from the database record.
  */
 
