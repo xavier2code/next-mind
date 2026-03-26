@@ -25,8 +25,8 @@ Requirements for v1.2 milestone. Each maps to roadmap phases.
 - [ ] **EXTR-03**: System reads code files directly (native fs), detecting and preserving syntax
 - [ ] **EXTR-04**: System parses CSV files using papaparse into structured data
 - [ ] **EXTR-05**: System parses Excel (.xlsx) files using exceljs into structured data
-- [ ] **EXTR-06**: System runs content extraction asynchronously after upload to avoid request timeouts
-- [ ] **EXTR-07**: System tracks extraction status (uploading, processing, ready, failed) with error messages on failure
+- [x] **EXTR-06**: System runs content extraction asynchronously after upload to avoid request timeouts
+- [x] **EXTR-07**: System tracks extraction status (uploading, processing, ready, failed) with error messages on failure
 - [x] **EXTR-08**: System converts PDF extracted text to Markdown format
 - [x] **EXTR-09**: System converts Word documents to Markdown via mammoth (docx→HTML) + turndown (HTML→Markdown)
 
@@ -109,8 +109,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EXTR-03 | Phase 8 | Pending |
 | EXTR-04 | Phase 8 | Pending |
 | EXTR-05 | Phase 8 | Pending |
-| EXTR-06 | Phase 8 | Pending |
-| EXTR-07 | Phase 8 | Pending |
+| EXTR-06 | Phase 8 | Complete |
+| EXTR-07 | Phase 8 | Complete |
 | EXTR-08 | Phase 8 | Complete |
 | EXTR-09 | Phase 8 | Complete |
 | MGMT-01 | Phase 9 | Pending |

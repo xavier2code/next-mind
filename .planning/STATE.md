@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: 文件处理
-current_plan: 2
+current_plan: 3
 status: Ready to execute
-stopped_at: Completed 08-02-PLAN.md
-last_updated: "2026-03-26T15:33:16.647Z"
+stopped_at: Completed 08-03-PLAN.md
+last_updated: "2026-03-26T15:38:14.406Z"
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 7
-  completed_plans: 4
+  completed_plans: 6
 ---
 
 # Project State
@@ -25,8 +25,8 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 ## Current Position
 
 Phase: 08 (content-extraction) — EXECUTING
-Plan: 2 of 4
-Current Plan: 2
+Plan: 3 of 4
+Current Plan: 3
 Total Plans in Phase: 4
 
 ## Performance Metrics
@@ -63,6 +63,7 @@ Total Plans in Phase: 4
 | Phase 07 P03 | 4 min | 3 tasks | 7 files |
 | Phase 08 P01 | 2 | 3 tasks | 9 files |
 | Phase 08 P02 | 5 | 3 tasks | 9 files |
+| Phase 08 P03 | 172 | 2 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -88,6 +89,8 @@ Recent decisions affecting current work:
 - [Phase 08]: Dynamic import() for all parsing libraries (papaparse, exceljs) per D-04
 - [Phase 08]: Dual-format output for data files: Markdown table + JSON string per D-07
 - [Phase 08]: Created types.ts and table-formatter.ts from Plan 01 spec due to parallel execution (Rule 3)
+- [Phase 08]: Extraction dispatcher uses mimeType-based strategy routing with 30s timeout and semaphore concurrency limit of 2
+- [Phase 08]: Fire-and-forget extraction trigger from upload route with logAudit lifecycle events (start/complete/failed)
 
 ### Pending Todos
 
@@ -101,8 +104,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-26T15:33:16.645Z
-Stopped at: Completed 08-02-PLAN.md
+Last session: 2026-03-26T15:38:14.404Z
+Stopped at: Completed 08-03-PLAN.md
 Resume file: None
 
 ---
