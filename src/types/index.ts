@@ -60,4 +60,7 @@ export type AuditAction =
   | 'tool_approval'
   | 'tool_rejection'
   | 'file_upload'
-  | 'file_delete';
+  | 'file_delete'
+  | 'file_extraction_start'
+  | 'file_extraction_complete'
+  | 'file_extraction_failed';

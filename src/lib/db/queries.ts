@@ -449,3 +449,40 @@ export async function getFilesByConversation(conversationId: string): Promise<Fi
     .innerJoin(files, eq(conversationFiles.fileId, files.id))
     .where(eq(conversationFiles.conversationId, conversationId));
 }
+
+/**
+ * File status and extraction queries (Phase 8: Content Extraction)
+ */
+
+export async function getFileById(fileId: string): Promise<File | undefined> {
+  const [file] = await db.select().from(files).where(eq(files.id, fileId));
+  return file;
+}
+
+export async function updateFileStatus(
+  fileId: string,
+  status: typeof FileStatusEnum[number],
+  errorMessage?: string | null
+): Promise<File | undefined> {
+  const [file] = await db.update(files)
+    .set({ status, errorMessage: errorMessage ?? null, updatedAt: new Date() })
+    .where(eq(files.id, fileId))
+    .returning();
+  return file;
+}
+
+export async function updateFileExtraction(
+  fileId: string,
+  data: {
+    extractedContent: string;
+    extractedMarkdown: string;
+    status: typeof FileStatusEnum[number];
+    errorMessage?: string | null;
+  }
+): Promise<File | undefined> {
+  const [file] = await db.update(files)
+    .set({ ...data, updatedAt: new Date() })
+    .where(eq(files.id, fileId))
+    .returning();
+  return file;
+}
