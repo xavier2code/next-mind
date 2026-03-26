@@ -2,14 +2,14 @@
 
 ## Milestones
 
-- ✅ **v1.0 MVP** — Phases 1-2 (shipped 2026-03-25)
-- 🚧 **v1.1 A2A 协作** — Phases 3-6 (in progress)
-- 📋 **v2.0** — Future (planned)
+- **v1.0 MVP** — Phases 1-2 (shipped 2026-03-25)
+- **v1.1 A2A 协作** — Phases 3-6 (in progress)
+- **v2.0** — Future (planned)
 
 ## Phases
 
 <details>
-<summary>✅ v1.0 MVP (Phases 1-2) - SHIPPED 2026-03-25</summary>
+<summary>v1.0 MVP (Phases 1-2) - SHIPPED 2026-03-25</summary>
 
 ### Phase 1: Core Foundation
 **Goal**: 建立 Next.js 16 项目基础，实现核心对话功能和认证系统
@@ -36,7 +36,7 @@ Plans:
 
 </details>
 
-### 🚧 v1.1 A2A 协作 (In Progress)
+### v1.1 A2A 协作 (In Progress)
 
 **Milestone Goal:** 实现主 Agent 任务分解与委派能力，支持多种专业子 Agent 并行/顺序执行
 
@@ -50,16 +50,16 @@ Plans:
   3. Sub-agent capabilities are declared via Agent Card (JSON) with clear skill mappings
   4. System persists agents, tasks, and workflows in database tables
   5. Sub-agents integrate with existing Skills infrastructure (no code duplication)
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 03-01: Agent type definitions and registry
-- [ ] 03-02: Database schema for agents, tasks, and workflows
-- [ ] 03-03: Task decomposition engine
-- [ ] 03-04: Agent-Skills integration layer
+- [x] 03-01: Agent type definitions and registry
+- [x] 03-02: Database schema for agents, tasks, and workflows
+- [x] 03-03: Task decomposition engine
+- [x] 03-04: Agent-Skills integration layer
 
 #### Phase 4: Smart Orchestration & Communication
-**Goal**: 实现智能调度引擎、Agent 执行器、通信总线和结果聚合
+**Goal**: 实现智能调度引擎、Agent 执行器、通信总线和执行计划可视化
 **Depends on**: Phase 3
 **Requirements**: ORCH-01~06, COMM-01~06
 **Success Criteria** (what must be TRUE):
@@ -68,13 +68,13 @@ Plans:
   3. Sub-agents can request additional context from lead agent and share information with each other
   4. Agent status changes (started, completed, failed) are tracked and notify relevant parties
   5. Communication messages have standardized format and are logged for audit
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 04-01: Agent executor with parallel/sequential support
-- [ ] 04-02: Dependency analysis and auto-scheduling
-- [ ] 04-03: Communication bus implementation
-- [ ] 04-04: Execution plan visualization
+- [ ] 04-01: Wave scheduler with topological sort for dependency analysis
+- [ ] 04-02: Hub-and-Spoke message bus for agent communication
+- [ ] 04-03: Execution plan visualization with SSE real-time updates
+- [ ] 04-04: Dependency-aware task decomposition
 
 #### Phase 5: Control & Verification
 **Goal**: 实现用户控制机制、检查点保存、错误恢复和结果处理策略
@@ -115,17 +115,17 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 1. Core Foundation | v1.0 | 5/5 | Complete | 2026-03-25 |
 | 2. MCP Protocol & Skills | v1.0 | 6/6 | Complete | 2026-03-25 |
-| 3. Foundation & Task Decomposition | v1.1 | 0/4 | Not started | - |
-| 4. Smart Orchestration & Communication | v1.1 | 0/4 | Not started | - |
+| 3. Foundation & Task Decomposition | v1.1 | 4/4 | Complete | 2026-03-25 |
+| 4. Smart Orchestration & Communication | v1.1 | 0/4 | Planning | - |
 | 5. Control & Verification | v1.1 | 0/4 | Not started | - |
 | 6. Visibility & Polish | v1.1 | 0/4 | Not started | - |
 
 ---
-*Roadmap updated: 2026-03-25*
+*Roadmap updated: 2026-03-26*
 *Current milestone: v1.1 A2A 协作*
