@@ -5,12 +5,20 @@ import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { User, Bot } from 'lucide-react';
+import { ChatMessageWorkflow } from './chat-message-workflow';
+import type { WaveInfo } from '@/components/workflow/pipeline-view';
+import type { WorkflowStatus } from '@/components/workflow/workflow-status-badge';
 
 interface ChatMessageProps {
   message: { id: string; role: 'user' | 'assistant'; content: string };
+  workflow?: {
+    id: string;
+    status: WorkflowStatus;
+    waves: WaveInfo[];
+  };
 }
 
-export function ChatMessage({ message }: ChatMessageProps) {
+export function ChatMessage({ message, workflow }: ChatMessageProps) {
   const isUser = message.role === 'user';
 
   return (
@@ -58,6 +66,14 @@ export function ChatMessage({ message }: ChatMessageProps) {
             {message.content}
           </ReactMarkdown>
         </div>
+        {/* D-01: Embed workflow panel below user message */}
+        {isUser && workflow && (
+          <ChatMessageWorkflow
+            workflowId={workflow.id}
+            waves={workflow.waves}
+            workflowStatus={workflow.status}
+          />
+        )}
       </div>
     </div>
   );
