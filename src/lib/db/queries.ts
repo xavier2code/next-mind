@@ -2,7 +2,7 @@
  * Database queries for A2A infrastructure (agents, tasks, workflows)
  */
 import { eq, and, desc } from 'drizzle-orm';
-import { db, workflows, tasks, agents, agentMessages, type Workflow, type Task, type Agent, type NewWorkflow, type NewTask, type NewAgent, type AgentMessage, type NewAgentMessage } from './schema';
+import { db, workflows, tasks, agents, agentMessages, AgentMessageTypeEnum, type Workflow, type Task, type Agent, type NewWorkflow, type NewTask, type NewAgent, type AgentMessage, type NewAgentMessage } from './schema';
 import type { TaskStatus, WorkflowStatus, WorkflowCheckpoint } from './schema';
 
 /**
@@ -321,4 +321,71 @@ export async function cancelWorkflow(workflowId: string): Promise<Workflow | und
     ));
 
   return workflow;
+}
+
+/**
+ * Log Entry Types (VIS-04: Log viewer support)
+ */
+
+/**
+ * Log entry format for UI display.
+ * VIS-04: Transformed from AgentMessage for log viewer.
+ */
+export interface LogEntry {
+  id: string;
+  timestamp: Date;
+  logLevel: 'info' | 'warning' | 'error' | 'debug';
+  message: string;
+  fromAgent: string;
+  toAgent: string;
+}
+
+/**
+ * Map AgentMessageType to log level.
+ * VIS-04: Converts internal message types to user-friendly log levels.
+ */
+function mapToLogLevel(type: typeof AgentMessageTypeEnum[number]): LogEntry['logLevel'] {
+  switch (type) {
+    case 'status_notification':
+      return 'info';
+    case 'progress_update':
+      return 'debug';
+    case 'human_intervention':
+      return 'warning';
+    case 'context_request':
+      return 'debug';
+    default:
+      return 'info';
+  }
+}
+
+/**
+ * Extract readable message from payload.
+ * VIS-04: Parses agent message payload for display.
+ */
+function extractMessage(payload: Record<string, unknown>): string {
+  if (typeof payload.message === 'string') return payload.message;
+  if (typeof payload.status === 'string') return `Status: ${payload.status}`;
+  if (typeof payload.progress === 'string') return `Progress: ${payload.progress}`;
+  return JSON.stringify(payload);
+}
+
+/**
+ * Get task logs formatted for log viewer.
+ * VIS-04: Agent execution logs for debugging.
+ */
+export async function getTaskLogs(taskId: string): Promise<LogEntry[]> {
+  const messages = await db.select()
+    .from(agentMessages)
+    .where(eq(agentMessages.taskId, taskId))
+    .orderBy(agentMessages.createdAt);
+
+  return messages.map(msg => ({
+    id: msg.id,
+    timestamp: msg.createdAt,
+    logLevel: mapToLogLevel(msg.type as typeof AgentMessageTypeEnum[number]),
+    message: extractMessage(msg.payload),
+    fromAgent: msg.fromAgent,
+    toAgent: msg.toAgent,
+  }));
 }
