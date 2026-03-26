@@ -1,5 +1,24 @@
 # Milestones
 
+## v1.1 A2A 协作 (Shipped: 2026-03-26)
+
+**Phases completed:** 4 phases, 17 plans, 35 tasks
+
+**Key accomplishments:**
+
+- Agent type definitions, Agent Registry with skill validation, and four predefined Agent Cards using reference-based design
+- Drizzle schema with agents, workflows, tasks tables using UUID primary keys, JSONB storage, and foreign key relationships to existing conversations table
+- Task decomposition engine that breaks complex user requests into sequential subtasks using LLM with skill catalog context, validates skillIds against registry, and logs to audit
+- SubAgentExecutor wrapping SkillExecutor with workflow tracking, AgentSkillContext extending SkillContext, and database queries for workflows, tasks, and agents
+- Fixed syntax errors in SSE implementation files (status-broadcaster.ts, route.ts, test file) to enable compilation and testing of real-time workflow status updates.
+- Core Functions:
+- Progress bar component displaying workflow completion percentage with status-based colors and ARIA accessibility
+- Real-time agent status display with AgentStatusList and AgentTaskRow components, showing all tasks sorted by status priority with visual indicators
+- Optional log viewer with lazy loading, allowing users to expand and view agent execution logs for debugging and transparency
+- 1. [Rule 2 - Missing Critical Functionality] Extended AgentStatusList interface
+
+---
+
 ## v1.0 MVP (Shipped: 2026-03-25)
 
 **Phases completed:** 2 phases, 11 plans, 4 tasks
@@ -16,6 +35,7 @@
 **Verification:** 24/24 must-haves verified
 
 **Archives:**
+
 - `.planning/milestones/v1.0-ROADMAP.md`
 - `.planning/milestones/v1.0-REQUIREMENTS.md`
 
