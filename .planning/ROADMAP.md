@@ -111,7 +111,13 @@ Plans:
 **Goal**: System automatically extracts text and converts uploaded files to usable formats (Markdown, structured data) asynchronously after upload
 **Depends on**: Phase 7
 **Requirements**: EXTR-01, EXTR-02, EXTR-03, EXTR-04, EXTR-05, EXTR-06, EXTR-07, EXTR-08, EXTR-09
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] 08-01: Extraction types, markdown utilities, and document extractors (PDF + DOCX)
+- [ ] 08-02: Code, CSV, and Excel extractors
+- [ ] 08-03: Extraction dispatcher, concurrency control, upload trigger, and status/retry APIs
+- [ ] 08-04: Extraction status polling hook and FileChip UI extension
 
 #### Phase 9: File Management & Preview
 **Goal**: Users can browse, preview, and manage their uploaded files through a dedicated file management interface
@@ -138,7 +144,7 @@ Plans:
 | 5. Control & Verification | v1.1 | 4/4 | Complete | 2026-03-26 |
 | 6. Visibility & Polish | v1.1 | 4/4 | Complete | 2026-03-26 |
 | 7. Storage & Upload | v1.2 | 3/3 | Complete | 2026-03-26 |
-| 8. Content Extraction | v1.2 | 0/0 | Not started | - |
+| 8. Content Extraction | v1.2 | 0/4 | Not started | - |
 | 9. File Management & Preview | v1.2 | 0/0 | Not started | - |
 | 10. Chat & Skills Integration | v1.2 | 0/0 | Not started | - |
 
