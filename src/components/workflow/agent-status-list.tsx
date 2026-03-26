@@ -3,9 +3,13 @@
 import { AgentTaskRow } from './agent-task-row';
 import type { WaveInfo, TaskInfo } from './pipeline-view';
 import type { TaskStatus } from './task-status-icon';
+import type { WorkflowStatus } from './workflow-status-badge';
 
 export interface AgentStatusListProps {
   waves: WaveInfo[];
+  workflowStatus?: WorkflowStatus;
+  selectedTaskId?: string;
+  onTaskClick?: (taskId: string) => void;
   className?: string;
 }
 
@@ -31,7 +35,13 @@ function getStatusPriority(status: TaskStatus): number {
  * VIS-01: Real-time list of active agents.
  * VIS-02: Shows status indicator for each agent.
  */
-export function AgentStatusList({ waves, className = '' }: AgentStatusListProps) {
+export function AgentStatusList({
+  waves,
+  workflowStatus,
+  selectedTaskId,
+  onTaskClick,
+  className = '',
+}: AgentStatusListProps) {
   // Flatten all tasks from all waves
   const allTasks = waves.flatMap(wave => wave.tasks);
 
@@ -51,8 +61,12 @@ export function AgentStatusList({ waves, className = '' }: AgentStatusListProps)
   const runningCount = allTasks.filter(t => t.status === 'running').length;
   const completedCount = allTasks.filter(t => t.status === 'completed').length;
 
+  const handleTaskClick = (taskId: string) => {
+    onTaskClick?.(taskId);
+  };
+
   return (
-    <div className={className} data-testid="agent-status-list">
+    <div className={className} data-testid="agent-status-list" data-status={workflowStatus}>
       <div className="flex items-center justify-between mb-2">
         <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">
           Agent Status
@@ -65,7 +79,14 @@ export function AgentStatusList({ waves, className = '' }: AgentStatusListProps)
       </div>
       <div className="space-y-1">
         {sortedTasks.map(task => (
-          <AgentTaskRow key={task.id} task={task} />
+          <button
+            key={task.id}
+            type="button"
+            onClick={() => handleTaskClick(task.id)}
+            className={`w-full text-left ${selectedTaskId === task.id ? 'bg-primary/10 rounded' : ''}`}
+          >
+            <AgentTaskRow task={task} />
+          </button>
         ))}
       </div>
     </div>
