@@ -2,7 +2,7 @@
  * Database queries for A2A infrastructure (agents, tasks, workflows)
  */
 import { eq, and, desc } from 'drizzle-orm';
-import { db, workflows, tasks, agents, agentMessages, AgentMessageTypeEnum, type Workflow, type Task, type Agent, type NewWorkflow, type NewTask, type NewAgent, type AgentMessage, type NewAgentMessage } from './schema';
+import { db, workflows, tasks, agents, agentMessages, AgentMessageTypeEnum, files, conversationFiles, type Workflow, type Task, type Agent, type NewWorkflow, type NewTask, type NewAgent, type AgentMessage, type NewAgentMessage, type File, type NewFile, type ConversationFile, type NewConversationFile } from './schema';
 import type { TaskStatus, WorkflowStatus, WorkflowCheckpoint } from './schema';
 
 /**
@@ -388,4 +388,64 @@ export async function getTaskLogs(taskId: string): Promise<LogEntry[]> {
     fromAgent: msg.fromAgent,
     toAgent: msg.toAgent,
   }));
+}
+
+/**
+ * File queries (Phase 7: Storage & Upload)
+ */
+
+export async function createFile(
+  userId: string,
+  data: {
+    filename: string;
+    mimeType: string;
+    size: number;
+    fileType: 'document' | 'code' | 'data';
+    storagePath: string;
+  }
+): Promise<File> {
+  const [file] = await db.insert(files).values({
+    userId,
+    ...data,
+    status: 'uploaded',
+  }).returning();
+  return file;
+}
+
+export async function getFile(fileId: string): Promise<File | undefined> {
+  const [file] = await db.select().from(files).where(eq(files.id, fileId));
+  return file;
+}
+
+export async function getFilesByUser(userId: string): Promise<File[]> {
+  return db.select().from(files)
+    .where(eq(files.userId, userId))
+    .orderBy(desc(files.createdAt));
+}
+
+export async function deleteFile(fileId: string, userId: string): Promise<File | undefined> {
+  const [file] = await db.delete(files)
+    .where(and(eq(files.id, fileId), eq(files.userId, userId)))
+    .returning();
+  return file;
+}
+
+export async function linkFileToConversation(
+  fileId: string,
+  conversationId: string,
+  messageId?: string
+): Promise<ConversationFile> {
+  const [link] = await db.insert(conversationFiles).values({
+    fileId,
+    conversationId,
+    messageId: messageId || null,
+  }).returning();
+  return link;
+}
+
+export async function getFilesByConversation(conversationId: string): Promise<File[]> {
+  return db.select({ file: files })
+    .from(conversationFiles)
+    .innerJoin(files, eq(conversationFiles.fileId, files.id))
+    .where(eq(conversationFiles.conversationId, conversationId));
 }
