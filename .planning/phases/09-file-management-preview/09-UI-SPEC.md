@@ -154,16 +154,16 @@ Source: 07-UI-SPEC, 08-UI-SPEC, established project patterns.
 
 ## Typography
 
-Carries forward from Phase 7/8. Adds one new role for the page heading.
+Carries forward from Phase 7/8. Adds one new role for the page heading. 2 font weights total: 400 (regular) for Body/Label/Caption, 600 (semibold) for Page heading.
 
 | Role | Size | Weight | Line Height | Usage |
 |------|------|--------|-------------|-------|
 | Body (text) | 14px (text-sm) | 400 (regular) | 1.5 | Table cell content, preview body text |
-| Label | 14px (text-sm) | 500 (medium) | 1.5 | Filter button labels, table header labels |
+| Label | 14px (text-sm) | 400 (regular) | 1.5 | Filter button labels, table header labels |
 | Caption / hint | 12px (text-xs) | 400 (regular) | 1.4 | Status badges, metadata captions |
 | Page heading | 20px (text-xl) | 600 (semibold) | 1.2 | File management page title (if shown in main area) |
 
-Source: 07-UI-SPEC, 08-UI-SPEC. Page heading role is new for Phase 9 (Claude's discretion).
+Source: 07-UI-SPEC, 08-UI-SPEC. Page heading role is new for Phase 9 (Claude's discretion). Label uses weight 400 (same as Body) -- differentiation from Body is achieved by context and 14px size alone, keeping total weight count at 2.
 
 ---
 
