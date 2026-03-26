@@ -83,16 +83,16 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. User can pause, cancel, or resume workflow execution at any point
   2. Long-running tasks support checkpoint save and resume from checkpoint
-  3. Results from multiple agents are merged into coherent response with source attribution
-  4. User can compare results side-by-side or select from multiple agent outputs
-  5. Sub-agent execution respects timeout limits and handles failures gracefully
-**Plans**: TBD
+  3. Results display with source attribution showing which agent produced each result
+  4. Sub-agent execution respects timeout limits and handles failures gracefully
+  5. Checkpoint data persists in database for recovery
+**Plans**: 4 plans
 
 Plans:
-- [ ] 05-01: Workflow control (pause/cancel/resume)
-- [ ] 05-02: Checkpoint and recovery system
-- [ ] 05-03: Result aggregation strategies
-- [ ] 05-04: Timeout and error handling
+- [ ] 05-01: Workflow control schema and scheduler extensions (CTRL-01, CTRL-04, CTRL-05)
+- [ ] 05-02: Workflow control API and controller (CTRL-01, CTRL-02, CTRL-05)
+- [ ] 05-03: Pipeline view control UI (CTRL-01, RSLT-05)
+- [ ] 05-04: Timeout enforcement and error handling (CTRL-06, RSLT-01, RSLT-05)
 
 #### Phase 6: Visibility & Polish
 **Goal**: 实现实时过程展示、Agent 状态追踪和 UI 集成优化
@@ -122,8 +122,8 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 1. Core Foundation | v1.0 | 5/5 | Complete | 2026-03-25 |
 | 2. MCP Protocol & Skills | v1.0 | 6/6 | Complete | 2026-03-25 |
 | 3. Foundation & Task Decomposition | v1.1 | 4/4 | Complete | 2026-03-25 |
-| 4. Smart Orchestration & Communication | v1.1 | 0/4 | Planning | - |
-| 5. Control & Verification | v1.1 | 0/4 | Not started | - |
+| 4. Smart Orchestration & Communication | v1.1 | 3/4 | In progress | - |
+| 5. Control & Verification | v1.1 | 0/4 | Ready to execute | - |
 | 6. Visibility & Polish | v1.1 | 0/4 | Not started | - |
 
 ---
