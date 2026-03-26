@@ -136,3 +136,25 @@ export function createAgentSkillContext(
     agentType,
   };
 }
+
+/**
+ * Subtask with dependency information for parallel execution.
+ * Extends Subtask with id (for dependency references) and dependencies array.
+ */
+export interface SubtaskWithDeps extends Subtask {
+  /** Unique identifier for dependency references (e.g., "task-1", "task-2") */
+  id: string;
+  /** Task IDs that must complete before this task can start */
+  dependencies: string[];
+}
+
+/**
+ * Decomposition Result with dependency information.
+ * Includes both tasks with deps and a dependency map for quick lookup.
+ */
+export interface DecompositionResultWithDeps extends DecompositionResult {
+  /** Tasks with dependency information */
+  tasks: SubtaskWithDeps[];
+  /** Map of taskId -> dependency taskIds */
+  dependencies: Record<string, string[]>;
+}

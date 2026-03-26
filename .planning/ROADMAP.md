@@ -71,9 +71,9 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 04-01: Wave scheduler with topological sort for dependency analysis
-- [ ] 04-02: Hub-and-Spoke message bus for agent communication
-- [ ] 04-03: Execution plan visualization with SSE real-time updates
+- [x] 04-01: Wave scheduler with topological sort for dependency analysis
+- [x] 04-02: Hub-and-Spoke message bus for agent communication
+- [x] 04-03: Execution plan visualization with SSE real-time updates
 - [ ] 04-04: Dependency-aware task decomposition
 
 #### Phase 5: Control & Verification

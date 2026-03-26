@@ -13,7 +13,7 @@ import { z } from 'zod';
 import { logAudit } from '@/lib/audit';
 import { discoverSkills, type DiscoveredSkill } from '@/lib/skills/discovery';
 import { streamChat } from '@/lib/llm';
-import type { AgentType, Subtask, DecompositionResult } from './types';
+import type { AgentType, Subtask, DecompositionResult, SubtaskWithDeps, DecompositionResultWithDeps } from './types';
 
 /**
  * Input for the decomposeTask function
@@ -298,6 +298,285 @@ ${skillCatalog}`;
       conversationId: prompt.conversationId,
       taskCount: result.tasks.length,
       duration,
+      reasoning: result.reasoning,
+      complexity: result.estimatedComplexity,
+      skillCatalogSize: skills.length,
+    },
+  });
+
+  return result;
+}
+
+/**
+ * Schema for subtask with dependencies
+ */
+const SubtaskWithDepsSchema = z.object({
+  id: z.string(),
+  agentType: z.enum(['file', 'search', 'code', 'custom']),
+  skillId: z.string(),
+  input: z.record(z.unknown()),
+  description: z.string().optional(),
+  dependencies: z.array(z.string()).default([]),
+});
+
+/**
+ * Schema for decomposition result with dependencies
+ */
+const DecompositionResultWithDepsSchema = z.object({
+  tasks: z.array(SubtaskWithDepsSchema),
+  dependencies: z.record(z.array(z.string())),
+  reasoning: z.string().optional(),
+  estimatedComplexity: z.enum(['low', 'medium', 'high']).optional(),
+});
+
+/**
+ * System prompt for dependency-aware task decomposition.
+ */
+export const DECOMPOSITION_SYSTEM_PROMPT_WITH_DEPS = `You are a task decomposition engine. Given a complex user request, break it down into subtasks with dependency information.
+
+Available agent types:
+- file: File operations (read, list, process documents)
+- search: Web search and knowledge retrieval
+- code: Code generation, review, refactoring tasks
+- custom: User-defined specialized agent
+
+Output a JSON object with this structure:
+{
+  "tasks": [
+    {
+      "id": "task-1",
+      "agentType": "file" | "search" | "code" | "custom",
+      "skillId": "exact-skill-id-from-catalog",
+      "input": { ... skill-specific input ... },
+      "description": "Human-readable task description",
+      "dependencies": []
+    }
+  ],
+  "dependencies": {
+    "task-1": [],
+    "task-2": ["task-1"],
+    "task-3": ["task-1"],
+    "task-4": ["task-2", "task-3"]
+  },
+  "reasoning": "Why these subtasks are needed and their dependencies"
+}
+
+Rules:
+1. Each task must have a unique "id" field (e.g., "task-1", "task-2")
+2. Dependencies array lists task IDs that must complete before this task can start
+3. Independent tasks should have empty dependencies (can run in parallel)
+4. Avoid circular dependencies (task A depends on B, B depends on A)
+5. Use only skillIds that exist in the provided skill catalog
+
+Output ONLY valid JSON. No markdown, no code blocks, no explanation outside the JSON.`;
+
+/**
+ * Validate dependencies in decomposition result.
+ * Checks for missing references and circular dependencies.
+ */
+function validateDependencies(
+  tasks: Array<{ id: string; dependencies: string[] }>
+): void {
+  const taskIds = new Set(tasks.map(t => t.id));
+
+  // Check for missing references
+  for (const task of tasks) {
+    for (const dep of task.dependencies) {
+      if (!taskIds.has(dep)) {
+        throw new Error(
+          `Task "${task.id}" depends on non-existent task "${dep}"`
+        );
+      }
+    }
+  }
+
+  // Check for circular dependencies using DFS
+  const visited = new Set<string>();
+  const recursionStack = new Set<string>();
+
+  function hasCycle(taskId: string): boolean {
+    if (recursionStack.has(taskId)) return true;
+    if (visited.has(taskId)) return false;
+
+    visited.add(taskId);
+    recursionStack.add(taskId);
+
+    const task = tasks.find(t => t.id === taskId);
+    if (task) {
+      for (const dep of task.dependencies) {
+        if (hasCycle(dep)) return true;
+      }
+    }
+
+    recursionStack.delete(taskId);
+    return false;
+  }
+
+  for (const task of tasks) {
+    if (hasCycle(task.id)) {
+      throw new Error('Circular dependency detected in task graph');
+    }
+  }
+}
+
+/**
+ * Decompose a user request into subtasks with dependency information.
+ *
+ * @param prompt - The decomposition prompt containing user request and context
+ * @returns The decomposition result with tasks, dependencies, and metadata
+ * @throws Error if no skills are available or decomposition fails
+ */
+export async function decomposeTaskWithDeps(
+  prompt: DecomposePrompt
+): Promise<DecompositionResultWithDeps> {
+  const startTime = Date.now();
+
+  // 1. Discover available skills
+  const skills = discoverSkills();
+  const skillIds = new Set(skills.map(s => s.metadata.id));
+
+  if (skills.length === 0) {
+    throw new Error('No skills available for task decomposition');
+  }
+
+  // 2. Build skill catalog
+  const skillCatalog = buildSkillCatalog(skills);
+
+  // 3. Construct messages for LLM
+  const systemPrompt = `${DECOMPOSITION_SYSTEM_PROMPT_WITH_DEPS}
+
+${skillCatalog}`;
+
+  const messages = [
+    {
+      role: 'user' as const,
+      content: `Decompose this task: ${prompt.userRequest}`,
+    },
+  ];
+
+  // 4. Call LLM for decomposition
+  let responseText = '';
+  try {
+    const stream = await streamChat({
+      modelId: prompt.modelId ?? 'qwen-plus',
+      messages,
+      systemPrompt,
+    });
+
+    for await (const chunk of stream) {
+      if (chunk.type === 'text') {
+        responseText += chunk.text;
+      }
+    }
+  } catch (error) {
+    const errorMsg = `LLM call failed: ${error instanceof Error ? error.message : String(error)}`;
+    await logAudit({
+      userId: prompt.userId,
+      action: 'task_decomposition_with_deps_failed',
+      resource: 'decomposition',
+      metadata: {
+        sessionId: prompt.sessionId,
+        conversationId: prompt.conversationId,
+        error: errorMsg,
+        userRequest: prompt.userRequest,
+      },
+    });
+    throw new Error(errorMsg);
+  }
+
+  // 5. Parse response
+  let result: DecompositionResultWithDeps;
+  try {
+    let jsonStr = responseText.trim();
+
+    // Handle markdown code blocks
+    const codeBlockMatch = jsonStr.match(/```(?:json)?\s*([\s\S]*?)```/);
+    if (codeBlockMatch) {
+      jsonStr = codeBlockMatch[1].trim();
+    }
+
+    const jsonStart = jsonStr.indexOf('{');
+    const jsonEnd = jsonStr.lastIndexOf('}');
+    if (jsonStart !== -1 && jsonEnd !== -1) {
+      jsonStr = jsonStr.slice(jsonStart, jsonEnd + 1);
+    }
+
+    const parsed = JSON.parse(jsonStr);
+    const validated = DecompositionResultWithDepsSchema.parse(parsed);
+
+    result = {
+      tasks: validated.tasks.map(t => ({
+        id: t.id,
+        agentType: t.agentType as AgentType,
+        skillId: t.skillId,
+        input: t.input,
+        description: t.description,
+        dependencies: t.dependencies || [],
+      })),
+      dependencies: validated.dependencies,
+      reasoning: validated.reasoning,
+      estimatedComplexity: validated.estimatedComplexity,
+    };
+  } catch (error) {
+    await logAudit({
+      userId: prompt.userId,
+      action: 'task_decomposition_with_deps_parse_failed',
+      resource: 'decomposition',
+      metadata: {
+        sessionId: prompt.sessionId,
+        conversationId: prompt.conversationId,
+        error: error instanceof Error ? error.message : String(error),
+        rawResponse: responseText,
+        userRequest: prompt.userRequest,
+      },
+    });
+    throw error;
+  }
+
+  // 6. Validate skill IDs
+  const basicResult: DecompositionResult = {
+    tasks: result.tasks.map(t => ({
+      agentType: t.agentType,
+      skillId: t.skillId,
+      input: t.input,
+      description: t.description,
+    })),
+    reasoning: result.reasoning,
+    estimatedComplexity: result.estimatedComplexity,
+  };
+  validateSkillIds(basicResult, skillIds);
+
+  // 7. Validate dependencies
+  try {
+    validateDependencies(result.tasks);
+  } catch (error) {
+    await logAudit({
+      userId: prompt.userId,
+      action: 'task_decomposition_deps_failed',
+      resource: 'decomposition',
+      metadata: {
+        sessionId: prompt.sessionId,
+        conversationId: prompt.conversationId,
+        error: error instanceof Error ? error.message : String(error),
+        result,
+        userRequest: prompt.userRequest,
+      },
+    });
+    throw error;
+  }
+
+  // 8. Log successful decomposition
+  const duration = Date.now() - startTime;
+  await logAudit({
+    userId: prompt.userId,
+    action: 'task_decomposition_with_deps',
+    resource: 'decomposition',
+    metadata: {
+      sessionId: prompt.sessionId,
+      conversationId: prompt.conversationId,
+      taskCount: result.tasks.length,
+      duration,
+      hasDependencies: Object.values(result.dependencies).some(d => d.length > 0),
       reasoning: result.reasoning,
       complexity: result.estimatedComplexity,
       skillCatalogSize: skills.length,

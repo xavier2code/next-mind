@@ -45,7 +45,7 @@
 - [ ] **ORCH-03**: 有依赖的子任务按正确顺序执行
 - [ ] **ORCH-04**: 系统自动决定顺序或并行执行模式
 - [ ] **ORCH-05**: 并行执行时控制最大并发数（防止 token 消耗）
-- [ ] **ORCH-06**: 执行计划可视化展示给用户
+- [x] **ORCH-06**: 执行计划可视化展示给用户
 
 ### Result Handling (结果处理)
 
@@ -272,7 +272,7 @@ v1.0 MVP 已发布的需求。
 | ORCH-03 | Phase 4 | Pending |
 | ORCH-04 | Phase 4 | Pending |
 | ORCH-05 | Phase 4 | Pending |
-| ORCH-06 | Phase 4 | Pending |
+| ORCH-06 | Phase 4 | Complete |
 | COMM-01 | Phase 4 | Pending |
 | COMM-02 | Phase 4 | Pending |
 | COMM-03 | Phase 4 | Pending |
