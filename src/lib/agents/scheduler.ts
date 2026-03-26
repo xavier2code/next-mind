@@ -296,7 +296,9 @@ export class WaveScheduler {
     // Track previous results for context
     const previousResults = new Map<string, { success: boolean; data?: unknown; error?: string; metadata?: Record<string, unknown> }>();
 
-    // Track failed task IDs for cascade cancel
+    // D-11, D-12: Track failed task IDs for cascade cancel
+    // Independent tasks continue executing even if sibling tasks fail
+    // Timeout failures trigger cascade cancel for dependent tasks
     const failedTaskIds = new Set<string>();
 
     // Execute waves sequentially
