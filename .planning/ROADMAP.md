@@ -123,8 +123,12 @@ Plans:
 **Goal**: Users can browse, preview, and manage their uploaded files through a dedicated file management interface
 **Depends on**: Phase 8
 **Requirements**: MGMT-01, MGMT-02, MGMT-03, MGMT-04, MGMT-05
-**Plans**: TBD
-**UI hint**: yes
+**Plans**: 3 plans
+
+Plans:
+- [ ] 09-01: Backend API (paginated list, delete) and auto-classification module
+- [ ] 09-02: File table UI with sort/filter/pagination and data hooks
+- [ ] 09-03: Preview panel, page assembly, and sidebar entry
 
 #### Phase 10: Chat & Skills Integration
 **Goal**: Users can reference files in conversations with AI and agents can process files as registered skills
@@ -144,10 +148,10 @@ Plans:
 | 5. Control & Verification | v1.1 | 4/4 | Complete | 2026-03-26 |
 | 6. Visibility & Polish | v1.1 | 4/4 | Complete | 2026-03-26 |
 | 7. Storage & Upload | v1.2 | 3/3 | Complete | 2026-03-26 |
-| 8. Content Extraction | v1.2 | 0/4 | Not started | - |
-| 9. File Management & Preview | v1.2 | 0/0 | Not started | - |
+| 8. Content Extraction | v1.2 | 4/4 | Complete | 2026-03-26 |
+| 9. File Management & Preview | v1.2 | 0/3 | Not started | - |
 | 10. Chat & Skills Integration | v1.2 | 0/0 | Not started | - |
 
 ---
-*Roadmap updated: 2026-03-26*
+*Roadmap updated: 2026-03-27*
 *Current milestone: v1.2 文件处理*
