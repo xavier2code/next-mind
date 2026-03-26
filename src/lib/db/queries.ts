@@ -3,7 +3,7 @@
  */
 import { eq, and, desc } from 'drizzle-orm';
 import { db, workflows, tasks, agents, agentMessages, type Workflow, type Task, type Agent, type NewWorkflow, type NewTask, type NewAgent, type AgentMessage, type NewAgentMessage } from './schema';
-import type { TaskStatus, WorkflowStatus } from './schema';
+import type { TaskStatus, WorkflowStatus, WorkflowCheckpoint } from './schema';
 
 /**
  * Workflow queries
@@ -229,4 +229,96 @@ export async function getMessagesByTask(taskId: string): Promise<AgentMessage[]>
   return db.select().from(agentMessages)
     .where(eq(agentMessages.taskId, taskId))
     .orderBy(agentMessages.createdAt);
+}
+
+/**
+ * Checkpoint queries (CTRL-04, CTRL-05: Pause/Resume workflow control)
+ */
+
+/**
+ * Save a checkpoint to the workflow.
+ * D-06: Called after each wave completes.
+ */
+export async function saveCheckpoint(
+  workflowId: string,
+  checkpoint: WorkflowCheckpoint
+): Promise<Workflow | undefined> {
+  const [workflow] = await db.update(workflows)
+    .set({
+      checkpoint,
+      updatedAt: new Date()
+    })
+    .where(eq(workflows.id, workflowId))
+    .returning();
+  return workflow;
+}
+
+/**
+ * Load checkpoint from a workflow.
+ * Used when resuming a paused workflow.
+ */
+export async function loadCheckpoint(workflowId: string): Promise<WorkflowCheckpoint | null> {
+  const [workflow] = await db.select({ checkpoint: workflows.checkpoint })
+    .from(workflows)
+    .where(eq(workflows.id, workflowId));
+  return workflow?.checkpoint as WorkflowCheckpoint | null;
+}
+
+/**
+ * Get all paused workflows (for workflow list display).
+ */
+export async function getPausedWorkflows(): Promise<Workflow[]> {
+  return db.select().from(workflows)
+    .where(eq(workflows.status, 'paused'))
+    .orderBy(desc(workflows.updatedAt));
+}
+
+/**
+ * Update workflow status with checkpoint support.
+ * Used for pause/resume/cancel operations.
+ */
+export async function updateWorkflowStatusWithCheckpoint(
+  workflowId: string,
+  status: WorkflowStatus,
+  checkpoint?: WorkflowCheckpoint | null
+): Promise<Workflow | undefined> {
+  const updateData: { status: WorkflowStatus; updatedAt: Date; checkpoint?: WorkflowCheckpoint | null } = {
+    status,
+    updatedAt: new Date(),
+  };
+
+  if (checkpoint !== undefined) {
+    updateData.checkpoint = checkpoint;
+  }
+
+  const [workflow] = await db.update(workflows)
+    .set(updateData)
+    .where(eq(workflows.id, workflowId))
+    .returning();
+  return workflow;
+}
+
+/**
+ * Cancel a workflow and all its pending tasks.
+ * D-04: Terminates entire workflow.
+ */
+export async function cancelWorkflow(workflowId: string): Promise<Workflow | undefined> {
+  // Update workflow status
+  const [workflow] = await db.update(workflows)
+    .set({
+      status: 'cancelled',
+      updatedAt: new Date()
+    })
+    .where(eq(workflows.id, workflowId))
+    .returning();
+
+  // Cancel all pending tasks
+  await db.update(tasks)
+    .set({ status: 'cancelled' })
+    .where(and(
+      eq(tasks.workflowId, workflowId),
+      eq(tasks.status, 'pending')
+    ));
+
+  return workflow;
 }

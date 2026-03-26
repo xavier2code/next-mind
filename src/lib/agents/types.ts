@@ -158,3 +158,22 @@ export interface DecompositionResultWithDeps extends DecompositionResult {
   /** Map of taskId -> dependency taskIds */
   dependencies: Record<string, string[]>;
 }
+
+/**
+ * Checkpoint data for workflow recovery (D-06, D-07, D-09)
+ * Saved after each wave completes, used for resume.
+ */
+export interface CheckpointData {
+  /** Workflow ID this checkpoint belongs to */
+  workflowId: string;
+  /** Current wave index (0-based) */
+  currentWaveIndex: number;
+  /** Total waves in execution plan */
+  totalWaves: number;
+  /** Completed task results: taskId -> result */
+  completedResults: Record<string, { success: boolean; data?: unknown; error?: string }>;
+  /** Remaining task IDs to execute */
+  remainingTaskIds: string[];
+  /** ISO timestamp when checkpoint was saved */
+  savedAt: string;
+}
