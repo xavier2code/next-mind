@@ -102,8 +102,8 @@ export const auditLogs = pgTable('audit_log', {
 
 // Enum arrays for Agent types and Task/Workflow statuses
 export const AgentTypeEnum = ['file', 'search', 'code', 'custom'] as const;
-export const TaskStatusEnum = ['pending', 'running', 'completed', 'failed'] as const;
-export const WorkflowStatusEnum = ['pending', 'running', 'completed', 'failed'] as const;
+export const TaskStatusEnum = ['pending', 'running', 'completed', 'failed', 'cancelled'] as const;
+export const WorkflowStatusEnum = ['pending', 'running', 'pausing', 'paused', 'completed', 'failed', 'cancelled'] as const;
 
 // Agents table - stores agent definitions with their cards
 export const agents = pgTable('agent', {
@@ -116,11 +116,32 @@ export const agents = pgTable('agent', {
   typeIdx: index('agent_type_idx').on(table.type),
 }));
 
+/**
+ * Checkpoint data structure for workflow pause/resume (D-06, D-07, D-09)
+ * Saved after each wave completes, used for resume.
+ */
+export interface WorkflowCheckpoint {
+  /** Workflow ID this checkpoint belongs to */
+  workflowId: string;
+  /** Current wave index (0-based) */
+  currentWaveIndex: number;
+  /** Total waves in execution plan */
+  totalWaves: number;
+  /** Completed task results: taskId -> result */
+  completedResults: Record<string, { success: boolean; data?: unknown; error?: string }>;
+  /** Remaining task IDs to execute */
+  remainingTaskIds: string[];
+  /** ISO timestamp when checkpoint was saved */
+  savedAt: string;
+}
+
 // Workflows table - orchestrates multiple tasks within a conversation
 export const workflows = pgTable('workflow', {
   id: uuid('id').primaryKey().defaultRandom(),
   conversationId: text('conversation_id').notNull().references(() => conversations.id, { onDelete: 'cascade' }),
   status: text('status', { enum: WorkflowStatusEnum }).notNull().default('pending'),
+  /** Checkpoint data for pause/resume workflow control */
+  checkpoint: jsonb('checkpoint').$type<WorkflowCheckpoint>(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   updatedAt: timestamp('updated_at').defaultNow().notNull(),
 }, (table) => ({
