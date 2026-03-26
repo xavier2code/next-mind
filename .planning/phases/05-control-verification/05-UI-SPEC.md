@@ -50,11 +50,11 @@ Exceptions: none
 | Role | Size | Weight | Line Height |
 |------|------|--------|-------------|
 | Body | 14px | 400 (regular) | 1.5 |
-| Label | 12px | 500 (medium) | 1.4 |
+| Label | 12px | 400 (regular) | 1.4 |
 | Heading | 16px | 600 (semibold) | 1.2 |
-| Section Header | 14px | 500 (medium) | 1.2 |
+| Section Header | 14px | 600 (semibold) | 1.2 |
 
-**Note:** Uses Tailwind classes `text-sm` (14px), `text-xs` (12px). Font weights: `font-medium` (500), `font-semibold` (600).
+**Note:** Uses Tailwind classes `text-sm` (14px), `text-xs` (12px). Font weights: `font-normal` (400), `font-semibold` (600). Only 2 weights used to maintain visual consistency.
 
 ---
 
