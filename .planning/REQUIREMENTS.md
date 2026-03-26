@@ -96,45 +96,45 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| UPLD-01 | TBD | Pending |
-| UPLD-02 | TBD | Pending |
-| UPLD-03 | TBD | Pending |
-| UPLD-04 | TBD | Pending |
-| UPLD-05 | TBD | Pending |
-| UPLD-06 | TBD | Pending |
-| UPLD-07 | TBD | Pending |
-| UPLD-08 | TBD | Pending |
-| EXTR-01 | TBD | Pending |
-| EXTR-02 | TBD | Pending |
-| EXTR-03 | TBD | Pending |
-| EXTR-04 | TBD | Pending |
-| EXTR-05 | TBD | Pending |
-| EXTR-06 | TBD | Pending |
-| EXTR-07 | TBD | Pending |
-| EXTR-08 | TBD | Pending |
-| EXTR-09 | TBD | Pending |
-| MGMT-01 | TBD | Pending |
-| MGMT-02 | TBD | Pending |
-| MGMT-03 | TBD | Pending |
-| MGMT-04 | TBD | Pending |
-| MGMT-05 | TBD | Pending |
-| CHAT-01 | TBD | Pending |
-| CHAT-02 | TBD | Pending |
-| CHAT-03 | TBD | Pending |
-| CHAT-04 | TBD | Pending |
-| CHAT-05 | TBD | Pending |
-| SKIL-01 | TBD | Pending |
-| SKIL-02 | TBD | Pending |
-| SKIL-03 | TBD | Pending |
-| SKIL-04 | TBD | Pending |
-| DB-01 | TBD | Pending |
-| DB-02 | TBD | Pending |
+| UPLD-01 | Phase 7 | Pending |
+| UPLD-02 | Phase 7 | Pending |
+| UPLD-03 | Phase 7 | Pending |
+| UPLD-04 | Phase 7 | Pending |
+| UPLD-05 | Phase 7 | Pending |
+| UPLD-06 | Phase 7 | Pending |
+| UPLD-07 | Phase 7 | Pending |
+| UPLD-08 | Phase 7 | Pending |
+| EXTR-01 | Phase 8 | Pending |
+| EXTR-02 | Phase 8 | Pending |
+| EXTR-03 | Phase 8 | Pending |
+| EXTR-04 | Phase 8 | Pending |
+| EXTR-05 | Phase 8 | Pending |
+| EXTR-06 | Phase 8 | Pending |
+| EXTR-07 | Phase 8 | Pending |
+| EXTR-08 | Phase 8 | Pending |
+| EXTR-09 | Phase 8 | Pending |
+| MGMT-01 | Phase 9 | Pending |
+| MGMT-02 | Phase 9 | Pending |
+| MGMT-03 | Phase 9 | Pending |
+| MGMT-04 | Phase 9 | Pending |
+| MGMT-05 | Phase 9 | Pending |
+| CHAT-01 | Phase 10 | Pending |
+| CHAT-02 | Phase 10 | Pending |
+| CHAT-03 | Phase 10 | Pending |
+| CHAT-04 | Phase 10 | Pending |
+| CHAT-05 | Phase 10 | Pending |
+| SKIL-01 | Phase 10 | Pending |
+| SKIL-02 | Phase 10 | Pending |
+| SKIL-03 | Phase 10 | Pending |
+| SKIL-04 | Phase 10 | Pending |
+| DB-01 | Phase 7 | Pending |
+| DB-02 | Phase 7 | Pending |
 
 **Coverage:**
 - v1.2 requirements: 28 total
-- Mapped to phases: 0
-- Unmapped: 28 ⚠️
+- Mapped to phases: 28
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-26*
-*Last updated: 2026-03-26 after initial definition*
+*Last updated: 2026-03-26 after roadmap creation*

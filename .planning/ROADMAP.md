@@ -4,6 +4,7 @@
 
 - **v1.0 MVP** — Phases 1-2 (shipped 2026-03-25)
 - **v1.1 A2A 协作** — Phases 3-6 (shipped 2026-03-26)
+- **v1.2 文件处理** — Phases 7-10 (in progress)
 - **v2.0** — Future (planned)
 
 ## Phases
@@ -84,9 +85,61 @@ Plans:
 
 </details>
 
-### v2.0 (Planned)
+### v1.2 文件处理 (In Progress)
 
-Future phases to be defined via `/gsd:new-milestone`.
+**Milestone Goal:** 实现多类型文件上传、处理和管理能力，让用户能在对话中引用文件内容，也能独立管理已上传文件
+
+#### Phase 7: Storage & Upload
+**Goal**: Users can upload files through the chat interface; files are stored safely via an abstract storage layer with proper validation and streaming support
+**Depends on**: v1.1 shipped
+**Requirements**: UPLD-01, UPLD-02, UPLD-03, UPLD-04, UPLD-05, UPLD-06, UPLD-07, UPLD-08, DB-01, DB-02
+**Success Criteria** (what must be TRUE):
+  1. User can upload a file by dragging it into the chat input and see a progress indicator
+  2. User can upload a file by clicking the attachment button and see a progress indicator
+  3. System rejects unsupported file types with a clear error message
+  4. System rejects files over 100MB with a clear error message
+  5. User sees a file preview card (filename, type icon, size) after upload and can remove it before sending
+  6. Uploaded files are persisted via the abstract storage layer and tracked in the database
+**Plans**: TBD
+**UI hint**: yes
+
+#### Phase 8: Content Extraction
+**Goal**: System automatically extracts text and converts uploaded files to usable formats (Markdown, structured data) asynchronously after upload
+**Depends on**: Phase 7
+**Requirements**: EXTR-01, EXTR-02, EXTR-03, EXTR-04, EXTR-05, EXTR-06, EXTR-07, EXTR-08, EXTR-09
+**Success Criteria** (what must be TRUE):
+  1. System extracts readable text from PDF, DOCX, code, CSV, and Excel files
+  2. System converts PDF content to Markdown and DOCX content to Markdown (via mammoth + turndown)
+  3. User can see extraction status (uploading, processing, ready, failed) for each uploaded file
+  4. Extraction runs asynchronously -- upload response returns before extraction finishes
+  5. Failed extraction shows a meaningful error message to the user
+**Plans**: TBD
+
+#### Phase 9: File Management & Preview
+**Goal**: Users can browse, preview, and manage their uploaded files through a dedicated file management interface
+**Depends on**: Phase 8
+**Requirements**: MGMT-01, MGMT-02, MGMT-03, MGMT-04, MGMT-05
+**Success Criteria** (what must be TRUE):
+  1. User can view a list of all uploaded files with filename, type, size, upload date, and status
+  2. User can delete a file and it is removed from both storage and the database
+  3. User can filter the file list by type category (document, code, data)
+  4. User can preview file content in a viewer panel (rendered Markdown for documents, syntax highlighted for code, table view for data)
+  5. System auto-classifies uploaded files based on content analysis beyond file extension
+**Plans**: TBD
+**UI hint**: yes
+
+#### Phase 10: Chat & Skills Integration
+**Goal**: Users can reference files in conversations with AI and agents can process files as registered skills
+**Depends on**: Phase 9
+**Requirements**: CHAT-01, CHAT-02, CHAT-03, CHAT-04, CHAT-05, SKIL-01, SKIL-02, SKIL-03, SKIL-04
+**Success Criteria** (what must be TRUE):
+  1. User can attach one or more files to a chat message and the AI responds based on the file content
+  2. User can edit extracted file content (Markdown editor) before sending it to the AI
+  3. System manages token budget when injecting file content -- large files are truncated with a clear indicator
+  4. File content extraction, format conversion, and classification are available as skills in agent workflows (file-extract, file-convert, file-classify)
+  5. File-list and file-read skills work with the new storage layer and database schema
+**Plans**: TBD
+**UI hint**: yes
 
 ## Progress
 
@@ -98,7 +151,11 @@ Future phases to be defined via `/gsd:new-milestone`.
 | 4. Smart Orchestration & Communication | v1.1 | 5/5 | Complete | 2026-03-26 |
 | 5. Control & Verification | v1.1 | 4/4 | Complete | 2026-03-26 |
 | 6. Visibility & Polish | v1.1 | 4/4 | Complete | 2026-03-26 |
+| 7. Storage & Upload | v1.2 | 0/0 | Not started | - |
+| 8. Content Extraction | v1.2 | 0/0 | Not started | - |
+| 9. File Management & Preview | v1.2 | 0/0 | Not started | - |
+| 10. Chat & Skills Integration | v1.2 | 0/0 | Not started | - |
 
 ---
 *Roadmap updated: 2026-03-26*
-*Current milestone: None — ready for v2.0 planning*
+*Current milestone: v1.2 文件处理*
