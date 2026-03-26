@@ -4,25 +4,25 @@
  * ORCH-06: Execution plan visualization
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, type Mock } from 'vitest';
 import {
   addWorkflowListener,
   removeWorkflowListener,
   broadcastWorkflowUpdate,
   getListenerCount
 } from '@/lib/agents/status-broadcaster';
-import type { WorkflowStatusUpdate } from './status-broadcaster';
+import type { WorkflowStatusUpdate } from '@/lib/agents/status-broadcaster';
 
 // Helper to create mock listener
-function createMockListener(): jest.Mock<(data: string) => void> {
+function createMockListener(): { mock: Mock<(data: string) => void> } {
   return {
-    mock: jest.fn(),
+    mock: vi.fn(),
   };
 }
 
 describe('addWorkflowListener', () => {
-  let listener1: ReturnType<typeof createMockListener>['mock']>;
-  let listener2: ReturnType<typeof createMockListener>['mock']>;
+  let listener1: Mock<(data: string) => void>;
+  let listener2: Mock<(data: string) => void>;
 
   beforeEach(() => {
     // Clear any existing listeners before each test
@@ -76,8 +76,8 @@ describe('addWorkflowListener', () => {
 });
 
 describe('broadcastWorkflowUpdate', () => {
-  let listener1: ReturnType<typeof createMockListener>['mock'];
-  let listener2: ReturnType<typeof createMockListener>['mock'];
+  let listener1: Mock<(data: string) => void>;
+  let listener2: Mock<(data: string) => void>;
 
   beforeEach(() => {
     // Clean up any existing listeners
@@ -93,11 +93,11 @@ describe('broadcastWorkflowUpdate', () => {
 
   it('should send update to all listeners', () => {
     const workflowId = 'broadcast-test-1';
-    listener1 = createMockListener();
-    listener2 = createMockListener();
+    listener1 = createMockListener().mock;
+    listener2 = createMockListener().mock;
 
-    addWorkflowListener(workflowId, listener1.mock);
-    addWorkflowListener(workflowId, listener2.mock);
+    addWorkflowListener(workflowId, listener1);
+    addWorkflowListener(workflowId, listener2);
 
     const update: WorkflowStatusUpdate = {
       taskId: 'task-1',
@@ -108,8 +108,8 @@ describe('broadcastWorkflowUpdate', () => {
 
     broadcastWorkflowUpdate(workflowId, update);
 
-    expect(listener1.mock).toHaveBeenCalledWith(JSON.stringify(update));
-    expect(listener2.mock).toHaveBeenCalledWith(JSON.stringify(update));
+    expect(listener1).toHaveBeenCalledWith(JSON.stringify(update));
+    expect(listener2).toHaveBeenCalledWith(JSON.stringify(update));
   });
 
   it('should not throw when no listeners', () => {
@@ -128,7 +128,7 @@ describe('broadcastWorkflowUpdate', () => {
   it('should handle listener errors gracefully', () => {
     const workflowId = 'broadcast-test-3';
     const errorListener = {
-      mock: jest.fn().mockImplementation(() => {
+      mock: vi.fn().mockImplementation(() => {
         throw new Error('Listener error');
       }),
     };
@@ -146,7 +146,7 @@ describe('broadcastWorkflowUpdate', () => {
     };
 
     // Mock console.error
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     broadcastWorkflowUpdate(workflowId, update);
 
