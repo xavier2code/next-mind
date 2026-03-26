@@ -49,12 +49,13 @@ export function FileChip({
 }: FileChipProps) {
   const [isFading, setIsFading] = useState(false);
 
-  // Auto-fade error chips after 5 seconds (D-07)
+  // Auto-fade upload error chips after 5 seconds (D-07).
+  // Extraction errors (no onRetry) do NOT auto-fade per 08-UI-SPEC.
   useEffect(() => {
-    if (status !== 'error') return;
+    if (status !== 'error' || !onRetry) return;
     const timer = setTimeout(() => setIsFading(true), 5000);
     return () => clearTimeout(timer);
-  }, [status]);
+  }, [status, onRetry]);
 
   // Remove from DOM after fade completes
   useEffect(() => {

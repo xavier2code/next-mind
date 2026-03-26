@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { FileChip } from '@/components/files/file-chip';
 
@@ -136,5 +136,43 @@ describe('FileChip', () => {
     const removeButton = screen.getByLabelText('Remove test.pdf');
     fireEvent.click(removeButton);
     expect(onRemove).toHaveBeenCalled();
+  });
+
+  it('should NOT auto-fade extraction error chips (no onRetry)', () => {
+    vi.useFakeTimers();
+    const onRemove = vi.fn();
+    const { container } = render(
+      <FileChip {...baseProps} status="error" error="Extraction failed" onRemove={onRemove} />
+    );
+
+    // Advance past the 5s auto-fade threshold
+    act(() => {
+      vi.advanceTimersByTime(6000);
+    });
+
+    // Chip should NOT be fading (no opacity-0 class)
+    const chip = container.firstChild as HTMLElement;
+    expect(chip.className).not.toContain('opacity-0');
+    expect(onRemove).not.toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
+  it('should auto-fade upload error chips (with onRetry)', () => {
+    vi.useFakeTimers();
+    const onRemove = vi.fn();
+    const onRetry = vi.fn();
+    const { container } = render(
+      <FileChip {...baseProps} status="error" error="Upload failed" onRemove={onRemove} onRetry={onRetry} />
+    );
+
+    // Advance past the 5s auto-fade threshold
+    act(() => {
+      vi.advanceTimersByTime(5500);
+    });
+
+    // Chip should be fading
+    const chip = container.firstChild as HTMLElement;
+    expect(chip.className).toContain('opacity-0');
+    vi.useRealTimers();
   });
 });
