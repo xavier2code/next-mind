@@ -211,8 +211,8 @@ describe('AgentStatusList', () => {
   it('shows skill ID for each task', () => {
     const waves: WaveInfo[] = [
       createWave(0, [
-        createTask('task-1', { skillId: 'file-read-skill' }),
-        createTask('task-2', { skillId: 'web-search-skill' }),
+        createTask('task-1', { description: undefined, skillId: 'file-read-skill' }),
+        createTask('task-2', { description: undefined, skillId: 'web-search-skill' }),
       ]),
     ];
 
@@ -233,8 +233,10 @@ describe('AgentStatusList', () => {
 
     render(<AgentStatusList waves={waves} />);
 
-    expect(screen.getByText('2 running')).toBeInTheDocument();
-    expect(screen.getByText('1 completed')).toBeInTheDocument();
+    // The count is in a span, use regex to match partial text
+    const statusSpan = screen.getByText(/2 running/);
+    expect(statusSpan).toBeInTheDocument();
+    expect(statusSpan).toHaveTextContent(/1 completed/);
   });
 
   it('shows only running count when no completed tasks', () => {
