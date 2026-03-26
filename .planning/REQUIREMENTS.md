@@ -11,12 +11,12 @@ Requirements for v1.2 milestone. Each maps to roadmap phases.
 
 - [ ] **UPLD-01**: User can upload files by dragging and dropping them into the chat input area
 - [ ] **UPLD-02**: User can upload files by clicking an attachment button (+/paperclip icon) in the chat input
-- [ ] **UPLD-03**: System validates file type on both client and server, accepting only PDF, Word (.docx), code files, CSV, and Excel (.xlsx)
-- [ ] **UPLD-04**: System rejects files exceeding 100MB with a clear error message stating the limit
+- [x] **UPLD-03**: System validates file type on both client and server, accepting only PDF, Word (.docx), code files, CSV, and Excel (.xlsx)
+- [x] **UPLD-04**: System rejects files exceeding 100MB with a clear error message stating the limit
 - [ ] **UPLD-05**: User sees upload progress indicator (progress bar or spinner) during file upload
 - [ ] **UPLD-06**: User sees file preview cards (filename, type icon, size) above chat input after upload, and can remove a file before sending
 - [x] **UPLD-07**: System stores uploaded files via an abstract storage layer that supports both local filesystem and cloud storage (S3/R2) without changing business logic
-- [ ] **UPLD-08**: System uses streaming upload (busboy) for files over 10MB to handle large files within Next.js App Router limits
+- [x] **UPLD-08**: System uses streaming upload (busboy) for files over 10MB to handle large files within Next.js App Router limits
 
 ### Content Extraction & Conversion (EXTR)
 
@@ -98,12 +98,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | UPLD-01 | Phase 7 | Pending |
 | UPLD-02 | Phase 7 | Pending |
-| UPLD-03 | Phase 7 | Pending |
-| UPLD-04 | Phase 7 | Pending |
+| UPLD-03 | Phase 7 | Complete |
+| UPLD-04 | Phase 7 | Complete |
 | UPLD-05 | Phase 7 | Pending |
 | UPLD-06 | Phase 7 | Pending |
 | UPLD-07 | Phase 7 | Complete |
-| UPLD-08 | Phase 7 | Pending |
+| UPLD-08 | Phase 7 | Complete |
 | EXTR-01 | Phase 8 | Pending |
 | EXTR-02 | Phase 8 | Pending |
 | EXTR-03 | Phase 8 | Pending |

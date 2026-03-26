@@ -104,7 +104,7 @@ Plans:
 
 Plans:
 - [x] 07-01: Database schema, storage abstraction, file queries, and test scaffolds
-- [ ] 07-02: File validation module and upload API with dual transport
+- [x] 07-02: File validation module and upload API with dual transport
 - [ ] 07-03: ChatInput UI extension with drag-drop, file chips, and upload hook
 **UI hint**: yes
 
@@ -156,7 +156,7 @@ Plans:
 | 4. Smart Orchestration & Communication | v1.1 | 5/5 | Complete | 2026-03-26 |
 | 5. Control & Verification | v1.1 | 4/4 | Complete | 2026-03-26 |
 | 6. Visibility & Polish | v1.1 | 4/4 | Complete | 2026-03-26 |
-| 7. Storage & Upload | v1.2 | 0/3 | Planning | - |
+| 7. Storage & Upload | v1.2 | 2/3 | In Progress|  |
 | 8. Content Extraction | v1.2 | 0/0 | Not started | - |
 | 9. File Management & Preview | v1.2 | 0/0 | Not started | - |
 | 10. Chat & Skills Integration | v1.2 | 0/0 | Not started | - |
