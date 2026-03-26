@@ -107,9 +107,9 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 06-01: Real-time agent status display
+- [x] 06-01: Real-time agent status display
 - [x] 06-02: Workflow progress UI
-- [ ] 06-03: Execution log viewer
+- [x] 06-03: Execution log viewer
 - [ ] 06-04: UI polish and integration
 
 ## Progress
