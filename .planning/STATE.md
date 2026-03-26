@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: 文件处理
-current_plan: 08-01
+current_plan: 2
 status: Ready to execute
-stopped_at: Phase 8 planned (4 plans, 3 waves)
-last_updated: "2026-03-26T16:30:00.000Z"
+stopped_at: Completed 08-01-PLAN.md
+last_updated: "2026-03-26T15:33:16.647Z"
 progress:
   total_phases: 4
   completed_phases: 1
   total_plans: 7
-  completed_plans: 3
+  completed_plans: 4
 ---
 
 # Project State
@@ -20,13 +20,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-26)
 
 **Core value:** 让团队成员通过统一的对话界面，高效处理文件、管理知识、调用工具，完成80%以上的日常工作任务
-**Current focus:** Phase 08 — content-extraction (PLANNED)
+**Current focus:** Phase 08 — content-extraction
 
 ## Current Position
 
-Phase: 8
-Plan: 1 of 4
-Current Plan: 08-01
+Phase: 08 (content-extraction) — EXECUTING
+Plan: 2 of 4
+Current Plan: 2
 Total Plans in Phase: 4
 
 ## Performance Metrics
@@ -61,6 +61,7 @@ Total Plans in Phase: 4
 | Phase 07 P01 | 295 min | 5 tasks | 19 files |
 | Phase 07 P02 | 2 min | 2 tasks | 4 files |
 | Phase 07 P03 | 4 min | 3 tasks | 7 files |
+| Phase 08 P01 | 2 | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -81,6 +82,8 @@ Recent decisions affecting current work:
 - [Phase 07]: Error chip auto-fade after 5 seconds to reduce visual clutter
 - [Phase 07]: Progress rounded to nearest 5% for smoother visual updates
 - [Phase 07]: onSend signature extended with optional fileIds parameter for backward compatibility
+- [Phase 08]: Sub-heading pattern check ordered before ALL-CAPS in textToMarkdown to distinguish numbered sub-headings from plain ALL-CAPS headings
+- [Phase 08]: mammoth conversion warnings embedded as HTML comments in extractedMarkdown per D-10 for transparent conversion loss tracking
 
 ### Pending Todos
 
@@ -94,9 +97,9 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-26T16:30:00.000Z
-Stopped at: Phase 8 planned
-Resume file: .planning/phases/08-content-extraction/08-01-PLAN.md
+Last session: 2026-03-26T15:33:16.645Z
+Stopped at: Completed 08-01-PLAN.md
+Resume file: None
 
 ---
 *State updated: 2026-03-26 for v1.2 roadmap — Phase 8 Content Extraction planned*

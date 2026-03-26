@@ -114,7 +114,7 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 08-01: Extraction types, markdown utilities, and document extractors (PDF + DOCX)
+- [x] 08-01: Extraction types, markdown utilities, and document extractors (PDF + DOCX)
 - [ ] 08-02: Code, CSV, and Excel extractors
 - [ ] 08-03: Extraction dispatcher, concurrency control, upload trigger, and status/retry APIs
 - [ ] 08-04: Extraction status polling hook and FileChip UI extension

@@ -20,15 +20,15 @@ Requirements for v1.2 milestone. Each maps to roadmap phases.
 
 ### Content Extraction & Conversion (EXTR)
 
-- [ ] **EXTR-01**: System extracts text content from PDF files using unpdf
-- [ ] **EXTR-02**: System extracts text content from Word (.docx) files using mammoth
+- [x] **EXTR-01**: System extracts text content from PDF files using unpdf
+- [x] **EXTR-02**: System extracts text content from Word (.docx) files using mammoth
 - [ ] **EXTR-03**: System reads code files directly (native fs), detecting and preserving syntax
 - [ ] **EXTR-04**: System parses CSV files using papaparse into structured data
 - [ ] **EXTR-05**: System parses Excel (.xlsx) files using exceljs into structured data
 - [ ] **EXTR-06**: System runs content extraction asynchronously after upload to avoid request timeouts
 - [ ] **EXTR-07**: System tracks extraction status (uploading, processing, ready, failed) with error messages on failure
-- [ ] **EXTR-08**: System converts PDF extracted text to Markdown format
-- [ ] **EXTR-09**: System converts Word documents to Markdown via mammoth (docx→HTML) + turndown (HTML→Markdown)
+- [x] **EXTR-08**: System converts PDF extracted text to Markdown format
+- [x] **EXTR-09**: System converts Word documents to Markdown via mammoth (docx→HTML) + turndown (HTML→Markdown)
 
 ### File Management & Preview (MGMT)
 
@@ -104,15 +104,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 | UPLD-06 | Phase 7 | Pending |
 | UPLD-07 | Phase 7 | Complete |
 | UPLD-08 | Phase 7 | Complete |
-| EXTR-01 | Phase 8 | Pending |
-| EXTR-02 | Phase 8 | Pending |
+| EXTR-01 | Phase 8 | Complete |
+| EXTR-02 | Phase 8 | Complete |
 | EXTR-03 | Phase 8 | Pending |
 | EXTR-04 | Phase 8 | Pending |
 | EXTR-05 | Phase 8 | Pending |
 | EXTR-06 | Phase 8 | Pending |
 | EXTR-07 | Phase 8 | Pending |
-| EXTR-08 | Phase 8 | Pending |
-| EXTR-09 | Phase 8 | Pending |
+| EXTR-08 | Phase 8 | Complete |
+| EXTR-09 | Phase 8 | Complete |
 | MGMT-01 | Phase 9 | Pending |
 | MGMT-02 | Phase 9 | Pending |
 | MGMT-03 | Phase 9 | Pending |
