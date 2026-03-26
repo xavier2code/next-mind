@@ -100,7 +100,12 @@ Plans:
   4. System rejects files over 100MB with a clear error message
   5. User sees a file preview card (filename, type icon, size) after upload and can remove it before sending
   6. Uploaded files are persisted via the abstract storage layer and tracked in the database
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [x] 07-01: Database schema, storage abstraction, file queries, and test scaffolds
+- [ ] 07-02: File validation module and upload API with dual transport
+- [ ] 07-03: ChatInput UI extension with drag-drop, file chips, and upload hook
 **UI hint**: yes
 
 #### Phase 8: Content Extraction
@@ -151,7 +156,7 @@ Plans:
 | 4. Smart Orchestration & Communication | v1.1 | 5/5 | Complete | 2026-03-26 |
 | 5. Control & Verification | v1.1 | 4/4 | Complete | 2026-03-26 |
 | 6. Visibility & Polish | v1.1 | 4/4 | Complete | 2026-03-26 |
-| 7. Storage & Upload | v1.2 | 0/0 | Not started | - |
+| 7. Storage & Upload | v1.2 | 0/3 | Planning | - |
 | 8. Content Extraction | v1.2 | 0/0 | Not started | - |
 | 9. File Management & Preview | v1.2 | 0/0 | Not started | - |
 | 10. Chat & Skills Integration | v1.2 | 0/0 | Not started | - |

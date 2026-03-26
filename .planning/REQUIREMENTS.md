@@ -15,7 +15,7 @@ Requirements for v1.2 milestone. Each maps to roadmap phases.
 - [ ] **UPLD-04**: System rejects files exceeding 100MB with a clear error message stating the limit
 - [ ] **UPLD-05**: User sees upload progress indicator (progress bar or spinner) during file upload
 - [ ] **UPLD-06**: User sees file preview cards (filename, type icon, size) above chat input after upload, and can remove a file before sending
-- [ ] **UPLD-07**: System stores uploaded files via an abstract storage layer that supports both local filesystem and cloud storage (S3/R2) without changing business logic
+- [x] **UPLD-07**: System stores uploaded files via an abstract storage layer that supports both local filesystem and cloud storage (S3/R2) without changing business logic
 - [ ] **UPLD-08**: System uses streaming upload (busboy) for files over 10MB to handle large files within Next.js App Router limits
 
 ### Content Extraction & Conversion (EXTR)
@@ -55,8 +55,8 @@ Requirements for v1.2 milestone. Each maps to roadmap phases.
 
 ### Database Schema (DB)
 
-- [ ] **DB-01**: System has a `files` table storing metadata (id, userId, filename, mimeType, size, fileType, storagePath, extractedContent, extractedMarkdown, classification, status, errorMessage, timestamps)
-- [ ] **DB-02**: System has a `conversationFiles` junction table linking files to conversations
+- [x] **DB-01**: System has a `files` table storing metadata (id, userId, filename, mimeType, size, fileType, storagePath, extractedContent, extractedMarkdown, classification, status, errorMessage, timestamps)
+- [x] **DB-02**: System has a `conversationFiles` junction table linking files to conversations
 
 ## v2 Requirements
 
@@ -102,7 +102,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | UPLD-04 | Phase 7 | Pending |
 | UPLD-05 | Phase 7 | Pending |
 | UPLD-06 | Phase 7 | Pending |
-| UPLD-07 | Phase 7 | Pending |
+| UPLD-07 | Phase 7 | Complete |
 | UPLD-08 | Phase 7 | Pending |
 | EXTR-01 | Phase 8 | Pending |
 | EXTR-02 | Phase 8 | Pending |
@@ -127,8 +127,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SKIL-02 | Phase 10 | Pending |
 | SKIL-03 | Phase 10 | Pending |
 | SKIL-04 | Phase 10 | Pending |
-| DB-01 | Phase 7 | Pending |
-| DB-02 | Phase 7 | Pending |
+| DB-01 | Phase 7 | Complete |
+| DB-02 | Phase 7 | Complete |
 
 **Coverage:**
 - v1.2 requirements: 28 total
