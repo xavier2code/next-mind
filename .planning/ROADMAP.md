@@ -91,7 +91,7 @@ Plans:
 Plans:
 - [x] 05-01: Workflow control schema and scheduler extensions (CTRL-01, CTRL-04, CTRL-05)
 - [x] 05-02: Workflow control API and controller (CTRL-01, CTRL-02, CTRL-05)
-- [ ] 05-03: Pipeline view control UI (CTRL-01, RSLT-05)
+- [x] 05-03: Pipeline view control UI (CTRL-01, RSLT-05)
 - [ ] 05-04: Timeout enforcement and error handling (CTRL-06, RSLT-01, RSLT-05)
 
 #### Phase 6: Visibility & Polish
