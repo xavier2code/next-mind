@@ -9,6 +9,7 @@ import 'reflect-metadata';
 import {
   discoverSkillsFromModules,
   registerSkills,
+  registerSkill,
   discoverSkills,
   getSkillById,
   getSkillsByCategory,

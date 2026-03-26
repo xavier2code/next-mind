@@ -2,7 +2,7 @@
  * Database queries for A2A infrastructure (agents, tasks, workflows)
  */
 import { eq, and, desc } from 'drizzle-orm';
-import { db, workflows, tasks, agents, type Workflow, type Task, type Agent, type NewWorkflow, type NewTask, type NewAgent } from './schema';
+import { db, workflows, tasks, agents, agentMessages, type Workflow, type Task, type Agent, type NewWorkflow, type NewTask, type NewAgent, type AgentMessage, type NewAgentMessage } from './schema';
 import type { TaskStatus, WorkflowStatus } from './schema';
 
 /**
@@ -192,4 +192,41 @@ export async function getAgentsByTypeDb(type: string): Promise<Agent[]> {
  */
 export async function getAllAgents(): Promise<Agent[]> {
   return db.select().from(agents);
+}
+
+/**
+ * Agent Message queries (COMM-06: Message persistence for audit trail)
+ */
+
+/**
+ * Save an agent message to the database.
+ */
+export async function saveAgentMessage(message: {
+  workflowId: string;
+  taskId?: string;
+  type: 'context_request' | 'status_notification' | 'human_intervention' | 'progress_update';
+  fromAgent: string;
+  toAgent: string;
+  payload: Record<string, unknown>;
+}): Promise<AgentMessage> {
+  const [record] = await db.insert(agentMessages).values(message).returning();
+  return record;
+}
+
+/**
+ * Get all messages for a workflow, ordered by time.
+ */
+export async function getMessagesByWorkflow(workflowId: string): Promise<AgentMessage[]> {
+  return db.select().from(agentMessages)
+    .where(eq(agentMessages.workflowId, workflowId))
+    .orderBy(agentMessages.createdAt);
+}
+
+/**
+ * Get all messages for a specific task.
+ */
+export async function getMessagesByTask(taskId: string): Promise<AgentMessage[]> {
+  return db.select().from(agentMessages)
+    .where(eq(agentMessages.taskId, taskId))
+    .orderBy(agentMessages.createdAt);
 }

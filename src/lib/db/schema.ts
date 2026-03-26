@@ -144,6 +144,29 @@ export const tasks = pgTable('task', {
   statusIdx: index('task_status_idx').on(table.status),
 }));
 
+// Agent Messages table - communication audit trail (COMM-06)
+export const AgentMessageTypeEnum = [
+  'context_request',
+  'status_notification',
+  'human_intervention',
+  'progress_update',
+] as const;
+
+export const agentMessages = pgTable('agent_message', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workflowId: uuid('workflow_id').notNull().references(() => workflows.id, { onDelete: 'cascade' }),
+  taskId: uuid('task_id').references(() => tasks.id, { onDelete: 'set null' }),
+  type: text('type', { enum: AgentMessageTypeEnum }).notNull(),
+  fromAgent: text('from_agent').notNull(),
+  toAgent: text('to_agent').notNull(),
+  payload: jsonb('payload').$type<Record<string, unknown>>().notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+  workflowIdx: index('agent_message_workflow_idx').on(table.workflowId),
+  typeIdx: index('agent_message_type_idx').on(table.type),
+  createdAtIdx: index('agent_message_created_at_idx').on(table.createdAt),
+}));
+
 // Type exports
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -159,3 +182,5 @@ export type Task = typeof tasks.$inferSelect;
 export type NewTask = typeof tasks.$inferInsert;
 export type Workflow = typeof workflows.$inferSelect;
 export type NewWorkflow = typeof workflows.$inferInsert;
+export type AgentMessage = typeof agentMessages.$inferSelect;
+export type NewAgentMessage = typeof agentMessages.$inferInsert;

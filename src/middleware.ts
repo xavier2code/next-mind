@@ -1,11 +1,20 @@
 import { auth } from '@/auth';
 import { NextResponse } from 'next/server';
 
+/**
+ * Authentication middleware for route protection
+ *
+ * Security notes:
+ * - MCP endpoints (/api/mcp/*) are protected by auth and designed for localhost-only access
+ * - DNS rebinding protection is enforced at the MCP route level via Origin header validation
+ * - This ensures external websites cannot make requests to local MCP tools
+ */
 export default auth((req) => {
   const isLoggedIn = !!req.auth;
   const isAuthPage = req.nextUrl.pathname.startsWith('/login') ||
                      req.nextUrl.pathname.startsWith('/register');
   const isApiAuthRoute = req.nextUrl.pathname.startsWith('/api/auth');
+  const isMcpRoute = req.nextUrl.pathname.startsWith('/api/mcp');
   const isProtectedApiRoute = req.nextUrl.pathname.startsWith('/api/') && !isApiAuthRoute;
 
   // Allow auth pages and auth API routes

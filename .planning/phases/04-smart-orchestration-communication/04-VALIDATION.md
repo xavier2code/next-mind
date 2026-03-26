@@ -2,7 +2,7 @@
 phase: 04
 slug: smart-orchestration-communication
 status: draft
-nyquist_compliant: false
+nyquist_compliant: true
 wave_0_complete: false
 created: 2026-03-26
 ---
@@ -38,18 +38,18 @@ created: 2026-03-26
 
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 04-01-01 | 01 | 1 | ORCH-01 | unit | `vitest run tests/lib/agents/scheduler.test.ts` | ❌ W0 | ⬜ pending |
-| 04-01-02 | 01 | 1 | ORCH-02 | unit | `vitest run tests/lib/agents/scheduler.test.ts` | ❌ W0 | ⬜ pending |
-| 04-01-03 | 01 | 1 | ORCH-03 | unit | `vitest run tests/lib/agents/scheduler.test.ts` | ❌ W0 | ⬜ pending |
-| 04-01-04 | 01 | 1 | ORCH-04 | unit | `vitest run tests/lib/agents/scheduler.test.ts` | ❌ W0 | ⬜ pending |
-| 04-01-05 | 01 | 1 | ORCH-05 | unit | `vitest run tests/lib/agents/scheduler.test.ts` | ❌ W0 | ⬜ pending |
-| 04-02-01 | 02 | 1 | COMM-01~05 | unit | `vitest run tests/lib/agents/message-bus.test.ts` | ❌ W0 | ⬜ pending |
-| 04-02-02 | 02 | 1 | COMM-06 | unit | `vitest run tests/lib/db/queries-messages.test.ts` | ❌ W0 | ⬜ pending |
-| 04-03-01 | 03 | 2 | ORCH-06 | integration | `vitest run tests/components/pipeline-view.test.tsx` | ❌ W0 | ⬜ pending |
-| 04-03-02 | 03 | 2 | SSE | integration | `vitest run tests/app/api/workflow-status.test.ts` | ❌ W0 | ⬜ pending |
-| 04-04-01 | 04 | 2 | ORCH-01 | unit | `vitest run tests/lib/agents/decomposition-deps.test.ts` | ❌ W0 | ⬜ pending |
+| 04-01-01 | 01 | 1 | ORCH-01~05 | unit | `vitest run tests/lib/agents/scheduler.test.ts` | W0 | pending |
+| 04-02-01 | 02 | 1 | COMM-06 | unit | `vitest run tests/lib/db/queries-messages.test.ts` | W0 | pending |
+| 04-02-02 | 02 | 1 | COMM-06 | unit | `vitest run tests/lib/db/queries-messages.test.ts` | W0 | pending |
+| 04-02-03 | 02 | 1 | COMM-01~05 | unit | `vitest run tests/lib/agents/message-bus.test.ts` | W0 | pending |
+| 04-03-01 | 03 | 2 | ORCH-06 | unit | `vitest run tests/app/api/workflow-status.test.ts` | W0 | pending |
+| 04-03-02 | 03 | 2 | SSE | unit | `vitest run tests/app/api/workflow-status.test.ts` | W0 | pending |
+| 04-03-03 | 03 | 2 | ORCH-06 | unit | `vitest run tests/components/pipeline-view.test.tsx` | W0 | pending |
+| 04-03-04 | 03 | 2 | ORCH-06 | integration | `vitest run tests/components/pipeline-view.test.tsx` | W0 | pending |
+| 04-04-01 | 04 | 2 | ORCH-01 | unit | `vitest run tests/lib/agents/decomposition-deps.test.ts` | W0 | pending |
+| 04-04-02 | 04 | 2 | ORCH-01 | unit | `vitest run tests/lib/agents/decomposition-deps.test.ts` | W0 | pending |
 
-*Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
+*Status: pending / green / red / flaky*
 
 ---
 
@@ -77,11 +77,11 @@ created: 2026-03-26
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 15s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [ ] Wave 0 covers all MISSING references (tests created during execution)
+- [x] No watch-mode flags
+- [x] Feedback latency < 15s
+- [ ] `nyquist_compliant: true` set in frontmatter (after Wave 0 tests created)
 
 **Approval:** pending

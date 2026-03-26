@@ -104,17 +104,16 @@ describe('SkillsPanel Component', () => {
   });
 
   describe('Test 3: Shows error state on fetch failure', () => {
-    it('should show error message when fetch fails', async () => {
+    it('should show retry button on error', async () => {
       mockFetch.mockRejectedValueOnce(new Error('Network error'));
 
       render(<SkillsPanel />);
 
       await waitFor(() => {
-        // Check for error-related content
-        const errorElement = screen.queryByText(/failed/i) || screen.queryByText(/error/i);
-        expect(errorElement).toBeDefined();
+        expect(screen.getByRole('button', { name: /retry/i })).toBeDefined();
       });
     });
+  });
 
     it('should show retry button on error', async () => {
       mockFetch.mockRejectedValueOnce(new Error('Network error'));
