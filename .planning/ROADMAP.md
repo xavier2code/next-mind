@@ -105,31 +105,18 @@ Plans:
 Plans:
 - [x] 07-01: Database schema, storage abstraction, file queries, and test scaffolds
 - [x] 07-02: File validation module and upload API with dual transport
-- [ ] 07-03: ChatInput UI extension with drag-drop, file chips, and upload hook
-**UI hint**: yes
+- [x] 07-03: ChatInput UI extension with drag-drop, file chips, and upload hook
 
 #### Phase 8: Content Extraction
 **Goal**: System automatically extracts text and converts uploaded files to usable formats (Markdown, structured data) asynchronously after upload
 **Depends on**: Phase 7
 **Requirements**: EXTR-01, EXTR-02, EXTR-03, EXTR-04, EXTR-05, EXTR-06, EXTR-07, EXTR-08, EXTR-09
-**Success Criteria** (what must be TRUE):
-  1. System extracts readable text from PDF, DOCX, code, CSV, and Excel files
-  2. System converts PDF content to Markdown and DOCX content to Markdown (via mammoth + turndown)
-  3. User can see extraction status (uploading, processing, ready, failed) for each uploaded file
-  4. Extraction runs asynchronously -- upload response returns before extraction finishes
-  5. Failed extraction shows a meaningful error message to the user
 **Plans**: TBD
 
 #### Phase 9: File Management & Preview
 **Goal**: Users can browse, preview, and manage their uploaded files through a dedicated file management interface
 **Depends on**: Phase 8
 **Requirements**: MGMT-01, MGMT-02, MGMT-03, MGMT-04, MGMT-05
-**Success Criteria** (what must be TRUE):
-  1. User can view a list of all uploaded files with filename, type, size, upload date, and status
-  2. User can delete a file and it is removed from both storage and the database
-  3. User can filter the file list by type category (document, code, data)
-  4. User can preview file content in a viewer panel (rendered Markdown for documents, syntax highlighted for code, table view for data)
-  5. System auto-classifies uploaded files based on content analysis beyond file extension
 **Plans**: TBD
 **UI hint**: yes
 
@@ -137,12 +124,6 @@ Plans:
 **Goal**: Users can reference files in conversations with AI and agents can process files as registered skills
 **Depends on**: Phase 9
 **Requirements**: CHAT-01, CHAT-02, CHAT-03, CHAT-04, CHAT-05, SKIL-01, SKIL-02, SKIL-03, SKIL-04
-**Success Criteria** (what must be TRUE):
-  1. User can attach one or more files to a chat message and the AI responds based on the file content
-  2. User can edit extracted file content (Markdown editor) before sending it to the AI
-  3. System manages token budget when injecting file content -- large files are truncated with a clear indicator
-  4. File content extraction, format conversion, and classification are available as skills in agent workflows (file-extract, file-convert, file-classify)
-  5. File-list and file-read skills work with the new storage layer and database schema
 **Plans**: TBD
 **UI hint**: yes
 
@@ -156,7 +137,7 @@ Plans:
 | 4. Smart Orchestration & Communication | v1.1 | 5/5 | Complete | 2026-03-26 |
 | 5. Control & Verification | v1.1 | 4/4 | Complete | 2026-03-26 |
 | 6. Visibility & Polish | v1.1 | 4/4 | Complete | 2026-03-26 |
-| 7. Storage & Upload | v1.2 | 2/3 | In Progress|  |
+| 7. Storage & Upload | v1.2 | 3/3 | Complete | 2026-03-26 |
 | 8. Content Extraction | v1.2 | 0/0 | Not started | - |
 | 9. File Management & Preview | v1.2 | 0/0 | Not started | - |
 | 10. Chat & Skills Integration | v1.2 | 0/0 | Not started | - |
