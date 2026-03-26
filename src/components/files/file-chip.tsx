@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, RefreshCw, Loader2, FileText, FileCode, FileSpreadsheet, AlertCircle } from 'lucide-react';
+import { X, RefreshCw, Loader2, FileText, FileCode, FileSpreadsheet, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface FileChipProps {
   filename: string;
   size: number;
-  status: 'pending' | 'uploading' | 'uploaded' | 'error';
+  status: 'pending' | 'uploading' | 'uploaded' | 'processing' | 'ready' | 'error';
   progress?: number;
   error?: string;
   fileType?: 'document' | 'code' | 'data';
@@ -18,6 +18,12 @@ interface FileChipProps {
 function getTypeIcon(fileType?: string, status?: string) {
   if (status === 'uploading') {
     return <Loader2 className="h-3.5 w-3.5 animate-spin" />;
+  }
+  if (status === 'processing') {
+    return <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-500" />;
+  }
+  if (status === 'ready') {
+    return <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />;
   }
   if (status === 'error') {
     return <AlertCircle className="h-3.5 w-3.5 text-destructive" />;
@@ -60,6 +66,8 @@ export function FileChip({
   const isUploaded = status === 'uploaded';
   const isError = status === 'error';
   const isUploading = status === 'uploading';
+  const isProcessing = status === 'processing';
+  const isReady = status === 'ready';
 
   return (
     <div
@@ -69,7 +77,9 @@ export function FileChip({
         'relative inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted text-xs transition-opacity duration-500',
         isError && 'border border-destructive',
         isFading && 'opacity-0',
-        isUploaded && 'text-emerald-700'
+        isUploaded && 'text-emerald-700',
+        isProcessing && 'text-blue-600',
+        isReady && 'text-emerald-700'
       )}
     >
       {getTypeIcon(fileType, status)}
@@ -77,10 +87,10 @@ export function FileChip({
         {filename}
       </span>
       <span className="text-[10px] font-medium">
-        {isUploading ? `${progress}%` : isError ? error : formatSize(size)}
+        {isProcessing ? 'Processing...' : isUploading ? `${progress}%` : isError ? error : formatSize(size)}
       </span>
 
-      {isError && onRetry ? (
+      {!isProcessing && (isError && onRetry ? (
         <button
           type="button"
           aria-label={`Retry upload of ${filename}`}
@@ -98,7 +108,7 @@ export function FileChip({
         >
           <X className="h-3 w-3" />
         </button>
-      )}
+      ))}
 
       {/* Progress bar (2px height, bottom of chip) */}
       {isUploading && (

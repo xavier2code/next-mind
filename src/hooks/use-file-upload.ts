@@ -1,13 +1,14 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { validateFileClient } from '@/lib/validation/file-validation';
 import { ACCEPTED_EXTENSIONS } from '@/lib/storage/types';
+import { useFileExtractionStatus } from './use-file-extraction-status';
 
 export interface PendingFile {
   id: string;
   file: File;
-  status: 'pending' | 'uploading' | 'uploaded' | 'error';
+  status: 'pending' | 'uploading' | 'uploaded' | 'processing' | 'ready' | 'error';
   progress: number;
   error?: string;
   uploadedFile?: {
@@ -84,6 +85,39 @@ function uploadFile(
 export function useFileUpload(): FileUploadState {
   const [files, setFiles] = useState<PendingFile[]>([]);
   const [isUploading, setIsUploading] = useState(false);
+  const extractionStatus = useFileExtractionStatus();
+
+  // Start extraction status polling when files finish uploading
+  useEffect(() => {
+    const uploadedFileIds = files
+      .filter(f => f.status === 'uploaded' && f.uploadedFile)
+      .map(f => f.uploadedFile!.id);
+    if (uploadedFileIds.length > 0) {
+      extractionStatus.startPolling(uploadedFileIds);
+    }
+  }, [files, extractionStatus]);
+
+  // Sync extraction status to file state
+  useEffect(() => {
+    const newStatuses = Object.entries(extractionStatus.statuses);
+    if (newStatuses.length === 0) return;
+
+    setFiles(prev => prev.map(f => {
+      if (!f.uploadedFile) return f;
+      const extractionStatusValue = extractionStatus.statuses[f.uploadedFile.id];
+      if (!extractionStatusValue) return f;
+      if (f.status === 'uploaded' && extractionStatusValue === 'processing') {
+        return { ...f, status: 'processing' };
+      }
+      if (f.status === 'processing' && extractionStatusValue === 'ready') {
+        return { ...f, status: 'ready' };
+      }
+      if (f.status === 'processing' && extractionStatusValue === 'failed') {
+        return { ...f, status: 'error', error: 'Extraction failed' };
+      }
+      return f;
+    }));
+  }, [extractionStatus.statuses]);
 
   const addFiles = useCallback((fileList: FileList) => {
     const fileArray = Array.from(fileList);
@@ -212,7 +246,7 @@ export function useFileUpload(): FileUploadState {
 
   const getUploadedFileIds = useCallback(() => {
     return files
-      .filter(f => f.status === 'uploaded' && f.uploadedFile)
+      .filter(f => (f.status === 'uploaded' || f.status === 'ready') && f.uploadedFile)
       .map(f => f.uploadedFile!.id);
   }, [files]);
 
