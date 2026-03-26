@@ -58,4 +58,6 @@ export type AuditAction =
   | 'model_switch'
   | 'tool_invocation'
   | 'tool_approval'
-  | 'tool_rejection';
+  | 'tool_rejection'
+  | 'file_upload'
+  | 'file_delete';

@@ -9,6 +9,7 @@ import {
   index,
   primaryKey,
   uuid,
+  integer,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
@@ -188,6 +189,44 @@ export const agentMessages = pgTable('agent_message', {
   createdAtIdx: index('agent_message_created_at_idx').on(table.createdAt),
 }));
 
+// File Storage Tables
+
+export const FileTypeEnum = ['document', 'code', 'data'] as const;
+export const FileStatusEnum = ['uploaded', 'processing', 'ready', 'failed'] as const;
+
+export const files = pgTable('file', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  filename: text('filename').notNull(),
+  mimeType: text('mime_type').notNull(),
+  size: integer('size').notNull(),
+  fileType: text('file_type', { enum: FileTypeEnum }).notNull(),
+  storagePath: text('storage_path').notNull(),
+  status: text('status', { enum: FileStatusEnum }).notNull().default('uploaded'),
+  extractedContent: text('extracted_content'),
+  extractedMarkdown: text('extracted_markdown'),
+  classification: text('classification'),
+  errorMessage: text('error_message'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index('file_user_id_idx').on(table.userId),
+  fileTypeIdx: index('file_type_idx').on(table.fileType),
+  statusIdx: index('file_status_idx').on(table.status),
+}));
+
+export const conversationFiles = pgTable('conversation_file', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  fileId: uuid('file_id').notNull().references(() => files.id, { onDelete: 'cascade' }),
+  conversationId: text('conversation_id').notNull().references(() => conversations.id, { onDelete: 'cascade' }),
+  messageId: text('message_id').references(() => messages.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+  fileIdIdx: index('conversation_file_file_idx').on(table.fileId),
+  conversationIdx: index('conversation_file_conv_idx').on(table.conversationId),
+  messageIdx: index('conversation_file_msg_idx').on(table.messageId),
+}));
+
 // Type exports
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -205,3 +244,7 @@ export type Workflow = typeof workflows.$inferSelect;
 export type NewWorkflow = typeof workflows.$inferInsert;
 export type AgentMessage = typeof agentMessages.$inferSelect;
 export type NewAgentMessage = typeof agentMessages.$inferInsert;
+export type File = typeof files.$inferSelect;
+export type NewFile = typeof files.$inferInsert;
+export type ConversationFile = typeof conversationFiles.$inferSelect;
+export type NewConversationFile = typeof conversationFiles.$inferInsert;
