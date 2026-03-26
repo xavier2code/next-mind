@@ -8,6 +8,7 @@ import {
   jsonb,
   index,
   primaryKey,
+  uuid,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
@@ -97,6 +98,75 @@ export const auditLogs = pgTable('audit_log', {
   createdAtIdx: index('audit_log_created_at_idx').on(table.createdAt),
 }));
 
+// A2A Infrastructure Tables
+
+// Enum arrays for Agent types and Task/Workflow statuses
+export const AgentTypeEnum = ['file', 'search', 'code', 'custom'] as const;
+export const TaskStatusEnum = ['pending', 'running', 'completed', 'failed'] as const;
+export const WorkflowStatusEnum = ['pending', 'running', 'completed', 'failed'] as const;
+
+// Agents table - stores agent definitions with their cards
+export const agents = pgTable('agent', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  type: text('type', { enum: AgentTypeEnum }).notNull(),
+  card: jsonb('card').$type<Record<string, unknown>>().notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  typeIdx: index('agent_type_idx').on(table.type),
+}));
+
+// Workflows table - orchestrates multiple tasks within a conversation
+export const workflows = pgTable('workflow', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  conversationId: text('conversation_id').notNull().references(() => conversations.id, { onDelete: 'cascade' }),
+  status: text('status', { enum: WorkflowStatusEnum }).notNull().default('pending'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  conversationIdx: index('workflow_conversation_idx').on(table.conversationId),
+  statusIdx: index('workflow_status_idx').on(table.status),
+}));
+
+// Tasks table - individual skill executions within a workflow
+export const tasks = pgTable('task', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workflowId: uuid('workflow_id').notNull().references(() => workflows.id, { onDelete: 'cascade' }),
+  agentType: text('agent_type', { enum: AgentTypeEnum }).notNull(),
+  skillId: text('skill_id').notNull(),
+  input: jsonb('input').$type<Record<string, unknown>>().notNull(),
+  output: jsonb('output').$type<{ success: boolean; data?: unknown; error?: string; metadata?: Record<string, unknown> }>(),
+  status: text('status', { enum: TaskStatusEnum }).notNull().default('pending'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  completedAt: timestamp('completed_at'),
+}, (table) => ({
+  workflowIdx: index('task_workflow_idx').on(table.workflowId),
+  statusIdx: index('task_status_idx').on(table.status),
+}));
+
+// Agent Messages table - communication audit trail (COMM-06)
+export const AgentMessageTypeEnum = [
+  'context_request',
+  'status_notification',
+  'human_intervention',
+  'progress_update',
+] as const;
+
+export const agentMessages = pgTable('agent_message', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  workflowId: uuid('workflow_id').notNull().references(() => workflows.id, { onDelete: 'cascade' }),
+  taskId: uuid('task_id').references(() => tasks.id, { onDelete: 'set null' }),
+  type: text('type', { enum: AgentMessageTypeEnum }).notNull(),
+  fromAgent: text('from_agent').notNull(),
+  toAgent: text('to_agent').notNull(),
+  payload: jsonb('payload').$type<Record<string, unknown>>().notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+}, (table) => ({
+  workflowIdx: index('agent_message_workflow_idx').on(table.workflowId),
+  typeIdx: index('agent_message_type_idx').on(table.type),
+  createdAtIdx: index('agent_message_created_at_idx').on(table.createdAt),
+}));
+
 // Type exports
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -106,3 +176,11 @@ export type Message = typeof messages.$inferSelect;
 export type NewMessage = typeof messages.$inferInsert;
 export type AuditLog = typeof auditLogs.$inferSelect;
 export type NewAuditLog = typeof auditLogs.$inferInsert;
+export type Agent = typeof agents.$inferSelect;
+export type NewAgent = typeof agents.$inferInsert;
+export type Task = typeof tasks.$inferSelect;
+export type NewTask = typeof tasks.$inferInsert;
+export type Workflow = typeof workflows.$inferSelect;
+export type NewWorkflow = typeof workflows.$inferInsert;
+export type AgentMessage = typeof agentMessages.$inferSelect;
+export type NewAgentMessage = typeof agentMessages.$inferInsert;
