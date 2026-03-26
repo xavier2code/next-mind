@@ -5,6 +5,7 @@ import { storeFile } from '@/lib/storage/provider';
 import { getFileType } from '@/lib/storage/types';
 import { validateFileServer, getMimeType } from '@/lib/validation/file-validation';
 import { createFile } from '@/lib/db/queries';
+import { extractFile } from '@/lib/extraction/dispatcher';
 import { logger, generateRequestId } from '@/lib/monitoring';
 import { Readable } from 'stream';
 import Busboy from 'busboy';
@@ -134,6 +135,11 @@ async function handleFormDataUpload(
     ...getClientInfo(request),
   }).catch(() => {});
 
+  // Fire-and-forget extraction (per D-01)
+  extractFile(dbFile.id).catch((error) => {
+    logger.error('upload', 'Extraction failed', error instanceof Error ? error : new Error(String(error)), { fileId: dbFile.id });
+  });
+
   logger.debug('upload', 'File uploaded via formData', { requestId, fileId, filename: file.name });
 
   return {
@@ -243,6 +249,11 @@ async function handleStreamingUpload(
           metadata: { filename, size: buffer.length, mimeType, fileType, transport: 'streaming' },
           ...getClientInfo(request),
         }).catch(() => {});
+
+        // Fire-and-forget extraction (per D-01)
+        extractFile(dbFile.id).catch((error) => {
+          logger.error('upload', 'Extraction failed', error instanceof Error ? error : new Error(String(error)), { fileId: dbFile.id });
+        });
 
         logger.debug('upload', 'File uploaded via streaming', { requestId, fileId, filename });
 
