@@ -83,8 +83,8 @@ Agent 间通信机制。
 
 用户对协作过程的感知。
 
-- [ ] **VIS-01**: 实时显示当前正在执行的 Agent 列表
-- [ ] **VIS-02**: 每个 Agent 显示当前状态（运行中/完成/失败）
+- [x] **VIS-01**: 实时显示当前正在执行的 Agent 列表
+- [x] **VIS-02**: 每个 Agent 显示当前状态（运行中/完成/失败）
 - [ ] **VIS-03**: 工作流整体进度指示
 - [ ] **VIS-04**: Agent 执行日志可查看（可选展开）
 - [ ] **VIS-05**: 过程信息简洁展示（不过度干扰）
@@ -290,8 +290,8 @@ v1.0 MVP 已发布的需求。
 | RSLT-03 | Phase 5 | Pending |
 | RSLT-04 | Phase 5 | Pending |
 | RSLT-05 | Phase 5 | Pending |
-| VIS-01 | Phase 6 | Pending |
-| VIS-02 | Phase 6 | Pending |
+| VIS-01 | Phase 6 | Complete |
+| VIS-02 | Phase 6 | Complete |
 | VIS-03 | Phase 6 | Pending |
 | VIS-04 | Phase 6 | Pending |
 | VIS-05 | Phase 6 | Pending |
