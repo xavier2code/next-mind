@@ -3,6 +3,9 @@
  *
  * Executes sub-tasks by wrapping the SkillExecutor with workflow/task context.
  * Integrates agents with the existing Skills infrastructure.
+ *
+ * CTRL-06: 60-second timeout enforcement
+ * RSLT-01: Error information recorded for result display
  */
 import { logAudit } from '@/lib/audit';
 import { SkillExecutor, createSkillExecutor, type ExecutionOptions } from '@/lib/skills/executor';
@@ -21,6 +24,12 @@ import {
   updateWorkflowStatus,
   getTasksByWorkflow,
 } from '@/lib/db/queries';
+
+/**
+ * Default timeout for sub-agent task execution.
+ * D-10: Fixed 60 second timeout per CONTEXT.md decision.
+ */
+export const DEFAULT_SUBAGENT_TIMEOUT_MS = 60000;
 
 /**
  * Sub-agent execution options
@@ -125,9 +134,13 @@ export class SubAgentExecutor {
       previousResults: context.previousResults,
     };
 
-    // Build execution options
+    // Build execution options with enforced timeout (D-10)
+    // D-10: Fixed 60s timeout, can only be reduced (not increased) via options
     const execOptions: ExecutionOptions = {
-      timeout: options?.timeout ?? skill.metadata.timeout,
+      timeout: Math.min(
+        options?.timeout ?? skill.metadata.timeout ?? DEFAULT_SUBAGENT_TIMEOUT_MS,
+        DEFAULT_SUBAGENT_TIMEOUT_MS
+      ),
       skipApproval: options?.skipApproval,
     };
 
