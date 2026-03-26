@@ -1,485 +1,297 @@
 # Feature Research
 
-**Domain:** AI Agent Collaboration Platform
-**Researched:** 2026-03-25 (Updated for v1.1 A2A milestone)
-**Confidence:** HIGH
+**Domain:** Multi-Type File Upload, Processing, and Management for AI Chat Platform
+**Researched:** 2026-03-26
+**Confidence:** MEDIUM (file processing libraries well-documented; UX patterns from competitor observation; some integration specifics need prototyping)
 
 ---
 
-## v1.1 A2A Multi-Agent Collaboration Features
+## v1.2 File Processing Features
 
-This section covers NEW features for the v1.1 milestone: adding A2A multi-agent collaboration (task decomposition & delegation) to the existing platform.
+This section covers NEW features for the v1.2 milestone: adding multi-type file upload, content extraction, format conversion, smart classification, preview, content editing, file management, and chat integration to the existing Next.js 16 AI Agent collaboration platform.
 
 ### Executive Summary
 
-Key findings from A2A multi-agent research:
-- **Multi-agent systems excel at breadth-first queries** - Anthropic's research shows 90.2% improvement over single-agent for parallel exploration tasks
-- **Token usage explains 80% of performance variance** - distributing work across agents with separate context windows scales capacity
-- **93-95% of AI agent projects fail before production** - mostly due to coordination/design issues, not technical problems
-- **A2A and MCP are complementary protocols** - MCP connects agents to tools/data, A2A enables agent-to-agent collaboration
+Key findings from file processing research:
 
-### Table Stakes for A2A (Users Expect These)
-
-Features users assume exist in any multi-agent system. Missing these = product feels incomplete or unreliable.
-
-| Feature | Why Expected | Complexity | Notes |
-|---------|--------------|------------|-------|
-| **Task Decomposition** | Users expect the main agent to break complex requests into subtasks automatically | HIGH | Requires LLM-based planning; must produce clear task boundaries to prevent duplicate work |
-| **Sub-Agent Spawning** | Users expect the system to create and manage multiple specialized agents | MEDIUM | Leverage existing Skills/MCP infrastructure; need agent lifecycle management |
-| **Progress Visibility** | Users need to see what agents are doing, especially for long-running tasks | MEDIUM | Real-time status updates, not just final results; prevent "black box" perception |
-| **Result Aggregation** | Users expect combined, coherent outputs from multiple agents | MEDIUM | Must synthesize results without losing information or creating contradictions |
-| **Error Recovery** | Users expect graceful handling when sub-agents fail | MEDIUM | Resume from checkpoints, not restart from beginning; let agents adapt to failures |
-| **Human Intervention** | Users expect to be able to intervene, correct, or redirect agents | LOW | Already have approval flow; extend for multi-agent context |
-
-### Differentiators for A2A (Competitive Advantage)
-
-Features that set the product apart. Not required, but valuable for v1.1.
-
-| Feature | Value Proposition | Complexity | Notes |
-|---------|-------------------|------------|-------|
-| **Smart Scheduling (Auto Sequential/Parallel)** | Automatically determines optimal execution order based on task dependencies | HIGH | Uses dependency graph analysis; saves user from manual orchestration |
-| **Four Specialized Agent Types** | File Processing, Search, Code, Custom agents with domain-optimized prompts | MEDIUM | Each type has tailored tools, prompts, and output formats |
-| **Inter-Agent Messaging** | Agents can request context from each other, share findings, coordinate | HIGH | Enables collaborative problem-solving beyond simple delegation |
-| **Result Comparison Mode** | Present multiple agent results side-by-side for user selection | MEDIUM | Useful when agents produce different approaches to same task |
-| **Agent Card / Capability Discovery** | Standardized declaration of agent capabilities for dynamic routing | LOW | A2A protocol pattern; enables flexible agent ecosystems |
-| **Checkpoint/Resume** | Long-running research can be paused and resumed without losing progress | HIGH | Critical for tasks that may take hours; requires durable state |
-
-### Anti-Features for A2A (Commonly Requested, Often Problematic)
-
-Features that seem good but create problems in multi-agent systems.
-
-| Feature | Why Requested | Why Problematic | Alternative |
-|---------|---------------|-----------------|-------------|
-| **Unlimited Parallel Agents** | More agents = faster results, right? | Token burn (15x more than chat), coordination overhead, duplicate work, conflicting results | Scale effort to task complexity (Anthropic: 1 agent for simple, 2-4 for comparison, 10+ for complex research) |
-| **Real-Time Agent-to-Agent Chat** | Users want to "watch agents collaborate" | Creates bottlenecks, adds complexity, agents aren't great at real-time coordination | Asynchronous delegation with status notifications; lead agent coordinates |
-| **Shared Memory Between All Agents** | Agents should "know what each other knows" | Context pollution, conflicting information, privacy concerns | Separate context windows with controlled information flow; lead agent synthesizes |
-| **Fully Autonomous Delegation** | "Just handle it, don't bother me" | 79% of failures are design/coordination issues; runaway agents; no accountability | Human-in-the-loop at key decision points; effort budgets; clear escalation triggers |
-| **Complex DAG Workflows** | Visual workflow builders, intricate branching | Maintenance nightmare, hard to debug, over-engineering for most use cases | Simple orchestrator-worker pattern; parallel subagents with lead agent coordination |
-| **Agent "Learning" From Each Other** | Agents should improve by observing peers | Cross-contamination of errors, emergent bad behaviors, hard to debug | Explicit knowledge sharing through structured outputs; no implicit behavioral learning |
-
-### A2A Feature Dependencies
-
-```
-Task Decomposition
-    └──requires──> Agent Registry / Capability Discovery
-                       └──requires──> Agent Card Schema
-
-Smart Scheduling
-    └──requires──> Task Decomposition (to analyze dependencies)
-    └──requires──> Dependency Graph Builder
-
-Sub-Agent Spawning
-    └──requires──> Agent Registry
-    └──requires──> Existing Skills/MCP Infrastructure (already built)
-
-Result Aggregation
-    └──requires──> Sub-Agent Spawning (to get results)
-    └──requires──> Output Schema Standardization
-
-Inter-Agent Messaging
-    └──requires──> Agent Registry
-    └──requires──> Message Bus / Event System
-
-Human Intervention
-    └──requires──> Progress Visibility (to know when to intervene)
-    └──enhances──> Existing Approval Flow (already built)
-
-Process Visibility
-    └──requires──> Status Notification System
-    └──requires──> Event Stream / SSE
-```
-
-### Dependency Notes for A2A
-
-- **Task Decomposition requires Agent Registry:** The lead agent needs to know what sub-agents exist and their capabilities before it can decompose tasks effectively
-- **Smart Scheduling requires Task Decomposition:** Cannot determine parallel vs sequential without understanding task dependencies
-- **Sub-Agent Spawning leverages existing Skills/MCP:** The v1.0 Skills system provides the execution layer; sub-agents are specialized skill executors
-- **Result Aggregation requires Output Schema:** Agents must produce structured outputs that can be merged, compared, or summarized
-- **Inter-Agent Messaging requires Message Bus:** Need infrastructure for agents to communicate asynchronously
-- **Human Intervention enhances existing Approval Flow:** Extend v1.0 approval mechanism for multi-agent context (pause specific sub-agent, redirect research, provide guidance)
-
-### A2A Feature Categories (For Roadmap Phases)
-
-**Category 1: Core Delegation (Foundation)**
-- Task decomposition with clear task boundaries
-- Basic sub-agent spawning (2-3 agent types)
-- Sequential execution with result aggregation
-- Simple progress status
-
-**Category 2: Smart Orchestration (Optimization)**
-- Parallel execution
-- Dependency analysis for auto-scheduling
-- All four agent types (File, Search, Code, Custom)
-- Enhanced result handling (merge, compare, summarize)
-
-**Category 3: Communication & Control (Advanced)**
-- Inter-agent messaging
-- Context requests between agents
-- Human intervention hooks
-- Checkpoint/resume for long tasks
-
-**Category 4: Visibility & Polish (UX)**
-- Rich process visualization
-- Real-time status streaming
-- Agent card / capability discovery
-- Result selection UI
-
-### A2A MVP Definition (v1.1 Scope)
-
-**Phase 1: Core Delegation (Must Have)**
-
-Minimum viable multi-agent - what's needed to validate the delegation concept.
-
-- [ ] Task Decomposition Engine — Lead agent breaks complex requests into subtasks
-- [ ] Agent Registry — Track available sub-agents and their capabilities
-- [ ] Basic Sub-Agent Types (2-3) — File Processing, Search (Code/Custom can be v1.2)
-- [ ] Sequential Execution — Run sub-agents one after another
-- [ ] Result Aggregation (Merge) — Combine sub-agent outputs into coherent response
-- [ ] Basic Progress Status — Show which agents are running, completed, failed
-
-**Phase 2: Smart Orchestration (Should Have)**
-
-Add once core delegation works reliably.
-
-- [ ] Parallel Execution — Run independent sub-agents simultaneously
-- [ ] Dependency Analysis — Determine task dependencies automatically
-- [ ] Auto-Scheduling — Choose sequential vs parallel based on dependencies
-- [ ] All Four Agent Types — Add Code and Custom agent types
-- [ ] Enhanced Result Handling — Compare mode, summarize mode, user selection
-
-**Phase 3: Communication & Control (Enhancement)**
-
-Advanced features for complex workflows.
-
-- [ ] Inter-Agent Messaging — Agents can communicate findings to each other
-- [ ] Context Requests — Sub-agents can request additional context from lead agent
-- [ ] Human Intervention Hooks — Pause, redirect, provide guidance mid-execution
-- [ ] Checkpoint/Resume — Save state for long-running tasks
-
-### A2A Feature Prioritization Matrix
-
-| Feature | User Value | Implementation Cost | Priority |
-|---------|------------|---------------------|----------|
-| Task Decomposition | HIGH | HIGH | P1 |
-| Agent Registry | HIGH | MEDIUM | P1 |
-| Basic Sub-Agent Types | HIGH | MEDIUM | P1 |
-| Sequential Execution | HIGH | LOW | P1 |
-| Result Aggregation | HIGH | MEDIUM | P1 |
-| Basic Progress Status | HIGH | LOW | P1 |
-| Parallel Execution | MEDIUM | MEDIUM | P2 |
-| Dependency Analysis | MEDIUM | HIGH | P2 |
-| Auto-Scheduling | MEDIUM | HIGH | P2 |
-| All Four Agent Types | MEDIUM | MEDIUM | P2 |
-| Enhanced Result Handling | MEDIUM | MEDIUM | P2 |
-| Inter-Agent Messaging | LOW | HIGH | P3 |
-| Context Requests | LOW | MEDIUM | P3 |
-| Human Intervention Hooks | MEDIUM | MEDIUM | P3 |
-| Checkpoint/Resume | LOW | HIGH | P3 |
-
-**Priority key:**
-- P1: Must have for v1.1 MVP (core delegation working)
-- P2: Should have, add once core is validated
-- P3: Nice to have, future consideration
-
-### Key Design Principles for A2A (From Research)
-
-**From Anthropic's Multi-Agent Research System:**
-
-1. **Scale effort to query complexity** — Simple fact-finding: 1 agent, 3-10 tool calls. Direct comparisons: 2-4 subagents, 10-15 calls each. Complex research: 10+ subagents with clear division of labor
-2. **Teach the orchestrator how to delegate** — Each subagent needs: objective, output format, tool/source guidance, clear task boundaries
-3. **Parallel tool calling transforms speed** — 3-5 subagents in parallel + 3+ tools in parallel = up to 90% time reduction
-4. **Start wide, then narrow down** — Begin with broad queries, evaluate what's available, then progressively narrow
-5. **Agents are stateful and errors compound** — Need resume from checkpoints, not restart from beginning
-
-**From Google's A2A Protocol:**
-
-1. **Capability discovery via Agent Cards** — JSON format declaring capabilities and endpoints
-2. **Task lifecycle management** — Tasks have states: submitted, processing, complete
-3. **Modality agnostic** — Support text, audio, video (though text is primary for v1.1)
-4. **Secure by default** — OAuth-based authentication, encrypted transport
-
-**From Multi-Agent Failure Analysis:**
-
-1. **93-95% failure rate before production** — Most failures are coordination/design issues, not technical
-2. **41-86% fail in production** — Need robust error handling and recovery
-3. **79% of failures are NOT technical** — They're design and coordination problems
-4. **Near-total failure for 3+ agent coordination** — Dynamic ad-hoc coordination is hard; use structured delegation
-
-### A2A Competitor Feature Analysis
-
-| Feature | LangGraph | CrewAI | Anthropic Research | Our Approach (v1.1) |
-|---------|-----------|--------|-------------------|---------------------|
-| Architecture | Graph-based state machine | Role-based agents | Orchestrator-worker | Orchestrator-worker (simpler) |
-| Parallelization | Explicit edges | Sequential by default | 3-5 subagents parallel | Phase 2: Parallel execution |
-| Task Decomposition | Manual graph design | Automatic roles | Lead agent decomposes | LLM-based decomposition |
-| Agent Types | Custom nodes | Role definitions | Specialized subagents | 4 types: File, Search, Code, Custom |
-| Result Handling | State aggregation | Task output | Lead agent synthesizes | Merge, compare, summarize, select |
-| Protocol | Custom | Custom | MCP + internal | MCP (existing) + A2A patterns |
-
-**Our differentiator:** Simplicity and integration with existing v1.0 infrastructure (Skills, MCP, Approval Flow). Not trying to be a general-purpose framework like LangGraph or CrewAI.
-
-### A2A Sources
-
-**Primary Sources (HIGH Confidence):**
-- [Anthropic: How we built our multi-agent research system](https://www.anthropic.com/engineering/multi-agent-research-system) - Detailed architecture, prompting principles, evaluation methods
-- [Google: Announcing the Agent2Agent Protocol (A2A)](https://developers.googleblog.com/en/a2a-a-new-era-of-agent-interoperability/) - Official A2A specification, design principles
-- [OneReach: MCP vs A2A Protocols for Multi-Agent Collaboration](https://onereach.ai/blog/guide-choosing-mcp-vs-a2a-protocols/) - Protocol comparison, enterprise considerations
-
-**Secondary Sources (MEDIUM Confidence):**
-- [arXiv: DynTaskMAS - Dynamic Task Graph-driven Framework](https://arxiv.org/html/2503.07675v1) - Asynchronous parallel execution patterns
-- [arXiv: GAP - Graph-based Agent Planning](https://arxiv.org/html/2510.25320v1) - Task dependency modeling
-- [Swarm Signal: Multi-Agent Coordination Failure Modes](https://swarmsignal.net/multi-agent-coordination-failure-modes-and-mitigation/) - Failure patterns and mitigations
-- [Langflow: Complete Guide to AI Agent Frameworks 2025](https://www.langflow.org/blog/the-complete-guide-to-choosing-an-ai-agent-framework-in-2025) - Framework comparison
-
-**Additional Context (LOW Confidence - Web Search Only):**
-- [Medium: Agentic AI in Production - 10 Patterns That Ship](https://medium.com/@ThinkingLoop/d3-1-agentic-ai-in-production-10-patterns-that-ship-in-2025-d9c367827e58) - Production patterns
-- [Claude Code: Sub-agents Documentation](https://code.claude.com/docs/en/sub-agents) - Specialized subagent patterns
-- [Google ADK: Multi-agent Systems](https://google.github.io/adk-docs/agents/multi-agents/) - Agent hierarchy patterns
+- **Four file categories map cleanly to extraction libraries** -- PDF (unpdf), Word (mammoth), code files (native fs), and data files (SheetJS + PapaParse). Each category has a clear, well-maintained library choice. No single library handles all four.
+- **Converting all file types to a canonical format (Markdown) is the standard pattern** for AI chat platforms. ChatGPT, Claude, and similar tools extract text from uploads and present it as context to the LLM. Markdown is the natural canonical format because it preserves structure and renders well.
+- **File upload UX in AI chat is highly standardized** -- drag-and-drop zone, attachment button (+/paperclip icon), file preview cards above input, progress indicators. Deviation from these patterns creates friction.
+- **Server-side processing is required for content extraction** but upload can be direct-to-storage for large files. For a 100MB max with four focused file types, server-side streaming upload is practical and simpler than presigned URLs. Presigned URLs become worth the complexity at 500MB+.
+- **The existing Skills system is the right integration point** for file processing. File extraction/conversion can be exposed as skills, making them available to both direct user interaction and agent workflows. The existing `FileProcessingSkills` class already has `file-read` and `file-list` skills.
 
 ---
 
-## Platform-Wide Features (v1.0 Foundation)
-
-This section covers features for the overall platform, including what's already built and future roadmap.
+## Feature Landscape
 
 ### Table Stakes (Users Expect These)
 
-Features users assume exist. Missing these = product feels incomplete.
+Features users assume exist in any AI chat platform with file support. Missing these = product feels incomplete or broken.
 
 | Feature | Why Expected | Complexity | Notes |
 |---------|--------------|------------|-------|
-| ChatGPT-style conversation UI | Users are trained on ChatGPT interface; familiar patterns reduce learning curve | MEDIUM | Sidebar history, message threading, markdown rendering, code highlighting |
-| Conversation history & persistence | Users expect to resume past conversations; reference previous context | MEDIUM | JSON-based storage, searchable history, conversation management |
-| User authentication | Enterprise requirement; access control and audit trail foundation | LOW | SSO integration preferred, SCIM support for team management |
-| Multi-model LLM support | Users expect flexibility; cost optimization across providers | MEDIUM | Unified API abstraction (pi-ai provides this), model switching without code changes |
-| File upload & basic processing | Core value proposition; users want to work with documents | MEDIUM | Drag-and-drop, progress indicators, file type validation |
-| Basic RAG (document Q&A) | Standard expectation after ChatGPT Plus popularized file analysis | HIGH | Chunking, embedding, retrieval, citation |
-| API access | Developers and integrators expect programmatic access | MEDIUM | RESTful API, authentication, rate limiting |
-| Rate limiting & quotas | Prevents abuse; manages costs for LLM API consumption | MEDIUM | Token-based (TPM) vs request-based (RPM), exponential backoff |
-| Audit logging | Enterprise compliance requirement; security incident investigation | LOW | Action logging, user attribution, retention policies |
-| Data encryption (transit/storage) | Security baseline; regulatory compliance | LOW | TLS 1.3, AES-256 at rest |
+| **File Upload via Drag-and-Drop** | Every major AI chat platform (ChatGPT, Claude, Gemini) supports dropping files into the chat area. Users expect this without instruction. | MEDIUM | Need drag-and-drop zone in ChatInput component. Must handle drop events, prevent default browser behavior, show visual feedback during drag-over. |
+| **File Upload via Button** | Not all users know drag-and-drop. A "+" or paperclip button next to the chat input is the universal fallback. | LOW | Simple file input trigger. Opens native OS file picker. |
+| **File Type Validation** | Users expect the system to accept the file types it claims to support and reject others with a clear message. | LOW | Validate on both client (file extension, MIME type) and server (magic number check). Use `file-type` npm for server-side magic number detection. |
+| **File Size Limit (100MB)** | Users expect some limit and need to know what it is upfront. Error on exceed. | LOW | Check `file.size` client-side before upload. Re-validate server-side. Show clear error message with the limit stated. |
+| **Upload Progress Indicator** | For any file upload, users need visual feedback that something is happening, especially for larger files. | MEDIUM | Use `XMLHttpRequest` or `fetch` with `ReadableStream` for progress tracking. Show percentage or indeterminate progress bar. |
+| **File Preview Cards** | After upload, users expect to see what they attached before sending. A card showing filename, type icon, and size. | MEDIUM | Small component rendered above chat input. Each card shows file metadata. Option to remove before sending. |
+| **Content Extraction (Text)** | The core value of file upload in an AI chat is that the AI can "read" the file. Users expect text content to be extracted automatically. | HIGH | Different per file type: PDF needs `unpdf`, Word needs `mammoth`, code is native `fs.readFile`, CSV/Excel needs `SheetJS`. Each has different extraction quality characteristics. |
+| **Chat Integration** | Users expect to reference uploaded files in conversation and get AI responses that demonstrate understanding of file content. | HIGH | The chat API must accept file references alongside messages. Extracted content must be injected into the LLM context. This is the most architecturally significant feature. |
+| **File List / Management** | Users expect to see previously uploaded files, search/filter them, and delete ones they no longer need. | MEDIUM | Requires a `files` database table, a management UI (likely in sidebar), and CRUD API endpoints. |
 
 ### Differentiators (Competitive Advantage)
 
-Features that set the product apart. Not required, but valuable.
+Features that set Next-Mind apart from generic AI chat tools. Not required, but valuable given the platform's team collaboration focus.
 
 | Feature | Value Proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
-| Chinese LLM optimization (Qwen/GLM/MiniMax) | Cost advantage (30-50% cheaper), regulatory compliance in China market, native Chinese language performance | MEDIUM | GLM-5 best for system design, MiniMax best value, Qwen3.5 for reasoning |
-| Full MCP protocol implementation | Interoperability with growing ecosystem of MCP tools; standardized tool access | HIGH | Resources, tools, prompts, bash access; complements A2A for agent communication |
-| A2A multi-agent collaboration | Complex task delegation; specialized agents working together; no single agent can do everything | HIGH | Task delegation, agent discovery, result aggregation; Linux Foundation standard (Google-donated) |
-| Skills system with marketplace | Extensibility without development; community contributions; modular capability building | HIGH | Predefined skills, custom skills, skill orchestration; SKILL.md standard emerging |
-| Agentic document extraction (beyond OCR) | Handles complex layouts, tables, embedded images as structured multimodal objects | HIGH | LlamaParse-style processing vs legacy OCR; understands document structure |
-| Team knowledge base (shared RAG) | Collective intelligence; onboarding acceleration; institutional memory | HIGH | File library, conversation history, external knowledge sources, web resources |
-| Hybrid RAG (vector + graph) | Better contextual retrieval; relationship understanding; enterprise knowledge systems | HIGH | Graph-RAG for complex relationships; agentic RAG for autonomous retrieval |
-| Session management & resumption | Interrupted work recovery; long-running task continuity | MEDIUM | Full state management, resume capability (pi-agent-core provides foundation) |
-| Permission controls & path protection | Fine-grained access control; security boundaries for agent actions | MEDIUM | Role-based permissions, action approval workflows, sandboxed execution |
+| **Smart Classification** | Automatically categorize uploaded files (document, code, data, configuration) based on content analysis, not just extension. | MEDIUM | Use `file-type` for binary type detection + content-based heuristics (e.g., detect CSV delimiter, detect programming language). Store classification in DB. Enables filtering and organization. |
+| **Format Conversion to Markdown** | Convert PDF and Word documents to clean Markdown for display and editing. This preserves structure (headings, lists, tables) while being editable. | HIGH | Mammoth converts docx to HTML which can be piped through `turndown` for Markdown. PDF to Markdown is harder -- `unpdf` extracts raw text, but structure preservation requires additional processing (e.g., detecting headings by font size from pdfjs text layer). |
+| **Content Editing** | Allow users to edit the extracted content before or after sending to the AI. Useful for correcting OCR errors, removing sensitive sections, or refining context. | HIGH | Requires a Markdown editor component. `@uiw/react-md-editor` is the simplest option -- provides split view editing/preview. MDXEditor is richer but heavier. The edited content replaces the extracted text in the LLM context. |
+| **File-as-Skill Integration** | Expose file processing capabilities as Skills in the existing skills system, making them available to agent workflows. | MEDIUM | The existing `FileProcessingSkills` class has `file-read` and `file-list`. Add `file-extract`, `file-convert`, `file-classify` skills. These can be used by agents in multi-agent workflows. |
+| **Multi-File Context** | Allow uploading multiple files and having the AI reason across them (e.g., "compare these two PDFs"). | MEDIUM | The chat API must handle an array of file references. Content from all files is concatenated into the LLM context with clear delimiters. Token budget management becomes important. |
+| **File Version Awareness** | Track when a file was uploaded and by whom. Show this in the file management UI. | LOW | Already natural with the `files` DB table (userId, createdAt). Just needs UI display. |
 
 ### Anti-Features (Commonly Requested, Often Problematic)
 
-Features that seem good but create problems.
+Features that seem good but create problems. Explicitly avoid these.
 
 | Feature | Why Requested | Why Problematic | Alternative |
 |---------|---------------|-----------------|-------------|
-| Real-time everything | Users want instant responses | Compounding Error Rate (CER) reaches 31.2% for 5+ step tasks; early mistakes cascade; memory drift in long sessions | Streaming responses for UX, but atomic state changes for reliability; graceful degradation patterns |
-| Unlimited tool access | Maximum flexibility for agent | Tool overload anti-pattern; poorly described tools lead to wrong selections; confusion and incorrect usage | Clear tool boundaries; documented tool descriptions; role-specific tool sets |
-| Overly complex prompts | Comprehensive instructions | Instruction bloat leads to unpredictable behavior; conflicting instructions; role confusion (agent switches modes mid-response) | Focused, single-purpose prompts; clear separation of responsibilities; atomic tool definitions |
-| Shared agent memory | Efficiency, knowledge sharing | Race conditions; memory poisoning from bad outputs; state corruption across agents | Agent-isolated memory; A2A protocol for controlled information exchange; opaque agent boundaries |
-| Mobile-first design | Access anywhere | Web-primary platforms suffer on mobile; feature parity impossible; maintenance burden | Responsive web design; PWA for mobile access; defer native apps |
-| Multi-tenancy from day one | Scale preparation | Adds complexity before validation; premature optimization; distracts from core value | Single-team focus; validate with real users; add multi-tenancy after product-market fit |
-| Private deployment option | Enterprise sales requirement | Infrastructure complexity; support burden; security maintenance overhead | Cloud-first with strong security; SOC2 compliance; data residency options later |
+| **OCR / Image-based PDF Processing** | Some PDFs are scanned documents that need OCR to extract text. | OCR is a separate domain with heavy dependencies (Tesseract.js is 20MB+). It's slow, inaccurate for CJK characters, and a scope creep from the four defined file types. | Defer to future milestone. For v1.2, document this limitation and show a clear error message for image-only PDFs (detectable via text extraction returning empty). |
+| **Presigned URL / Direct-to-Cloud Upload** | Better performance for large files; server never touches bytes. | Adds significant complexity (cloud storage configuration, CORS, signed URL generation, upload callback). For 100MB max with four file types where server-side extraction is required anyway, the server must process the file. Presigned URLs only help if extraction happens in a background worker, which is premature for v1.2. | Server-side streaming upload with `Busboy` or Next.js native `request.formData()`. Revisit presigned URLs when file sizes exceed 500MB or cloud storage is integrated. |
+| **Real-time Collaborative File Editing** | Multiple team members editing the same extracted content simultaneously. | Requires CRDTs (Yjs) or OT, WebSocket infrastructure for edits, conflict resolution. Massive scope increase. The platform already supports multi-user through conversations, not real-time co-editing. | Single-user content editing in v1.2. If collaborative editing is needed later, it becomes its own milestone. |
+| **File Versioning / Diff History** | Track changes to file content over time, show diffs. | Requires storing multiple versions per file, diff computation, significantly more complex DB schema. Not a core need for an AI chat platform -- users re-upload if they have a new version. | Store only the latest extracted content. If the same file is re-uploaded, update the record. Version history is a future feature. |
+| **In-Browser PDF Rendering / Viewer** | Show PDFs visually in the chat, not just extracted text. | Requires `react-pdf` or `pdfjs-dist` on the client side, which adds significant bundle size. The platform's value is AI understanding of file content, not file viewing. Users have PDF viewers. | Show extracted text/markdown content. For PDFs where visual layout matters, note this as a limitation. If PDF viewing is added later, use an iframe with native browser PDF viewer as the simplest approach. |
+
+---
 
 ## Feature Dependencies
 
 ```
-User Authentication
-    └──requires──> Session Management
-                       └──requires──> Conversation History
+[File Upload (Drag-and-Drop + Button)]
+    └──requires──> [File Type Validation]
+                       └──requires──> [file-type library + MIME checks]
+    └──requires──> [Storage Layer (DB table + disk/cloud)]
 
-MCP Protocol
-    └──requires──> Tool Execution Framework
-    └──requires──> Permission Controls
+[Content Extraction]
+    └──requires──> [File Upload] (file must be stored first)
+    └──requires──> [PDF extraction: unpdf]
+    └──requires──> [Word extraction: mammoth]
+    └──requires──> [Code extraction: native fs]
+    └──requires──> [Data extraction: SheetJS + PapaParse]
 
-A2A Multi-Agent
-    └──requires──> MCP Protocol (agent-to-tool)
-    └──requires──> Agent Discovery Service
-    └──requires──> Task Queue/Orchestration
+[Format Conversion (to Markdown)]
+    └──requires──> [Content Extraction] (need raw text first)
+    └──requires──> [mammoth for docx->HTML->Markdown]
+    └──requires──> [turndown for HTML->Markdown conversion]
+    └──enhances──> [Content Editing] (Markdown is editable)
 
-RAG Knowledge Base
-    └──requires──> File Upload & Processing
-    └──requires──> Embedding Service
-    └──requires──> Vector Database
-                       └──requires──> Chunking Strategy
+[Smart Classification]
+    └──requires──> [Content Extraction] (classify based on content, not just extension)
+    └──enhances──> [File Management] (filter by category)
 
-Skills System
-    └──requires──> Tool Execution Framework
-    └──requires──> Permission Controls
-    └──enhances──> MCP Protocol (skills as MCP tools)
+[Content Editing]
+    └──requires──> [Format Conversion] (edit Markdown, not raw text)
+    └──requires──> [Markdown editor component]
 
-Chinese LLM Support
-    └──requires──> Unified LLM API (pi-ai)
-    └──conflicts──> None (complementary to other features)
+[File Preview]
+    └──requires──> [Content Extraction] or [Format Conversion] (something to preview)
+    └──enhances──> [Chat Integration] (preview before sending to AI)
 
-API Access
-    └──requires──> User Authentication
-    └──requires──> Rate Limiting
-    └──requires──> Audit Logging
+[File Management (List/Search/Delete)]
+    └──requires──> [Storage Layer] (DB table for file metadata)
+    └──independent of──> [Content Extraction] (can manage files without extracting)
 
-ChatGPT-Style UI
-    └──requires──> Conversation History
-    └──requires──> User Authentication
-    └──enhances──> All features (unified interface)
+[Chat Integration]
+    └──requires──> [File Upload] (files must be attached)
+    └──requires──> [Content Extraction] (content must be available)
+    └──requires──> [Chat API modification] (accept file references in messages)
+    └──enhances──> [Multi-File Context] (reference multiple files)
 ```
 
 ### Dependency Notes
 
-- **A2A requires MCP**: MCP handles agent-to-tool communication; A2A handles agent-to-agent. They are complementary standards - MCP for tools, A2A for collaboration.
-- **Skills enhance MCP**: Skills can be exposed as MCP tools, allowing skill invocation through the standard protocol.
-- **RAG requires multiple services**: Embedding, vector storage, and chunking are separate concerns that must work together.
-- **Chinese LLM Support has no conflicts**: Unified API abstraction (pi-ai) enables model switching without affecting other features.
-- **UI enhances all features**: The ChatGPT-style interface is the unified entry point for all capabilities.
+- **Content Extraction is the central dependency** -- almost everything else builds on it. It must be implemented first and designed for extensibility (strategy pattern per file type).
+- **Format Conversion is optional for MVP** -- raw text extraction is sufficient for chat integration. Markdown conversion is needed for content editing and better previews, but can be added incrementally.
+- **File Management is independent of extraction** -- the file metadata table and CRUD operations can be built in parallel with extraction logic.
+- **Chat Integration is the user-facing culmination** -- it ties upload + extraction + the existing chat API together. Build it last, after extraction is working.
+- **Smart Classification can be lightweight at first** -- start with extension-based + MIME type classification. Content-based classification (e.g., detecting CSV delimiter, programming language) can be added later.
 
-## Platform MVP Definition
+---
 
-### Launch With (v1) - COMPLETED
+## MVP Definition
 
-Minimum viable product - what's needed to validate the concept.
+### Launch With (v1.2 Core)
 
-- [x] ChatGPT-style conversation UI - Core interaction pattern; users expect this
-- [x] User authentication (email/password + SSO) - Security baseline; team context
-- [x] Conversation history & persistence - Users need to resume work
-- [x] Single Chinese LLM integration (Qwen3.5 or MiniMax) - Cost advantage; validate model choice
-- [x] File upload & basic processing (PDF, Word, images) - Core value proposition
-- [x] Basic RAG (document Q&A with citation) - Immediate utility
-- [x] API access with authentication - Integration path for power users
-- [x] Audit logging - Enterprise requirement
-- [x] Data encryption - Security baseline
-- [x] MCP protocol implementation - Tool integration foundation
-- [x] Skills system (predefined + custom) - Extensibility
-- [x] Permission controls & approval flow - Security boundaries
+Minimum viable file processing -- what users need to upload a file and have the AI understand it.
 
-**Status:** v1.0 MVP released.
+- [ ] **File Upload (Drag-and-Drop + Button)** -- Users can upload PDF, Word, code, and CSV/Excel files via drag-and-drop or button click in the chat input area.
+- [ ] **File Type & Size Validation** -- Client and server-side validation. Accept only supported types. Reject files over 100MB with clear error.
+- [ ] **Upload Progress Indicator** -- Visual feedback during upload (progress bar or spinner).
+- [ ] **File Preview Cards** -- Show uploaded files as cards above chat input before sending. Allow removal.
+- [ ] **Content Extraction** -- Extract text from all four file types (PDF, Word, code, CSV/Excel). Store extracted content in database.
+- [ ] **Files Database Table** -- New `files` table with metadata (id, userId, filename, mimeType, size, fileType category, storagePath, extractedContent, status).
+- [ ] **Chat Integration** -- When a message includes file references, inject extracted content into LLM context. AI can reason about file content.
+- [ ] **Basic File Management** -- List uploaded files, delete files. Accessible from sidebar or dedicated page.
 
-### Add After Validation (v1.x)
+### Add After Validation (v1.2.x)
 
-Features to add once core is working.
+Features to add once core upload + extraction + chat integration is working.
 
-- [x] Additional Chinese LLMs (GLM-5, other MiniMax models) - Trigger: User demand for specific models
-- [ ] Team knowledge base (shared RAG) - Trigger: Multiple users working on similar content
-- [ ] Rate limiting & quotas - Trigger: Cost management needs
-- [ ] **A2A multi-agent collaboration (v1.1 current milestone)** - Requires MCP foundation; complex orchestration
+- [ ] **Format Conversion to Markdown** -- Convert PDF and Word to clean Markdown for display. Requires mammoth (docx->HTML) + turndown (HTML->Markdown). Trigger: users want to see nicely formatted file content, not raw text.
+- [ ] **Content Editing** -- Markdown editor for extracted content. Users can correct, trim, or annotate before sending to AI. Trigger: users report needing to fix extraction artifacts or remove sensitive sections.
+- [ ] **Smart Classification** -- Content-based file categorization beyond extension. Detect programming language for code files, CSV delimiter, document structure. Trigger: file list becomes cluttered and users need filtering.
+- [ ] **Multi-File Context** -- Upload and reference multiple files in a single message. Trigger: users ask "compare these two files" and the system cannot handle it.
+- [ ] **File-as-Skill Integration** -- Expose file extraction/conversion as Skills for agent workflows. Trigger: multi-agent workflows need to process files as part of tasks.
+- [ ] **File Search** -- Full-text search across extracted file content. Trigger: users have many files and need to find specific ones.
 
 ### Future Consideration (v2+)
 
-Features to defer until product-market fit is established.
+Features to defer until the file processing system is validated and stable.
 
-- [ ] Skills marketplace - Requires skills system maturity; community building
-- [ ] Graph-RAG / Hybrid RAG - Requires basic RAG validation; adds significant complexity
-- [ ] Agentic document extraction - Requires multimodal LLM capabilities; specialized processing
-- [ ] Mobile native apps - Web-first validated; mobile as enhancement
-- [ ] Multi-tenancy - Single-team focus validated first
+- [ ] **OCR / Image-based PDF Processing** -- Tesseract.js integration for scanned documents. Heavy dependency, CJK accuracy concerns.
+- [ ] **In-Browser PDF Viewer** -- Visual PDF rendering via `react-pdf` or iframe. Users can view PDF layout, not just text.
+- [ ] **Presigned URL Uploads** -- Direct-to-cloud upload for better performance. Requires cloud storage integration.
+- [ ] **File Versioning** -- Track multiple versions of the same file. Diff view between versions.
+- [ ] **Real-time Collaborative Editing** -- Multiple users editing extracted content simultaneously. Requires CRDT infrastructure.
+- [ ] **Excel Formula Evaluation** -- Parse and evaluate Excel formulas, not just read cell values.
+- [ ] **PPTX Support** -- PowerPoint file extraction and conversion. Different structure from docx/pdf.
+
+---
 
 ## Feature Prioritization Matrix
 
 | Feature | User Value | Implementation Cost | Priority |
 |---------|------------|---------------------|----------|
-| ChatGPT-style UI | HIGH | MEDIUM | P1 |
-| User authentication | HIGH | LOW | P1 |
-| Conversation history | HIGH | MEDIUM | P1 |
-| Chinese LLM support | HIGH | MEDIUM | P1 |
-| File upload & processing | HIGH | MEDIUM | P1 |
-| Basic RAG | HIGH | HIGH | P1 |
-| API access | MEDIUM | MEDIUM | P1 |
-| Audit logging | MEDIUM | LOW | P1 |
-| Data encryption | MEDIUM | LOW | P1 |
-| MCP protocol | HIGH | HIGH | P2 |
-| Skills system | HIGH | HIGH | P2 |
-| Team knowledge base | HIGH | HIGH | P2 |
-| Session management | MEDIUM | MEDIUM | P2 |
-| Rate limiting | MEDIUM | MEDIUM | P2 |
-| Permission controls | MEDIUM | MEDIUM | P2 |
-| A2A multi-agent | HIGH | HIGH | P3 |
-| Skills marketplace | MEDIUM | HIGH | P3 |
-| Graph-RAG | MEDIUM | HIGH | P3 |
-| Agentic document extraction | MEDIUM | HIGH | P3 |
+| File Upload (Drag-and-Drop + Button) | HIGH | MEDIUM | P1 |
+| File Type & Size Validation | HIGH | LOW | P1 |
+| Upload Progress Indicator | HIGH | MEDIUM | P1 |
+| File Preview Cards | HIGH | MEDIUM | P1 |
+| Content Extraction (all 4 types) | HIGH | HIGH | P1 |
+| Files Database Table | HIGH | LOW | P1 |
+| Chat Integration (file references) | HIGH | HIGH | P1 |
+| Basic File Management (list/delete) | MEDIUM | MEDIUM | P1 |
+| Format Conversion to Markdown | MEDIUM | HIGH | P2 |
+| Content Editing | MEDIUM | HIGH | P2 |
+| Smart Classification | MEDIUM | MEDIUM | P2 |
+| Multi-File Context | MEDIUM | MEDIUM | P2 |
+| File-as-Skill Integration | MEDIUM | MEDIUM | P2 |
+| File Search | LOW | MEDIUM | P2 |
+| In-Browser PDF Viewer | LOW | HIGH | P3 |
+| OCR Processing | LOW | HIGH | P3 |
+| Presigned URL Uploads | LOW | HIGH | P3 |
+| File Versioning | LOW | HIGH | P3 |
+| Collaborative Editing | LOW | HIGH | P3 |
+| PPTX Support | LOW | MEDIUM | P3 |
 
 **Priority key:**
-- P1: Must have for launch (MVP) - DONE
-- P2: Should have, add when possible (v1.x)
+- P1: Must have for v1.2 launch
+- P2: Should have, add once core is validated (v1.2.x)
 - P3: Nice to have, future consideration (v2+)
+
+---
 
 ## Competitor Feature Analysis
 
-| Feature | LangChain/LangGraph | CrewAI | AutoGen | Dify | Next-Mind Approach |
-|---------|---------------------|--------|---------|------|-------------------|
-| Core focus | Flexible workflows | Role-based agents | Multi-agent conversations | Low-code AI apps | Team collaboration platform |
-| LLM abstraction | Yes (unified) | Yes | Yes | Yes | Yes (pi-ai) |
-| Chinese LLMs | Limited | Limited | Limited | Good | Native (primary) |
-| MCP support | Yes | Via extension | Via extension | Partial | Full implementation |
-| A2A support | Via LangGraph | No | Native (different protocol) | No | Planned (v1.1) |
-| Skills/Tools | Chains/Tools | Tasks | Conversations | Workflows | Skills system (implemented) |
-| RAG | Strong (LlamaIndex) | Basic | Basic | Good | Native (file + knowledge base) |
-| UI | No (library) | No | No | Yes (low-code) | Yes (ChatGPT-style) |
-| API | No (library) | No | No | Yes | Yes |
-| Team features | No | No | No | Basic | Native (shared knowledge) |
-| Deployment | Self-hosted | Self-hosted | Self-hosted | Cloud/Self | Cloud-first |
+| Feature | ChatGPT | Claude | Next-Mind (Planned) |
+|---------|---------|--------|---------------------|
+| **File upload methods** | Drag-and-drop, + button | Drag-and-drop, paperclip button | Drag-and-drop, + button (same pattern) |
+| **File preview before send** | File card with thumbnail | File card with type icon | File card with type icon + size |
+| **Files per message** | Multiple | Up to 20 per session | Start with 1, extend to multiple (P2) |
+| **Max file size** | 512MB (varies by plan) | 30MB per file | 100MB (sufficient for documents/code/data) |
+| **PDF text extraction** | Excellent (GPT-4o vision) | Good (native extraction) | Good (unpdf/pdfjs quality) |
+| **Word (.docx) extraction** | Good | Good | Good (mammoth -- some fragility on complex docs) |
+| **CSV/Excel analysis** | Excellent (Code Interpreter) | Good (native CSV/Excel) | Good (SheetJS -- reads cell values, no formula evaluation) |
+| **Code file understanding** | Excellent | Excellent | Excellent (native fs -- perfect for code) |
+| **Content editing after extraction** | No (re-upload required) | No (re-upload required) | Yes (planned differentiator -- Markdown editor) |
+| **Smart classification** | Auto-detected type | Auto-detected type | Extension + MIME + content-based (P2) |
+| **File management UI** | Limited (per-conversation) | Limited (per-conversation) | Full management (list, search, delete) |
+| **Agent workflow integration** | N/A | N/A | Yes (planned -- file processing as Skills) |
 
-**Differentiation strategy:**
-1. **Chinese LLM first** - Not an afterthought; optimized for Qwen/GLM/MiniMax from day one
-2. **Team collaboration native** - Shared knowledge, conversation history, team context
-3. **Full MCP + planned A2A** - Standards-based interoperability; future-proof architecture
-4. **Unified interface** - ChatGPT-style UI for all features; no context switching
-5. **File processing focus** - Beyond basic upload; document understanding and organization
+**Key differentiator opportunity:** Content editing of extracted files. Neither ChatGPT nor Claude allows users to edit the extracted content before or after AI processing. This is a meaningful differentiator for a team collaboration tool where users may need to correct extraction errors, redact sensitive sections, or refine context before sending to the AI.
 
-## Platform Sources
-
-### Framework Comparisons
-- [Propelius AI - LangChain vs CrewAI vs AutoGen Guide 2026](https://propelius.ai/blogs/langchain-crewai-autogen-comparison-2026/)
-- [Medium - LangGraph vs CrewAI vs AutoGen](https://medium.com/data-science-collective/langgraph-vs-crewai-vs-autogen-which-agent-framework-should-you-actually-use-in-2026-b8b2c84f1229)
-- [Turing - Top 6 AI Agent Frameworks](https://www.turing.com/resources/ai-agent-frameworks)
-
-### Enterprise AI Platforms
-- [Vellum AI - 2026 Guide to Enterprise AI Automation Platforms](https://vellum.ai/blog/guide-to-enterprise-ai-automation-platforms)
-- [Rasa - 8 Best AI Agent Builders for Enterprise in 2026](https://rasa.com/blog/best-ai-agent-builders)
-- [Beam AI - Top 5 AI Agent Platforms in 2026](https://beam.ai/agentic-insights/the-best-5-ai-agent-platforms-in-2026-and-how-to-pick-the-right-one)
-
-### MCP Protocol
-- [MCP Official Blog - The 2026 MCP Roadmap](http://blog.modelcontextprotocol.io/posts/2026-mcp-roadmap/)
-- [SitePoint - MCP Complete 2026 Guide](https://www.sitepoint.com/model-context-protocol-mcp/)
-- [CData - 2026: Enterprise-Ready MCP Adoption](https://www.cdata.com/blog/2026-year-enterprise-ready-mcp-adoption)
-
-### A2A Protocol
-- [A2A Protocol Official Documentation](https://a2a-protocol.org/latest/)
-- [Ruh AI - AI Agent Protocols 2026: Complete Guide](https://www.ruh.ai/blogs/ai-agent-protocols-2026-complete-guide)
-- [O'Reilly - Designing Collaborative Multi-Agent Systems with A2A](https://www.oreilly.com/radar/designing-collaborative-multi-agent-systems-with-the-a2a-protocol/)
-
-### Chinese LLMs
-- [Medium - MiniMax M2.7 vs GLM-5 vs Claude Opus 4.6](https://lalatenduswain.medium.com/minimax-m2-7-vs-glm-5-vs-claude-opus-4-6-the-definitive-ai-model-showdown-of-march-2026-f89a1bbaac15)
-- [Zhihu - Qwen3.5 Series Announcement](https://zhuanlan.zhihu.com/p/2008846603730048341)
-
-### RAG Systems
-- [ChatRAG - 7 Best Practices for RAG Implementation](https://www.chatrag.ai/blog/2026-02-06-7-best-practices-for-rag-implementation-that-actually-improve-your-ai-results)
-- [Medium - From RAG to Graph-RAG](https://medium.com/@amitvsolutions/from-rag-to-graph-rag-a-complete-guide-to-building-enterprise-knowledge-systems-49f7d564cb74)
-- [DataNucleus - Agentic RAG in 2026](https://datanucleus.dev/rag-and-agentic-ai/agentic-rag-enterprise-guide-2026)
-
-### Skills & Plugin Architecture
-- [Medium - 10 Must-Have Skills for Claude in 2026](https://medium.com/@unicodeveloper/10-must-have-skills-for-claude-and-any-coding-agent-in-2026-b5451b013051)
-- [The Prompt Index - How to Use AI Agent Skills in 2026](https://www.thepromptindex.com/how-to-use-ai-agent-skills-the-complete-guide.html)
-- [GitConnected - Mental Model: Skills, Subagents, and Plugins](https://levelup.gitconnected.com/a-mental-model-for-claude-code-skills-subagents-and-plugins-3dea9924bf05)
-
-### Anti-Patterns
-- [Tamirdresher - 9 AI Agents, One API Quota](https://www.tamirdresher.com/blog/2026/03/21/rate-limiting-multi-agent)
-- [Beam AI - AI Agent Security in 2026](https://beam.ai/agentic-insights/ai-agent-security-in-2026-the-risks-most-enterprises-still-ignore)
-
-### Document Processing
-- [LlamaIndex - Best OCR Software of 2026](https://www.llamaindex.ai/insights/best-ocr-software)
-- [Fast.io - AI Agent Document Processing: The 2026 Guide](https://fast.io/resources/ai-agent-document-processing/)
-- [Medium - Beyond OCR: Agentic Document Extraction](https://medium.com/@tam.tamanna18/beyond-ocr-how-agentic-document-extraction-agents-are-transforming-complex-files-in-2026-3e4124c4c7d7)
-
-### pi-mono Framework
-- [GitHub - pi-mono](https://github.com/badlogic/pi-mono)
-- [pi-mono Documentation](https://shittycodingagent.ai/)
+**Secondary differentiator:** File management. Both ChatGPT and Claude tie files to individual conversations with no cross-conversation file management. A dedicated file management view (list all files, search, delete) is valuable for team use where files are reused across conversations.
 
 ---
-*Feature research for: AI Agent Collaboration Platform*
-*Researched: 2026-03-24 (Platform), 2026-03-25 (A2A Multi-Agent)*
+
+## Integration Points with Existing System
+
+### ChatInput Component (`src/components/chat/chat-input.tsx`)
+
+Currently accepts only text input. Must be extended to:
+- Add a "+" / paperclip button next to the textarea
+- Add drag-and-drop event handlers on the input area
+- Render file preview cards above the textarea when files are attached
+- Pass file references alongside the text message to `onSend`
+
+### Chat API (`src/app/api/chat/route.ts`)
+
+Currently accepts `{ messages, modelId, conversationId }`. Must be extended to:
+- Accept `fileIds: string[]` in the request body
+- Look up files in the database, retrieve extracted content
+- Inject file content into the messages array as system context (e.g., `[File: report.pdf]\n{extracted content}\n[/File]`)
+- Apply token budget management to avoid exceeding model context limits
+
+### File Processing Skills (`src/skills/file-processing.ts`)
+
+Currently has `file-read` and `file-list` skills. Can be extended with:
+- `file-extract` -- extract content from an uploaded file by ID
+- `file-convert` -- convert extracted content to Markdown
+- `file-classify` -- classify a file based on content analysis
+
+### Database Schema (`src/lib/db/schema.ts`)
+
+New `files` table needed:
+- `id` (uuid, primary key)
+- `userId` (text, references users)
+- `conversationId` (text, nullable -- files can exist without being in a conversation)
+- `filename` (text)
+- `originalName` (text -- user-facing filename)
+- `mimeType` (text)
+- `size` (integer, bytes)
+- `fileType` (text enum: 'pdf', 'docx', 'code', 'csv', 'xlsx', 'other')
+- `storagePath` (text -- path on disk or object key)
+- `extractedContent` (text -- extracted text content)
+- `extractedMarkdown` (text, nullable -- converted Markdown, added in P2)
+- `classification` (text, nullable -- smart category, added in P2)
+- `status` (text enum: 'uploading', 'processing', 'ready', 'failed')
+- `errorMessage` (text, nullable)
+- `createdAt` (timestamp)
+- `updatedAt` (timestamp)
+
+### Storage Layer
+
+Abstract storage interface for local filesystem (v1.2) with future cloud storage swap:
+- `uploadFile(buffer, metadata)` -- store file, return storage path
+- `getFile(path)` -- retrieve file as buffer
+- `deleteFile(path)` -- remove file
+- Local implementation writes to a configurable directory (e.g., `./uploads/`)
+- Cloud implementation (future) wraps S3-compatible API
+
+---
+
+## Sources
+
+- [unpdf GitHub - PDF extraction and rendering across all runtimes](https://github.com/unjs/unpdf) -- HIGH confidence, official repo
+- [Using pdf-parse on Vercel Is Wrong -- Here's What Actually Works](https://chudi.dev/blog/serverless-pdf-processing-unpdf-vs-pdfparse) -- HIGH confidence, comparison with benchmarks
+- [7 PDF Parsing Libraries for Node.js - Strapi](https://strapi.io/blog/7-best-javascript-pdf-parsing-libraries-nodejs-2025) -- MEDIUM confidence, comparison article
+- [Mammoth npm package guide](https://generalistprogrammer.com/tutorials/mammoth-npm-package-guide) -- MEDIUM confidence, tutorial
+- [Reliable document text extraction in Node.js 20 - Reddit](https://www.reddit.com/r/node/comments/1qaoknz/reliable_document_text_extraction_in_nodejs_20/) -- MEDIUM confidence, real-world experience report
+- [Unstructured-ish DOCX Parsing in TypeScript/NodeJS](https://nguyenhuythanh.com/posts/unstructured-ish-docx-parsing/) -- MEDIUM confidence, technical blog
+- [Top 5 JavaScript CSV Parsers - OneSchema](https://www.oneschema.co/blog/top-5-javascript-csv-parsers) -- HIGH confidence, PapaParse benchmark data
+- [SheetJS vs ExcelJS vs node-xlsx (2026)](https://www.pkgpulse.com/blog/sheetjs-vs-exceljs-vs-node-xlsx-excel-files-node-2026) -- MEDIUM confidence, comparison article
+- [How to Handle File Uploads in Next.js - OneUptime (Jan 2026)](https://oneuptime.com/blog/post/2026-01-24-nextjs-file-uploads/view) -- HIGH confidence, current best practices
+- [What I Learned About File Uploads in Next.js - Medium](https://medium.com/codetodeploy/what-i-learned-about-file-uploads-in-next-js-and-the-mistakes-i-made-first-51481dab75fe) -- MEDIUM confidence, experience report
+- [ChatGPT vs. Claude for File Upload & Reading Capabilities](https://www.datastudios.org/post/chatgpt-vs-claude-for-file-upload-reading-capabilities-full-comparison-and-report-models-file) -- MEDIUM confidence, competitor comparison
+- [Best AI Chatbots with File Upload in 2026](https://textcortex.com/post/chatbots-with-file-upload) -- MEDIUM confidence, feature roundup
+- [React PDF Viewers - The 2025 Guide](https://sudopdf.mintlify.app/blogs/pdf-viewer-guide) -- MEDIUM confidence, React component comparison
+- [MDXEditor - Rich Text Markdown Editor](https://mdxeditor.dev/) -- HIGH confidence, official site
+- [React Markdown Complete Guide 2025 - Strapi](https://strapi.io/blog/react-markdown-complete-guide-security-styling) -- MEDIUM confidence, security guide
+- `file-type` npm package (sindresorhus) -- HIGH confidence, widely adopted, actively maintained
+- Existing codebase analysis -- HIGH confidence, direct inspection of schema.ts, chat-input.tsx, file-processing.ts, chat/route.ts, skills/types.ts
+
+---
+*Feature research for: Next-Mind v1.2 File Processing*
+*Researched: 2026-03-26*

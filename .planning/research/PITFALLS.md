@@ -1,389 +1,326 @@
-# Pitfalls Research
+# Pitfalls Research: File Upload, Processing & Management
 
-**Domain:** AI Agent Framework (Multi-Agent Collaboration Platform)
-**Researched:** 2026-03-25
+**Domain:** Adding multi-type file upload (PDF, Word, code files, CSV/Excel) to an existing Next.js 16 AI Agent platform
+**Researched:** 2026-03-26
 **Confidence:** HIGH
 
 ---
 
 ## Critical Pitfalls
 
-### Pitfall 1: The "More Agents = More Capability" Fallacy
+### Pitfall 1: Treating File Type Validation as a Checkbox
 
 **What goes wrong:**
-Teams assume that adding More agents automatically increases System Capability.
-Research shows this is fundamentally flawed - multi-agent systems are inherently fragile due to coordination complexity that often outweighs benefits.
-Studies show failure rates of 41-86.7% in production, with 30% of projects abandoned after proof of concept.
+Relying solely on file extension or `Content-Type` header to validate uploaded files. Attackers rename malicious payloads (e.g., `shell.php.jpg`) or spoof MIME headers to bypass checks. A polyglot file that passes as both a valid PDF and an executable can slip through naive validation and be served back to users or processed server-side.
 
 **Why it happens:**
-The seductive logic: "If one AI can write code, surely two AIs Working together can architect entire systems?"
-This ignores the exponential increase in coordination overhead, error propagation, and context management.
+Browser-sent `Content-Type` headers are client-controlled and trivially forged. File extensions are cosmetic. Most tutorials show validation as `if (file.type !== 'application/pdf')` and call it done. The existing `content-filter.ts` only checks text content -- it has no awareness of binary file payloads.
 
 **How to avoid:**
-- Start with clear justification: only add agents when single-agent baseline is below 45% success rate
-- Use read-only sub-agents first (file searchers, dependency checkers) before full delegation
-- Implement clear ownership: one main agent makes decisions, sub-agents only gather information
-- Validate that multi-agent provides measurable benefit over single-agent with better context
+- Validate magic bytes (file signatures) server-side as the primary check: PDF starts with `%PDF-`, DOCX is a ZIP with `[Content_Types].xml`, XLSX same pattern
+- Use the `file-type` npm package which reads buffers and identifies 100+ formats by magic bytes
+- Keep extension whitelisting as a secondary defense layer (defense in depth)
+- Reject files where extension and magic bytes disagree
+- For the highest confidence, consider Google Magika (AI-powered detection trained on 25M+ files)
 
 **Warning signs:**
-- Adding agents without measuring single-agent baseline
-- No clear ownership model for task decisions
-- Agents debating or negotiating instead of executing
-- Token usage growing faster than task completion rate
+- Validation logic only checks `file.name.endsWith('.pdf')` or `file.type === 'application/pdf'`
+- No server-side inspection of file content beyond the header
+- Test files pass when renamed to `.txt` but still uploaded as PDFs
+- Missing validation in the API route handler (only client-side checks exist)
 
-**Phase to address:** Phase 1 (Task Decomposition & Agent Design)
-
-**Evidence:**
-DeepMind research (Dec 2025) found multi-agent coordination yields highest returns only when single-agent baseline is below 45%. Above that, the overhead consumes benefits. Gartner forecasts 30% of agentic AI projects abandoned by end of 2025.
+**Phase to address:** Phase 1 (File Upload Infrastructure) -- validation layer must exist before any storage
 
 ---
 
-### Pitfall 2: Specification Ambiguity (41.77% of failures)
+### Pitfall 2: Next.js App Router Body Size Limits
 
 **What goes wrong:**
-Teams treat agent specifications like documentation - vague prose hoping agents will "figure it out." This is the largest failure category. Agents cannot read between lines, infer context, or ask clarifying questions during execution. Every ambiguity becomes a decision point where agents explore wrong interpretations.
+File uploads silently fail for files larger than ~1-4.5 MB depending on deployment. Next.js App Router route handlers use the Web API `Request` object, not Express. The old Pages Router `export const config = { api: { bodyParser: { sizeLimit } } }` pattern is **deprecated and does not work** in App Router. Vercel serverless functions have a hard 4.5 MB (Hobby) or 50 MB (Pro) payload limit.
+
+This project targets 100 MB uploads per PROJECT.md. That will **never work** through a standard route handler on serverless infrastructure without special handling.
 
 **Why it happens:**
-Developers underestimate how LLMs process instructions differently from humans. Natural language that seems clear ("analyze this issue and help the team take action") leads to completely different agent behaviors (close, assign, escalate, or do nothing - each "reasonable").
+Developers copy-paste Pages Router patterns into App Router route handlers. The `FormData` API in route handlers buffers the entire body into memory before your handler code runs. For a 100 MB file, this means 100+ MB of memory consumed per concurrent upload -- multiple simultaneous uploads will crash the process.
 
 **How to avoid:**
-- Treat specifications like API contracts, not documentation
-- Use JSON schemas for ALL agent inputs and outputs
-- Make role boundaries explicit: define what each agent CAN and CANNOT do
-- Use action schemas that constrain outputs to explicit, validatable options
-- Leverage existing MCP protocol schemas as enforcement layer
-
-**Example from research:**
-Task: "Create a standard Wordle game with daily 5-letter word"
-Result: Generated fixed word list, ignoring "daily" and "standard" implications
-Even explicit clarification still produced wrong output
+- Use streaming uploads: `request.body` returns a `ReadableStream` in App Router -- read chunks incrementally, never buffer the whole file
+- For production scale, implement presigned URL uploads: client uploads directly to S3/R2, server only stores metadata
+- If streaming through the server, set `export const maxDuration = 60` (or higher) to prevent function timeouts during slow uploads
+- Add client-side chunked upload with `tus` protocol for unreliable networks
+- For local development, configure the Next.js dev server body parser or use streaming from the start
 
 **Warning signs:**
-- Specifications longer than 2 paragraphs without schemas
-- Ambiguous verbs ("analyze", "help", "handle") without explicit actions
-- No validation of agent outputs against schemas
-- Multiple agents with overlapping responsibilities
+- Upload works for small files (< 1 MB) but fails with 413 or silent errors for larger files
+- `request.formData()` called on the full request body for large files
+- No chunked or streaming upload implementation
+- Body size limit configuration uses deprecated `export const config` pattern
 
-**Phase to address:** Phase 1 (Task Decomposition & Agent Design)
-
-**Evidence:**
-MAST study (March 2025) analyzed 1,642 execution traces across 7 frameworks - 41.77% of failures were specification issues. GitHub Blog (Feb 2026) states "Natural language is messy. Typed schemas make it reliable."
+**Phase to address:** Phase 1 (File Upload Infrastructure) -- must be resolved before any file type works at scale
 
 ---
 
-### Pitfall 3: Compounding Error Cascade (The "17x Error Trap")
+### Pitfall 3: PDF Parsing Memory Exhaustion
 
 **What goes wrong:**
-Errors compound across agent handoffs, creating catastrophic failures. A single miscommunication in step 1 becomes a wrong assumption in step 3, which cascades into completely incorrect output by step 5. The "telephone game" effect - each agent interprets previous agent's output slightly differently.
+Loading entire PDF files into memory as `Uint8Array` or `Buffer` for parsing. A 50 MB PDF can consume several hundred MB during parsing. `pdf-parse` depends on `pdfjs-dist` which loads the full document. `pdf-lib` is even worse for large files -- the GitHub issue tracker shows heap OOM crashes on documents with 20,000+ pages.
+
+The `pdfjs-dist` dependency in `pdf-parse` has also caused silent crashes in production when the debug worker file is missing (documented real-world incident).
 
 **Why it happens:**
-Each agent-to-agent handoff is a potential failure point. Unlike single-agent systems where context is preserved, multi-agent systems lose information at each boundary. Research shows even with 99% step accuracy, systems fail on complex multi-step processes.
+PDF parsing libraries are designed around the assumption that the entire file fits in memory. There is no native streaming support for PDF parsing -- the file structure requires random access. Developers don't test with real-world large PDFs (scanned documents, textbooks, annual reports) and only validate with small test files.
 
 **How to avoid:**
-- Implement structured communication protocols with schema validation
-- Use shared memory with strict access controls (namespace per agent role)
-- Add timestamps and TTL to all shared state
-- Implement circuit breakers: supervisor decides what to do on failure, not failing agent
-- Build in independent verification at each handoff point
+- Set a hard per-file size limit (e.g., 50 MB for PDFs, not the full 100 MB budget)
+- Use worker threads for PDF parsing to isolate memory and prevent main thread blocking
+- Implement timeout-based cancellation: if parsing takes > 30 seconds, abort and report error
+- For very large PDFs, extract only text (skip images/annotations) using `pdf-parse` with `pagerender` option set to a text-only callback
+- Never parse PDFs synchronously in a request handler -- queue extraction as a background task
+- Pin `pdf-parse` and `pdfjs-dist` versions and verify the debug worker file is present in deployment
 
 **Warning signs:**
-- Later agents working from assumptions, not facts
-- No shared state between agents
-- Agents unable to reference earlier decisions
-- Output quality degrading with workflow length
+- PDF parsing returns empty results for some files (silent failure from missing dependencies)
+- Memory usage spikes during upload processing
+- Processing time scales super-linearly with file size
+- No timeout on PDF extraction operations
 
-**Phase to address:** Phase 2 (Agent Communication Mechanisms)
-
-**Evidence:**
-Google DeepMind found unstructured multi-agent networks amplify errors up to 17.2x compared to single-agent baselines. The MAST study found reasoning-action mismatch at 13.98% of failures.
+**Phase to address:** Phase 2 (Content Extraction) -- when adding PDF text extraction
 
 ---
 
-### Pitfall 4: Information Withholding Between Agents (1.66% of failures)
+### Pitfall 4: Word Document (DOCX) Conversion Loss
 
 **What goes wrong:**
-An agent discovers critical information but fails to communicate it to other agents. Example from research: Phone Agent knows username format requirements but doesn't tell Supervisor Agent. Result: Repeated failed login attempts, task failure.
+Converting DOCX to Markdown loses critical content: tables lose formatting, images have unreliable dimensions, footnotes/endnotes/headers/footers are silently dropped, and complex layouts (columns, text boxes, SmartArt) produce garbage output. The fundamental problem is that DOCX uses XML-based styling (runs, paragraphs, sections) that does not map cleanly to HTML/Markdown.
+
+Additionally, mammoth.js has a known **Turbopack incompatibility** -- it fails during Next.js builds with Turbopack due to module resolution differences. Since this project uses `npm run dev` with `--turbopack`, this is a direct blocker.
 
 **Why it happens:**
-No explicit protocol for what information MUST be shared. Agents optimize for their local task, not system success. The agent doesn't "know" that its discovery is relevant to others.
+DOCX is an OOXML format with deeply nested XML structures. Conversion libraries (mammoth.js, docx4js) make opinionated choices about what to preserve. Mammoth.js explicitly ignores: footnotes, endnotes, headers, footers, page numbering, columns, text boxes, SmartArt, and nested tables. Documents created by Google Docs or LibreOffice produce different XML structures than Microsoft Word, leading to inconsistent output.
 
 **How to avoid:**
-- Define explicit information sharing requirements in agent specifications
-- Use structured message types: request, inform, commit, reject
-- Implement "required context" patterns: agents must acknowledge received information
-- Use shared memory with write requirements for key discoveries
-- Add explicit "what did you learn" prompts in agent responses
+- Document which DOCX features are NOT supported and communicate this to users
+- Test with documents from multiple sources: Microsoft Word, Google Docs, LibreOffice, WPS Office
+- For the Turbopack issue: either (a) bundle mammoth.js with webpack for the specific route, or (b) use a WASM-based alternative like `docx-preview` for rendering, or (c) consider server-side LibreOffice conversion for highest fidelity
+- Always read from buffers (not file paths) in web server contexts -- this is a common mistake with mammoth.js + multer/buffers
+- If tables are important (they are for data files), consider `mammoth-styled` fork or post-process table output with custom CSS
 
 **Warning signs:**
-- Agents working in isolation without sharing findings
-- Repeated failures that could be prevented with earlier knowledge
-- No explicit handoff protocols between agents
-- Supervisor unaware of sub-agent discoveries
+- Next.js dev server fails to start or build after adding mammoth.js with Turbopack
+- Users report missing content from their Word documents
+- Table data appears as unformatted text
+- Images from DOCX have broken dimensions or don't render
 
-**Phase to address:** Phase 2 (Agent Communication Mechanisms)
-
-**Evidence:**
-MAST study documented this as FM-2.4, with real examples from AppWorld traces showing repeated failures due to unshared API requirements.
+**Phase to address:** Phase 2 (Content Extraction) -- when adding Word document support
 
 ---
 
-### Pitfall 5: Weak Verification (13.48% of failures)
+### Pitfall 5: Excel (XLSX) Memory Explosion
 
 **What goes wrong:**
-Teams orchest elaborate workflows but never verify if work meets requirements. Garbage in, garbage out, but with more steps and higher costs. Verifiers often perform only superficial checks (code compilation, comments) instead of validating against actual requirements.
+Loading entire Excel workbooks into memory. SheetJS (xlsx) loads the full workbook into a JS object. A 5 MB `.xlsx` file can consume 500 MB+ of RAM because XLSX is a ZIP archive containing XML -- the parsed object representation is far larger than the compressed file. Real-world reports show 1.5 MB files taking 50 seconds to parse.
+
+The fundamental issue: **XLSX cannot be incrementally streamed for reads**. The ZIP format requires random access to internal file entries. There is no way to read row-by-row from a streaming source.
 
 **Why it happens:**
-Verification seems like a final step, but current LLM verifiers struggle to ensure deeper correctness. Even with explicit review phases, outputs pass despite fundamental bugs.
+SheetJS is the de facto standard for Excel parsing in JavaScript. Its API encourages loading the full workbook: `XLSX.read(buffer, { type: 'buffer' })` returns everything. Developers don't realize the memory amplification factor until they process real user data (multi-sheet workbooks with formulas, formatting, and embedded objects).
 
 **How to avoid:**
-- Add independent judge agent whose exclusive responsibility is evaluating outputs
-- Judge needs isolated prompts, separate context, independent scoring criteria
-- Implement multi-level verification: low-level correctness + high-level objectives
-- Use external knowledge sources for validation (not just internal checking)
-- PwC demonstrated 7x accuracy improvement through structured validation loops
+- Use `exceljs` instead of SheetJS for reading -- it supports streaming row-by-row: `workbook.xlsx.createReadStream()` processes rows without loading the full workbook
+- Set hard limits: reject files > 10 MB, limit to first N rows (configurable), limit to first sheet unless user specifies
+- Parse in a worker thread or background queue -- never in a request handler
+- For CSV files (the easier case), use `papaparse` in streaming mode or Node.js `readline` with streams
+- Add memory monitoring: if RSS exceeds a threshold during parsing, abort
 
 **Warning signs:**
-- Verification checks only superficial properties
-- No independent validation of outputs
-- Bugs reaching production despite passing all "checks"
-- Verifier shares too much context with producing agents (collective delusion)
+- Node.js process OOM crashes during Excel processing
+- Parsing time exceeds 10 seconds for files under 5 MB
+- Memory usage grows proportionally to file size rather than staying constant
+- No row/sheet limits configured
 
-**Phase to address:** Phase 3 (Result Processing & Verification)
-
-**Evidence:**
-MAST study found incorrect or incomplete verification at 13.48% of failures. STRATUS autonomous cloud system achieved 1.5x improvement through independent validation.
+**Phase to address:** Phase 2 (Content Extraction) -- when adding Excel/CSV parsing
 
 ---
 
-### Pitfall 6: Context Window Exhaustion
+### Pitfall 6: File Preview XSS Attack Surface
 
 **What goes wrong:**
-Multi-agent conversations grow unbounded, filling context windows with conversation history. Agents lose earlier decisions, forget constraints, start contradicting themselves. Token duplication rates of 53-86% across frameworks mean most tokens are redundant.
+Rendering user-uploaded files in the browser for preview creates XSS attack vectors. Malicious PDFs can execute JavaScript through PDF.js (documented exploits). Converted HTML from DOCX can contain injected scripts. Even CSV/Excel data rendered as HTML tables can include formula injection (`=cmd|'/C calc'!A0` in Excel).
+
+The existing `content-filter.ts` checks for harmful text patterns but has **no awareness of binary payloads or script injection in rendered file content**.
 
 **Why it happens:**
-Each agent maintains its own context, and inter-agent communication duplicates information. No context pruning, compression, or TTL. Long-running tasks accumulate stale information.
+File preview requires rendering untrusted content in the browser. PDF.js is a JavaScript-based renderer -- malicious PDFs can trigger JavaScript execution within its runtime. Converting DOCX to HTML and rendering it with `dangerouslySetInnerHTML` is an obvious XSS vector. The sandbox attribute on iframes helps but has known bypass techniques (documented by PortSwigger).
 
 **How to avoid:**
-- Implement context compression: summarize old context, keep key decisions
-- Use TTL (time-to-live) for shared state: stale facts expire
-- Priority-based retention: keep recent + important, drop old + irrelevant
-- Agent-scoped context windows: each agent manages its own window
-- Checkpoint at milestones: compress and snapshot at key points
+- For PDF preview: use sandboxed iframes with `sandbox="allow-scripts"` and block external URL fetches (configure CSP headers)
+- For DOCX-to-Markdown conversion: never render raw HTML from DOCX; convert to Markdown first, then render Markdown through the existing `react-markdown` pipeline
+- For CSV/Excel preview: sanitize cell values before rendering; escape HTML entities; detect and neutralize formula injection patterns
+- Never use `dangerouslySetInnerHTML` with file-derived content
+- Implement CSP headers on preview routes: `Content-Security-Policy: default-src 'none'; script-src 'none'; style-src 'unsafe-inline'`
+- For the highest security, render previews in an iframe with `sandbox` attribute and use `postMessage` for size negotiation (Google's SafeContentFrame pattern)
 
 **Warning signs:**
-- Context approaching token limits mid-task
-- Agents "forgetting" earlier decisions
-- Contradictory outputs from same agent
-- Token costs growing exponentially with task length
+- File content rendered via `dangerouslySetInnerHTML`
+- No CSP headers on file preview endpoints
+- PDF preview using `<embed>` or `<object>` without sandbox
+- CSV data rendered without HTML entity escaping
 
-**Phase to address:** Phase 2 (Agent Communication Mechanisms)
-
-**Evidence:**
-Research shows token duplication rates of 72% (MetaGPT), 86% (CAMEL), 53% (AgentVerse). Multi-agent systems consume 1.5x to 7x more tokens than necessary.
+**Phase to address:** Phase 3 (File Preview) -- when adding in-browser preview rendering
 
 ---
 
-### Pitfall 7: Task Derailment (7.15% of failures)
+### Pitfall 7: Abstract Storage Layer Leaking Abstraction
 
 **What goes wrong:**
-Agents gradually drift from the original objective, solving a different problem than requested. By the end, they produce a confident, well-reasoned answer to the wrong question.
+The PROJECT.md specifies an abstract storage layer (local/cloud switchable). The abstraction leaks when code assumes local filesystem semantics that don't apply to cloud storage: `fs.stat()` for file existence checks, path-based operations, file locking, atomic renames, or `fs.createReadStream()` without cloud SDK equivalents.
+
+Migration from local to cloud later becomes painful because code is tightly coupled to filesystem APIs through the "abstraction."
 
 **Why it happens:**
-Original task gets buried in long conversation threads. Agents interpret intermediate findings as new objectives. No checkpoint against original goal.
+Developers build the abstraction around `fs` operations and add an S3 adapter later. The S3 adapter has fundamentally different semantics: eventual consistency, no directory listing in a single call, multipart upload requirements, different error types, no file locking, and presigned URL complexity for reads.
 
 **How to avoid:**
-- Include original task in every agent prompt (not just first message)
-- Add task alignment checks at each handoff: "Does this contribute to original goal?"
-- Implement explicit scope boundaries: what's in scope vs. out of scope
-- Use supervisor pattern: supervisor validates all outputs against original objective
-- Add re-injection of user intent at decision points
+- Design the interface around **operations** not **filesystem**: `upload(key, stream)`, `download(key)`, `delete(key)`, `getMetadata(key)`, `getPresignedUrl(key)`
+- Never expose `fs`-specific concepts (paths, file descriptors, streams) through the abstraction
+- Use `ReadableStream` as the universal interface -- both `fs.createReadStream` and S3 `GetObject` can produce one
+- Implement local storage using a directory structure keyed by file ID (UUID), not user-provided paths
+- Store file metadata (size, MIME type, upload date) in PostgreSQL (already in schema), not in the storage layer
+- Test both implementations from day one, even if cloud storage isn't the default
 
 **Warning signs:**
-- Agents working on tangentially related problems
-- Final output doesn't address original request
-- Agents confidently solving wrong problem
-- Original task not visible in recent context
+- Storage interface has methods like `getFilePath()` or `readDir()`
+- Code outside the storage layer imports `fs` or `path`
+- File identifiers are user-provided filenames instead of UUIDs
+- No S3/R2 adapter exists, even as a stub
 
-**Phase to address:** Phase 1 (Task Decomposition & Agent Design)
-
-**Evidence:**
-MAST study documented FM-2.3 task derailment at 7.15% of failures. Examples show agents solving mathematically correct answers to different questions than asked.
+**Phase to address:** Phase 1 (File Upload Infrastructure) -- storage abstraction must be designed correctly from the start
 
 ---
 
-### Pitfall 8: Premature Termination (7.82% of failures)
+### Pitfall 8: File-Chat Integration Token Budget Blindness
 
 **What goes wrong:**
-Agents declare task complete before all objectives are met. They see "done" when critical steps remain. The conversation ends, but the user's actual goal is unfulfilled.
+When users attach files to conversations, the extracted content is injected into the LLM context. A 50-page PDF extracts to ~25,000 tokens. An Excel file with 10,000 rows extracts to ~50,000 tokens. Combined with conversation history, system prompt, and MCP tool definitions, this blows through the model's context window.
+
+The existing system has no concept of token budgeting -- messages are stored as plain text in PostgreSQL, and the chat API sends everything to the LLM.
 
 **Why it happens:**
-Unclear termination conditions. Agents optimize for task completion, not goal achievement. No explicit checklist for "what done looks like."
+File content is treated like regular message text. There's no awareness of how many tokens the extracted content consumes relative to the model's context limit. Users don't understand that attaching a large file effectively fills their entire conversation context.
 
 **How to avoid:**
-- Define explicit completion criteria in task specification
-- Implement completion checklists that verify all objectives
-- Add verification step before termination is allowed
-- Use supervisor pattern: only supervisor can declare completion
-- Require explicit "all objectives met" confirmation
+- Track token counts for extracted file content and expose this in the UI
+- Implement content truncation with a configurable max: e.g., first 8,000 tokens of extracted text, with a notice that content was truncated
+- For structured data (CSV/Excel), send column headers + sample rows instead of full data
+- Consider a separate RAG-style retrieval for large files: index content, retrieve relevant chunks on demand (deferred to future RAG milestone per PROJECT.md)
+- Add a file content size indicator in the chat UI before the user sends the message
+- Respect the model's actual context window: Qwen3.5 supports 128K tokens, GLM supports similar -- subtract conversation history and system prompt from the budget
 
 **Warning signs:**
-- Tasks marked complete but objectives unmet
-- Users reporting "it said it was done but..."
-- Agents stopping at first sign of completion
-- No verification of goal achievement
+- File content appended directly to message text without size check
+- No token counting for file content
+- Users reporting "the AI stopped responding" or truncated answers after attaching large files
+- API errors with context length exceeded after file attachments
 
-**Phase to address:** Phase 3 (Result Processing & Verification)
-
-**Evidence:**
-MAST study found FM-3.1 premature termination at 7.82% of failures. AppWorld traces showed particular vulnerability to this failure mode.
-
----
-
-### Pitfall 9: Natural Language Communication (Unstructured Messaging)
-
-**What goes wrong:**
-Agents exchange free-form natural language, leading to misinterpretation. "I'll handle the authentication module" could mean anything. Field names change, data types mismatch, formatting shifts - nothing enforces consistency.
-
-**Why it happens:**
-LLMs excel at natural language, so teams use it for inter-agent communication. But without structure, every message requires interpretation, and interpretation introduces errors.
-
-**How to avoid:**
-- Use typed message schemas for all agent communication
-- Implement MCP as enforcement layer: validate calls before execution
-- Use discriminated unions for action types: explicit, validatable options
-- Treat schema violations like contract failures: retry, repair, escalate
-- Use existing MCP protocol patterns for structured communication
-
-**Warning signs:**
-- Agents misunderstanding each other's outputs
-- Field name changes between agents
-- Data type mismatches at downstream
-- Parsing natural language to determine intent
-
-**Phase to address:** Phase 1 & 2 (Task Design & Communication Mechanisms)
-
-**Evidence:**
-GitHub Blog states "Natural language is messy. Typed schemas make it reliable." Augment Code found 79% of problems originate from specification and coordination issues, not technical implementation.
-
----
-
-### Pitfall 10: Resource Contention (Rate Limits, Database Locks)
-
-**What goes wrong:**
-Multiple agents hit the same rate-limited API simultaneously, triggering throttling. Three agents sprint toward the same endpoint with 100 calls/second limit - gateway throttles, transactions queue, downstream workflows stall.
-
-**Why it happens:**
-No coordination of shared resource access. Each agent optimizes locally, creating global bottlenecks. No exponential backoff, no request queuing.
-
-**How to avoid:**
-- Implement exponential backoff when encountering rate limits
-- Use coordinated API access through supervisor
-- Add purpose-built observability for contention hot spots
-- Implement request queuing for shared resources
-- Use circuit breakers that isolate misbehaving agents
-
-**Warning signs:**
-- 429 errors from LLM APIs
-- Cascading failures across agents
-- Database lock timeouts
-- One agent blocking all others
-
-**Phase to address:** Phase 2 & 3 (Communication & Result Processing)
-
-**Evidence:**
-Galileo AI research shows GPU pricing 4.7x differentials across providers. H100 hourly rates range from $1.49 to $6.98. Resource contention creates system-level vulnerabilities.
+**Phase to address:** Phase 4 (Chat Integration) -- when connecting uploaded files to conversation context
 
 ---
 
 ## Technical Debt Patterns
 
-Shortcuts that seem reasonable but create long-term problems in multi-agent systems:
+Shortcuts that seem reasonable but create long-term problems when adding file processing to an existing system:
 
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
 |----------|-------------------|----------------|-----------------|
-| Skip schema validation | Faster development | Contract violations, cascading failures | Never |
-| Natural language communication | Easier to implement | Interpretation errors, ambiguity | Never in multi-agent |
-| No shared memory | Simpler architecture | Lost context, repeated failures | Never for 3+ agents |
-| Skip verification agent | Lower costs | Hallucinations propagate undetected | Never |
-| Unlimited parallelism | Faster execution | Token burn, rate limit exhaustion | Only for independent tasks |
-| No timeout limits | Tasks complete eventually | Runaway costs, stuck agents | Never |
-| Single error handler | Simpler code | Local failures become global | Never - agent-specific handlers |
+| Store files in `public/` directory | No storage setup needed | Files lost on redeployment, no access control, no cleanup | Never -- ephemeral storage |
+| Parse files synchronously in API route | Simpler code path | Request timeouts, memory spikes, blocked event loop | Never for files > 1 MB |
+| Use `request.formData()` for large files | Simplest Next.js API | Entire body buffered in memory, OOM risk | Only for files < 5 MB |
+| Store extracted content only as message text | No new tables needed | No re-extraction, no search, no re-processing, no metadata | MVP only, migrate before v1.3 |
+| Skip virus/malware scanning | Faster upload, no dependencies | Malicious files served to users, RCE risk | Acceptable for trusted team (10-50 users) but add scanning before public access |
+| One extraction pipeline for all formats | Simpler code | Can't optimize per-format, can't add format-specific features | MVP only |
+| No file deduplication | Simpler upload logic | Same file uploaded 10x = 10x storage used | Acceptable for team scale, add hashing before public scale |
 
 ---
 
 ## Integration Gotchas
 
-Common mistakes when adding multi-agent to existing single-agent system:
+Common mistakes when connecting file processing to the existing Next-Mind system:
 
 | Integration Point | Common Mistake | Correct Approach |
 |-------------------|----------------|-------------------|
-| Existing MCP tools | Sub-agents call tools directly without coordination | Route all tool calls through supervisor with approval flow |
-| Existing Skills system | Skills become agent-specific instead of shared | Keep skills as shared resources, agents request access through supervisor |
-| Existing approval flow | Each agent has independent approval | Unified approval flow with supervisor aggregation |
-| Error handling | Agent failures propagate as unhandled errors | Wrap all agent calls with circuit breakers and fallbacks |
-| Streaming responses | Each agent streams independently | Aggregate and sequence agent streams through main response |
-| Context management | New agents don't integrate with existing context | Extend existing context with agent-scoped namespaces |
-| State persistence | Agent state conflicts with session state | Checkpoint agent state, merge with session on completion |
+| Existing `content-filter.ts` | Apply text filter to binary file content, or skip filtering entirely for files | Extract text first, then apply `isContentSafe()` to extracted text only; binary files need magic byte validation, not content filtering |
+| Existing `skills/file-processing.ts` | Try to reuse `readFile` skill for uploaded files (it reads local filesystem paths) | Build new upload-specific skills; the existing skill reads server files by path, uploaded files are in abstract storage |
+| Existing `audit.ts` | Only log upload events, not file access/preview/download | Log all file operations: upload, download, preview, delete, content extraction -- file access is security-sensitive |
+| Existing `auth.ts` / middleware | File preview URLs accessible without auth if using direct file paths | All file access (including preview) must go through authenticated API routes; never serve files from `public/` |
+| Existing `messages` table | Store file references as plain text in message content | Add file attachment relation (new table or JSONB field on messages); need structured metadata (fileId, filename, extractedTextSnippet) |
+| Existing streaming chat (`api/chat`) | Send file content as part of the streamed response text | File content should be in the messages array sent to the LLM, not mixed into the streaming delta text |
+| Existing MCP server | Try to expose file upload as an MCP tool directly | MCP tools should reference already-uploaded files by ID; upload itself is a separate HTTP endpoint |
+| Existing `ApprovalStateMachine` | File operations bypass approval flow | Large file deletes, bulk operations, and content extraction should optionally require approval |
 
 ---
 
 ## Performance Traps
 
-Patterns that work at small scale but fail as usage grows:
+Patterns that work for a few test files but fail under real usage:
 
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
-| Token duplication | 53-86% wasted tokens, high costs | Structured context sharing, avoid repetition | >2 concurrent agents |
-| Cascading timeouts | Sequential agent failures, full workflow collapse | Independent timeouts per agent, parallel execution where possible | >3 agent handoffs |
-| Context overflow | Agents lose earlier decisions, contradictions | Context compression, priority-based retention | >15,000 tokens in context |
-| Rate limit contention | 429 errors, throttled workflows | Coordinated API access, exponential backoff | >10 API calls/minute per endpoint |
-| Verification overhead | 2-3x execution time for verification | Async verification, caching, parallel checks | >5 verification steps |
+| Synchronous file extraction | API response times spike to 10-30 seconds | Process extraction asynchronously with job queue; return immediately, poll for status | Files > 2 MB or concurrent uploads > 3 |
+| In-memory file buffering | Server RSS grows linearly, eventual OOM | Stream to disk/cloud immediately; never hold full file in memory | Files > 10 MB or concurrent uploads > 5 |
+| No upload progress feedback | Users think upload is frozen, retry, create duplicates | Implement chunked upload with progress events; show progress bar | Files > 1 MB on any network |
+| Full-text extraction for preview | Preview loading takes seconds for large documents | Extract preview separately: first page only, or first N KB; lazy-load full content | PDFs > 10 pages, Excel > 1000 rows |
+| Database stores extracted content | PostgreSQL table bloat, slow queries | Store extracted content in separate table with full-text search index; or in object storage with reference | Files > 100, extracted text > 100 KB |
+| No file cleanup | Disk fills up with orphaned files (uploaded but not referenced) | Background job to delete unreferenced files after TTL (e.g., 30 days); soft-delete with cleanup queue | > 1000 files or > 10 GB total storage |
 
 ---
 
 ## Security Mistakes
 
-Domain-specific security issues for multi-agent systems:
+Domain-specific security issues beyond general web security for file upload systems:
 
 | Mistake | Risk | Prevention |
 |---------|------|------------|
-| Prompt injection via agent communication | 46% baseline attack success rate | Schema validation, content filtering, action verification |
-| Cross-agent data leakage | Sensitive data accessible to wrong agent | Agent-scoped permissions, data access controls |
-| Unbounded agent spawning | Resource exhaustion, DoS potential | Agent pool limits, spawn quotas |
-| Malicious agent output | Bad data propagates to other agents | Output validation, sanitization at each handoff |
-| Memory poisoning | Corrupted context affects all agents | Context isolation, TTL for shared state |
-| Tool misuse by compromised agent | Unauthorized resource access | Capability-based permissions, sandboxed execution |
+| Polyglot file upload | File valid as both PDF and executable bypasses type checks | Magic byte validation + content structure validation (not just first bytes) |
+| ZIP bomb in uploaded archive | 42 MB ZIP expands to 4.5 PB, causes OOM/DoS | Limit extraction depth and total extracted size; check compression ratio before extraction |
+| Path traversal in filename | `../../../etc/passwd.docx` overwrites system files | Sanitize filenames, use UUID-based storage keys, never use user-provided filename in filesystem operations |
+| File serving without auth | Direct URLs to uploaded files bypass authentication | All file access through authenticated API routes; never serve from `public/`; use presigned URLs with short TTL |
+| CSV formula injection | `=cmd\|'/C calc'!A0` in CSV cell executes when opened in Excel | Sanitize cell values: prefix with `'` or escape `=`, `+`, `-`, `@` at start of values |
+| Server-side request forgery via file URL | Stored file URL points to internal service (`http://localhost:3000/admin`) | Validate all URLs; never fetch URLs from uploaded file metadata; use allowlist for external resources |
+| Metadata injection in Office files | Office XML can contain external resource references, template injections | Strip all metadata beyond core content during extraction; don't trust Office file metadata |
 
 ---
 
 ## UX Pitfalls
 
-User experience mistakes in multi-agent systems:
+User experience mistakes specific to file upload and management in a chat-based AI platform:
 
 | Pitfall | User Impact | Better Approach |
-|---------|-------------|------------------|
-| Invisible progress | Users don't know what agents are doing | Real-time status updates, progress indicators |
-| Conflicting results | Users see different agents produce contradictory outputs | Unified result presentation, conflict resolution before display |
-| Endless waiting | Tasks hang without feedback | Timeout notifications, partial results, cancellation option |
-| Black box failures | Users don't know why multi-agent failed | Explainable failure messages, step-by-step breakdown |
-| Surprise agent actions | Agents take actions users didn't expect | Preview actions, confirmation for risky operations |
-| Lost context | Users repeat information across conversation | Persistent context, agents reference previous interactions |
+|---------|-------------|-----------------|
+| No upload progress for large files | User thinks upload failed, retries, creates duplicates | Chunked upload with progress bar; disable retry during active upload |
+| File preview takes forever to load | User abandons the feature, goes back to downloading and reading locally | Lazy-load preview; show placeholder immediately; load content incrementally |
+| Extracted text looks nothing like the original | User doesn't trust the AI's answers about their file | Show confidence indicator; allow user to view and edit extracted content; highlight what was lost in conversion |
+| No indication of what was extracted | User doesn't know if the AI "saw" their tables, images, or formatting | Show extraction summary: "Extracted 15 pages of text, 3 tables, 0 images" |
+| File attachment hidden in chat UI | User forgets file is attached, confused about AI's answers | Persistent file chip/pill in chat input area; file context panel showing attached files |
+| Deleting a file breaks conversation history | Past messages referencing deleted file show errors | Soft-delete; keep extracted text in conversation; show "file no longer available" rather than broken references |
+| No file search | User uploaded 50 files, can't find the one they need | Full-text search over file names and extracted content; filter by type and date |
+| Large file upload silently fails | No error message, file just doesn't appear | Explicit error messages with actionable guidance ("File too large. Maximum size is 100 MB. Your file is 150 MB.") |
 
 ---
 
 ## "Looks Done But Isn't" Checklist
 
-Things that appear complete in multi-agent systems but are missing critical pieces:
+Things that appear complete when adding file processing but are missing critical pieces:
 
-- [ ] **Schema Validation:** Often missing enforcement layer - verify MCP schemas validated before execution
-- [ ] **Shared Memory:** Often missing for 3+ agents - verify agents can reference earlier decisions
-- [ ] **Error Recovery:** Often missing fallback paths - verify circuit breakers exist for all agent calls
-- [ ] **Context Management:** Often missing pruning strategy - verify TTL and compression for shared state
-- [ ] **Resource Coordination:** Often missing rate limit handling - verify exponential backoff implemented
-- [ ] **Information Sharing:** Often missing explicit protocols - verify required context is acknowledged
-- [ ] **Schema Enforcement:** Often missing validation - verify MCP schemas are validated before execution
-- [ ] **Task Tracking:** Often missing objective verification - verify original task is included in all prompts
-- [ ] **Observability:** Often missing distributed tracing - verify all agent interactions are traceable
+- [ ] **File validation:** Often missing magic byte check -- verify files are validated beyond extension and Content-Type header
+- [ ] **Streaming upload:** Often missing for files > 5 MB -- verify large uploads don't buffer entire body in memory
+- [ ] **Error recovery:** Often missing retry for failed uploads -- verify interrupted uploads can be resumed or retried without creating duplicates
+- [ ] **Conversion fidelity:** Often missing for complex documents -- verify Word tables, PDF formatting, and Excel formulas are handled (or explicitly communicated as unsupported)
+- [ ] **File preview security:** Often missing CSP headers and sandbox -- verify preview iframe has `sandbox` attribute and CSP blocks scripts
+- [ ] **Extracted content token budget:** Often missing when injecting into chat -- verify file content doesn't blow through LLM context window
+- [ ] **Orphan cleanup:** Often missing background job -- verify unreferenced files are eventually cleaned up
+- [ ] **Concurrent upload handling:** Often missing -- verify multiple simultaneous uploads don't cause memory exhaustion or race conditions
+- [ ] **File deletion cascading:** Often missing -- verify deleting a file doesn't break conversation messages that reference it
+- [ ] **Storage abstraction test coverage:** Often missing cloud storage tests -- verify the abstraction works with both local and S3-like backends, not just local
 
 ---
 
@@ -393,58 +330,73 @@ When pitfalls occur despite prevention, how to recover:
 
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| Specification ambiguity | HIGH | Add schemas, redefine roles, re-test all workflows |
-| Compounding errors | HIGH | Checkpoint at each handoff, rollback to last known good |
-| Verification failures | MEDIUM | Add independent judge, re-run failed outputs |
-| Context exhaustion | MEDIUM | Compress history, restart from checkpoint |
-| Task derailment | HIGH | Re-inject original objective, validate all outputs |
-| Resource contention | LOW | Implement backoff, retry with coordination |
-| Premature termination | MEDIUM | Add completion checklist, re-run with verification |
-| Communication ambiguity | HIGH | Add schemas, wrap all agents with validation layer |
+| Body size limit hit in production | MEDIUM | Switch to presigned URL uploads; implement chunked client; no data loss since uploads fail before storage |
+| PDF parsing OOM crashes | MEDIUM | Add file size limits retroactively; implement worker thread isolation; no data loss since parsing is post-upload |
+| Storage abstraction leaks | HIGH | Refactor storage interface to operation-based; rewrite all consumers; may need data migration if file paths are stored |
+| File content XSS in preview | HIGH | Immediately disable preview; add CSP headers and sandbox; audit all rendered file content for script injection |
+| Token budget exceeded in chat | LOW | Add truncation logic to file content injection; reduce max file content sent to LLM; no data loss |
+| DOCX conversion losing content | LOW | Document supported features; add conversion warnings in UI; consider LibreOffice for edge cases |
+| Turbopack incompatibility (mammoth) | MEDIUM | Switch to alternative library or configure webpack override for the specific route; blocks development until resolved |
 
 ---
 
 ## Pitfall-to-Phase Mapping
 
-How roadmap phases should address these pitfalls:
+How roadmap phases should address these pitfalls for the v1.2 file processing milestone:
 
 | Pitfall | Prevention Phase | Verification |
 |---------|------------------|--------------|
-| "More Agents" Fallacy | Phase 1 | Compare single-agent baseline, validate delegation necessity |
-| Specification Ambiguity | Phase 1 | All agent specs have JSON schemas, test with edge cases |
-| Compounding Errors | Phase 2 | Circuit breakers work, shared memory accessible |
-| Information Withholding | Phase 2 | Explicit sharing protocols, acknowledgment required |
-| Weak Verification | Phase 3 | Independent judge catches issues, multi-level checks |
-| Context Exhaustion | Phase 2 | TTL works, compression reduces size, no repeated info |
-| Task Derailment | Phase 1 | Original task in all prompts, supervisor validates |
-| Resource Contention | Phase 2 & 3 | Backoff works, no cascading failures |
-| Premature Termination | Phase 3 | Completion checklist verified, actions confirmed |
-| Natural Language Ambiguity | Phase 1 & 2 | Schema validation catches all violations |
+| File type validation (Pitfall 1) | Phase 1 (Upload Infrastructure) | Upload `.txt` renamed to `.pdf` -- should be rejected |
+| Body size limits (Pitfall 2) | Phase 1 (Upload Infrastructure) | Upload 50 MB file -- should succeed without OOM |
+| PDF memory exhaustion (Pitfall 3) | Phase 2 (Content Extraction) | Upload 30 MB PDF -- extraction completes within timeout, no OOM |
+| DOCX conversion loss (Pitfall 4) | Phase 2 (Content Extraction) | Test with Word, Google Docs, LibreOffice files; document gaps |
+| Excel memory explosion (Pitfall 5) | Phase 2 (Content Extraction) | Upload 5 MB Excel file -- memory stays < 200 MB |
+| Preview XSS (Pitfall 6) | Phase 3 (File Preview) | Upload malicious test PDF -- no script execution in preview |
+| Storage abstraction leak (Pitfall 7) | Phase 1 (Upload Infrastructure) | Switch storage backend config -- no code changes outside storage module |
+| Token budget blindness (Pitfall 8) | Phase 4 (Chat Integration) | Attach 50-page PDF to conversation -- AI responds normally, no truncation errors |
 
 ---
 
 ## Sources
 
-### HIGH Confidence (Context7 / Official Sources / Academic Research)
-- [MAST: Multi-Agent System Failure Taxonomy (arXiv 2503.13657v2)](https://arxiv.org/html/2503.13657v2) - First empirically grounded taxonomy of MAS failures, 200+ traces analyzed, 14 failure modes identified
-- [GitHub Blog: Multi-agent workflows often fail](https://github.blog/ai-and-ml/generative-ai/multi-agent-workflows-often-fail-heres-how-to-engineer-ones-that-dont/) - Official GitHub engineering patterns for reliable multi-agent systems
-- [Why Multi-Agent LLM Systems Fail (Augment Code)](https://www.augmentcode.com/guides/why-multi-agent-llm-systems-fail-and-how-to-fix-them) - Industry research showing 41-86.7% failure rates, prevention strategies
+### HIGH Confidence (Official Documentation / Direct Experience)
 
-### MEDIUM Confidence (Industry Research / Multiple Sources)
-- [Multi-Agent Coordination Strategies (Galileo AI)](https://galileo.ai/blog/multi-agent-coordination-strategies) - 10 coordination strategies, token duplication data, OWASP security research
-- [Why Multi-Agent Systems Often Fail in Practice (Medium)](https://raghunitb.medium.com/why-multi-agent-systems-often-fail-in-practice-and-what-to-do-instead-890729ec4a03) - Research summary, context engineering alternative
-- [Anthropic: How We Built Our Multi-Agent Research System](https://www.anthropic.com/engineering/multi-agent-research-system) - Official Anthropic engineering blog on multi-agent patterns
+- [Next.js App Router File Upload -- body size limit deprecation](https://github.com/vercel/next.js/issues/34213) -- Official GitHub issue confirming Pages Router config does not work in App Router
+- [Next.js GitHub Issue #72863 -- mammoth.js Turbopack incompatibility](https://github.com/vercel/next.js/issues/72863) -- Confirmed Turbopack module resolution failure with mammoth.js
+- [SheetJS Issue #2707 -- XLSX cannot be streamed](https://github.com/SheetJS/sheetjs/issues/2707) -- Maintainer confirms: "XLSX is a ZIP-based file format and cannot be incrementally processed with a streaming data source"
+- [pdf-lib Issue #197 -- Heap OOM on large PDFs](https://github.com/Hopding/pdf-lib/issues/197) -- Confirmed entire `Uint8Array` loaded into memory
+- [pdf-parse missing debug file crash](https://medium.com/@mbmrajatit/how-a-missing-debug-file-in-pdf-parse-crashed-my-node-js-app-and-how-i-fixed-it-be5ba7077527) -- Real production crash from `pdfjs-dist` dependency issue
+- [OWASP File Upload Testing Guide](https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/10-Business_Logic_Testing/09-Test_Upload_of_Malicious_Files) -- Official security testing methodology for file uploads
+- [PortSwigger: File Upload Vulnerabilities](https://portswigger.net/web-security/file-upload) -- Comprehensive guide on file upload attack vectors
 
-### Additional Sources
-- [Agent Orchestration: Best Practices and Pitfalls (Forbes)](https://www.forbes.com/councils/forbestechcouncil/2025/12/16/agent-orchestration-best-practices-and-pitfalls/)
-- [A2A Protocol Guide (DEV Community)](https://dev.to/czmilo/2025-complete-guide-agent2agent-a2a-protocol-the-new-standard-for-ai-agent-collaboration-1pph)
-- [Making A2A Communication Secure and Reliable (Diagrid)](https://www.diagrid.io/blog/making-agent-to-agent-a2a-communication-secure-and-reliable-with-dapr)
-- [Multi-Agent System Failure: 10 Pitfalls to Avoid (LinkedIn)](https://www.linkedin.com/pulse/multi-agent-system-failure-10-pitfalls-avoid)
-- [Context Poisoning in LLMs (Elastic)](https://www.elastic.co/search-labs/blog/context-poisoning-llm)
-- [7 Multi-Agent Debugging Challenges (Galileo AI)](https://galileo.ai/blog/debug-multi-agent-ai-systems)
+### MEDIUM Confidence (Industry Research / Multiple Credible Sources)
+
+- [Why Abstracting Away from Object Storage Like S3 is Always a Good Idea](https://elasticscale.com/blog/abstracting-away-from-object-storage-like-s3-is-always-a-good-idea/) -- Testing and abstraction rationale for S3
+- [PortSwigger: Fickle PDFs -- Exploiting Browser Rendering Discrepancies](https://portswigger.net/research/fickle-pdfs-exploiting-browser-rendering-discrepancies) -- PDF-based security exploitation research
+- [Google Bug Hunters: SafeContentFrame](https://bughunters.google.com/blog/beyond-sandbox-domains-rendering-untrusted-web-content-with-safecontentframe) -- Google's approach to rendering untrusted content
+- [Transloadit: Secure API File Uploads with Magic Numbers](https://transloadit.com/devtips/secure-api-file-uploads-with-magic-numbers/) -- Magic byte validation implementation guide
+- [Google Magika: AI-Powered File Type Detector](https://blog.logrocket.com/using-google-magika-build-ai-powered-file-type-detector/) -- Deep-learning file identification tool
+- [pompelmi: File Scanner for Node.js](https://github.com/pompelmi/pompelmi) -- YARA-based malware scanning and ZIP bomb protection
+- [Cloudmersive: Why ZIP Uploads are Dangerous](https://cloudmersive.com/article/Why-ZIP-Uploads-are-Dangerous) -- ZIP bomb and double-extension spoofing attacks
+- [mammoth.js GitHub Issues #6, #71, #129, #187, #200, #213](https://github.com/mwilliamson/mammoth.js/issues) -- Documented limitations: tables, images, fragments, style mappings
+- [Dromo: Best Practices for Handling Large CSV Files](https://dromo.io/blog/best-practices-handling-large-csv-files) -- Streaming and chunked processing patterns
+- [Next.js file upload mistakes (Medium / Codetodeploy)](https://medium.com/codetodeploy/what-i-learned-about-file-uploads-in-next-js-and-the-mistakes-i-made-first-51481dab75fe) -- Real-world mistakes in Next.js file upload implementation
+
+### LOW Confidence (Single Source / Unverified -- Flagged for Validation)
+
+- Reddit: SheetJS 1.5 MB file taking 50 seconds to parse -- anecdotal, may be hardware-dependent
+- Mammoth.js Turbopack fix status -- may have been resolved in newer Next.js/mammoth versions; verify before implementation
+
+### Codebase-Specific Notes
+
+- Existing `content-filter.ts` only checks text patterns, not binary payloads or script injection
+- Existing `skills/file-processing.ts` reads local filesystem paths, incompatible with uploaded file storage
+- Existing `messages` table has no file attachment field -- schema extension required
+- Existing middleware protects `/api/*` routes but file preview URLs need specific attention
+- Project uses Turbopack (`npm run dev --turbopack`) -- any library incompatible with Turbopack is a direct blocker
 
 ---
 
-*Pitfalls research for: AI Agent Framework (Multi-Agent Collaboration Platform)*
-*Context: Adding A2A multi-agent to existing Next.js 16 single-agent system*
-*Researched: 2026-03-25*
+*Pitfalls research for: Next-Mind v1.2 File Upload, Processing & Management*
+*Context: Adding multi-type file support to existing Next.js 16 AI Agent collaboration platform*
+*Researched: 2026-03-26*

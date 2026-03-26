@@ -1,15 +1,22 @@
-# Architecture Research: AI Agent Framework with A2A Multi-Agent Integration
+# Architecture Research: File Upload, Processing, and Management for v1.2
 
-**Domain:** AI Agent Collaboration Platform (Next-Mind)
-**Framework Base:** pi-mono (TypeScript)
-**Researched:** 2026-03-25 (Updated for v1.1 A2A)
+**Domain:** Multi-type file handling integrated into existing Next.js 16 AI Agent platform
+**Researched:** 2026-03-26
 **Confidence:** HIGH
 
 ---
 
-## Existing Architecture Overview
+## Executive Summary
 
-### Current System Structure (v1.0)
+This document describes how file upload, processing, format conversion, preview, management, and chat integration features integrate with the existing Next-Mind architecture. The existing codebase uses Next.js 16 App Router with Route Handlers, PostgreSQL + Drizzle ORM, a decorator-based Skills system, and a per-session MCP server with a ToolRegistry. The file system must add three new subsystems -- a Storage Abstraction Layer (local/cloud), a File Processing Pipeline (extract/convert/classify), and a File Chat Integration layer -- while extending existing database schema, API routes, skills registry, and chat UI components.
+
+The key architectural insight is that files are NOT a new domain bolted onto the side. They integrate deeply at three levels: (1) as new database tables linked to users and conversations, (2) as new skills registered through the existing decorator system, and (3) as content injected into the existing LLM streaming chat flow. The storage abstraction layer is the most critical new component because it gates all other file features and must be built first.
+
+---
+
+## System Overview
+
+### Architecture Diagram (v1.2 additions highlighted)
 
 ```
 +------------------------------------------------------------------+
@@ -17,6 +24,14 @@
 +------------------------------------------------------------------+
 |  +------------+  +------------+  +------------+  +--------------+ |
 |  | /api/chat  |  | /api/mcp   |  |/api/skills |  |/api/approval | |
+|  +-----+------+  +-----+------+  +-----+------+  +-------+------+ |
+|        |              |               |                   |        |
+|  +-----+------+  +-----+------+  +-----+------+  +-------+------+ |
+|  | /api/files |  |/api/files/ |  |/api/preview|  |/api/convert|  |
+|  |   [NEW]    |  |:id/content|  |   [NEW]    |  |   [NEW]     |  |
+|  |   upload   |  |   [NEW]    |  |            |  |             |  |
+|  |   list     |  |   download |  |            |  |             |  |
+|  |   delete   |  |            |  |            |  |             |  |
 |  +-----+------+  +-----+------+  +-----+------+  +-------+------+ |
 |        |              |               |                   |        |
 +--------|--------------|---------------|-------------------|--------+
@@ -28,361 +43,51 @@
 |  |LLM Gate- |  | MCP Server|  |  Skills   |  | Approval State  |  |
 |  |   way    |  |(JSON-RPC) |  |  System   |  |    Machine      |  |
 |  +----------+  +-----------+  +-----------+  +-----------------+  |
-|  |Qwen/GLM/ |  |Tool Reg.  |  |Decorator  |  |ApprovalRequest  |  |
-|  |MiniMax   |  |Resource   |  |Discovery  |  |StateMachine     |  |
-|  |          |  |Prompts    |  |Executor   |  |                 |  |
-|  +----------+  +-----------+  |Orchestr.  |  +-----------------+  |
-|                              +-----------+                       |
+|                                                                    |
+|  +------------------+  +------------------+  +-----------------+  |
+|  | Storage Provider |  | File Processor   |  | File Classifier |  |
+|  |    [NEW]         |  |    [NEW]         |  |    [NEW]        |  |
+|  | - LocalAdapter   |  | - PDF extract    |  | - Type-based    |  |
+|  | - S3Adapter      |  | - DOCX extract  |  | - Content-based |  |
+|  | - R2Adapter      |  | - CSV parse      |  |   auto-tag      |  |
+|  +------------------+  | - Excel parse    |  +-----------------+  |
+|                         | - Code read      |                       |
+|                         +------------------+                       |
 +-------------------------------------------------------------------+
 |                          Data Layer                               |
 +-------------------------------------------------------------------+
 |  +-----------------+  +------------------+  +-------------------+ |
-|  |   PostgreSQL    |  |   Drizzle ORM    |  |   Auth.js v5      | |
-|  | users/sessions  |  |   Schema         |  |   Sessions        | |
-|  | conversations   |  |                  |  |                   | |
-|  | messages        |  |                  |  |                   | |
-|  | audit_logs      |  |                  |  |                   | |
+|  |   PostgreSQL    |  |   Drizzle ORM    |  |   File Storage    | |
+|  | [existing]      |  |   [extended]     |  |   [NEW]           | |
+|  | + files         |  | + fileSchema     |  |   local disk or   | |
+|  | + fileContents  |  |                  |  |   S3 / R2 bucket  | |
+|  | + conversation- |  |                  |  |                   | |
+|  |   Files (join)  |  |                  |  |                   | |
 |  +-----------------+  +------------------+  +-------------------+ |
 +-------------------------------------------------------------------+
 ```
 
-### Key Existing Components
+### Component Responsibility Table
 
-| Component | File | Responsibility | Integration Points |
-|-----------|------|----------------|-------------------|
-| LLM Gateway | `src/lib/llm/index.ts` | Multi-provider streaming chat | Used by `/api/chat` |
-| MCP Server | `src/lib/mcp/server.ts` | JSON-RPC 2.0 protocol handler | Session-scoped, tool registry |
-| Tool Registry | `src/lib/mcp/registry.ts` | Tool registration & execution | Zod schemas, handler execution |
-| Skill Types | `src/lib/skills/types.ts` | `SkillMetadata`, `SkillContext`, `SkillResult` | Foundation for all skills |
-| Skill Discovery | `src/lib/skills/discovery.ts` | Decorator-based skill registration | `registerSkill()`, `discoverSkills()` |
-| Skill Executor | `src/lib/skills/executor.ts` | Skill execution with timeout/approval | Uses registry, approval flow |
-| Skill Orchestrator | `src/lib/skills/orchestration.ts` | Sequential skill execution | `executePlan()` with steps |
-| Approval State | `src/lib/approval/state.ts` | State machine for approvals | `ApprovalStateMachine` |
-| DB Schema | `src/lib/db/schema.ts` | Drizzle ORM definitions | users, sessions, conversations, messages |
-
----
-
-## A2A Multi-Agent Integration Architecture (v1.1)
-
-### System Overview with A2A Components
-
-```
-+------------------------------------------------------------------+
-|                        Next.js App Router                         |
-+------------------------------------------------------------------+
-|  +------------+  +------------+  +------------+  +--------------+ |
-|  |/api/chat   |  |/api/mcp    |  |/api/skills |  |/api/agents   | |
-|  +-----+------+  +-----+------+  +-----+------+  +-------+------+ |
-|        |              |               |               | NEW        |
-+--------|--------------|---------------|---------------|-----------+
-         |              |               |               |
-+--------v--------------v---------------v---------------v-----------+
-|                            Core Services                           |
-+-------------------------------------------------------------------+
-|                         EXISTING                                  |
-|  +----------+  +-----------+  +-----------+  +-----------------+  |
-|  |LLM Gate- |  | MCP Server|  |  Skills   |  | Approval State  |  |
-|  |   way    |  |(JSON-RPC) |  |  System   |  |    Machine      |  |
-|  +----------+  +-----------+  +-----------+  +-----------------+  |
-+-------------------------------------------------------------------+
-|                         NEW - A2A Layer                           |
-|  +----------------+  +----------------+  +---------------------+  |
-|  | Agent Registry |  | Task Queue     |  | Communication Bus   |  |
-|  | - register()   |  | - enqueue()    |  | - publish()         |  |
-|  | - discover()   |  | - dequeue()    |  | - subscribe()       |  |
-|  | - getAgent()   |  | - getStatus()  |  | - broadcast()       |  |
-|  +----------------+  +----------------+  +---------------------+  |
-|  +----------------+  +----------------+  +---------------------+  |
-|  | Agent Lifecycle|  | Result Aggreg. |  | Workflow State      |  |
-|  | - spawn()      |  | - merge()      |  | - saveState()       |  |
-|  | - terminate()  |  | - compare()    |  | - loadState()       |  |
-|  | - healthCheck()|  | - summarize()  |  | - trackProgress()   |  |
-|  +----------------+  +----------------+  +---------------------+  |
-+-------------------------------------------------------------------+
-|                          Data Layer                               |
-+-------------------------------------------------------------------+
-|  +-----------------+                                              |
-|  |   PostgreSQL    |  NEW TABLES: agents, agent_tasks,           |
-|  |   + NEW         |  agent_messages, workflows, workflow_steps  |
-|  +-----------------+                                              |
-+-------------------------------------------------------------------+
-```
-
-### New Component Responsibilities
-
-| Component | Responsibility | Communicates With | Integration Type |
-|-----------|---------------|-------------------|------------------|
-| Agent Registry | Agent registration, discovery, capability mapping | Skills (as agent implementations), Workflow Engine | Uses existing `SkillMetadata` pattern |
-| Task Queue | Task enqueue, dequeue, priority, retry | Agent Registry, Communication Bus | New component |
-| Communication Bus | Pub/sub messaging between agents | Task Queue, Result Aggregator | New component |
-| Result Aggregator | Merge, compare, summarize results | Communication Bus, Workflow State | New component |
-| Workflow State | Persist multi-step workflow state | PostgreSQL, Agent Registry | Extends existing schema |
-| Agent Lifecycle | Spawn, terminate, health monitoring | Agent Registry, Task Queue | New component |
-
----
-
-## Integration Points with Existing Architecture
-
-### 1. Skills System Integration (HIGH Priority)
-
-**Current:** Skills are discovered via decorator pattern and executed sequentially by `SkillOrchestrator`.
-
-**Integration:** Sub-agents ARE specialized skills. The existing skill system becomes the foundation for agent capabilities.
-
-```typescript
-// src/lib/agents/types.ts - extends existing SkillMetadata
-import type { SkillMetadata, SkillContext, SkillResult } from '@/lib/skills/types';
-
-export interface AgentMetadata extends SkillMetadata {
-  /** Agent type classification */
-  agentType: 'file' | 'search' | 'code' | 'custom';
-  /** Whether this agent can spawn sub-agents */
-  canDelegate: boolean;
-  /** Maximum concurrent tasks this agent can handle */
-  maxConcurrency: number;
-  /** Timeout for agent initialization */
-  initTimeout: number;
-}
-
-export interface AgentContext extends SkillContext {
-  /** Parent agent ID if spawned by another agent */
-  parentAgentId?: string;
-  /** Workflow ID for tracking multi-agent tasks */
-  workflowId: string;
-  /** Communication channel for inter-agent messaging */
-  communicationChannel: string;
-}
-
-export interface AgentResult extends SkillResult {
-  /** Agent ID that produced this result */
-  agentId: string;
-  /** Execution time in ms */
-  duration: number;
-  /** Child agent results if delegation occurred */
-  childResults?: AgentResult[];
-}
-```
-
-**Files to Modify:**
-- `src/lib/skills/types.ts` - Add agent-specific interfaces (non-breaking)
-- `src/lib/skills/discovery.ts` - Support agent discovery alongside skills
-
-**Files to Create:**
-- `src/lib/agents/types.ts` - Agent-specific types extending skills
-- `src/lib/agents/registry.ts` - Agent registry (similar to skill registry)
-- `src/lib/agents/discovery.ts` - Agent discovery from skill modules
-
-### 2. MCP Server Integration (MEDIUM Priority)
-
-**Current:** MCP provides tools via JSON-RPC 2.0 with session-scoped tool registry.
-
-**Integration:** Expose agents as MCP tools. The host agent becomes an MCP tool that can orchestrate sub-agents.
-
-```typescript
-// src/lib/mcp/agent-tools.ts - register agents as MCP tools
-import type { McpTool } from '@/lib/mcp/types';
-import { getAgentRegistry } from '@/lib/agents/registry';
-
-export function registerAgentTools(registry: ToolRegistry): void {
-  const agents = getAgentRegistry().listAgents();
-
-  for (const agent of agents) {
-    registry.registerTool({
-      name: `agent_${agent.metadata.id}`,
-      description: agent.metadata.description,
-      inputSchema: z.object(agent.metadata.inputSchema),
-      handler: async (args) => {
-        const result = await executeAgent(agent.metadata.id, args, context);
-        return {
-          content: [{ type: 'text', text: JSON.stringify(result) }],
-        };
-      },
-    });
-  }
-}
-```
-
-**Files to Modify:**
-- `src/lib/mcp/session.ts` - Include agent registry in session
-- `src/app/api/mcp/route.ts` - Register agent tools on session creation
-
-**Files to Create:**
-- `src/lib/mcp/agent-tools.ts` - Agent-as-MCP-tool registration
-
-### 3. LLM Gateway Integration (MEDIUM Priority)
-
-**Current:** `streamChat()` provides streaming completion with provider abstraction.
-
-**Integration:** Each agent needs its own LLM context. Host agent orchestrates by generating delegation prompts.
-
-```typescript
-// src/lib/agents/llm-context.ts
-import { streamChat, type StreamChatOptions } from '@/lib/llm';
-
-export interface AgentLLMContext {
-  /** Agent-specific system prompt */
-  systemPrompt: string;
-  /** Delegated task description */
-  taskPrompt: string;
-  /** Context from parent agent */
-  parentContext?: string;
-}
-
-export async function executeAgentLLM(
-  agent: AgentMetadata,
-  context: AgentLLMContext,
-  options: Partial<StreamChatOptions>
-): Promise<ReadableStream> {
-  return streamChat({
-    modelId: options.modelId ?? 'qwen3.5-turbo',
-    messages: [
-      { role: 'system', content: context.systemPrompt },
-      { role: 'user', content: context.taskPrompt },
-    ],
-    ...options,
-  });
-}
-```
-
-**Files to Create:**
-- `src/lib/agents/llm-context.ts` - Agent-specific LLM context handling
-
-### 4. Approval Flow Integration (HIGH Priority)
-
-**Current:** `ApprovalStateMachine` handles skill approval requests with pending/approved/rejected states.
-
-**Integration:** Multi-agent workflows may require aggregated approvals. Extend approval flow for agent delegation.
-
-```typescript
-// src/lib/approval/agent-approval.ts
-import { ApprovalStateMachine, type ApprovalRequest } from './state';
-
-export interface AgentDelegationApproval extends ApprovalRequest {
-  /** Agent being delegated to */
-  targetAgentId: string;
-  /** Task being delegated */
-  delegatedTask: string;
-  /** Parent agent requesting delegation */
-  parentAgentId: string;
-}
-
-export class AgentApprovalStateMachine extends ApprovalStateMachine {
-  createDelegationApproval(params: {
-    targetAgentId: string;
-    parentAgentId: string;
-    task: string;
-    userId: string;
-    sessionId: string;
-  }): AgentDelegationApproval {
-    return this.createRequest({
-      skillId: `agent_delegation_${params.targetAgentId}`,
-      skillName: `Agent Delegation: ${params.targetAgentId}`,
-      action: `Delegate task to ${params.targetAgentId}`,
-      details: params.task,
-      input: { task: params.task },
-      userId: params.userId,
-      sessionId: params.sessionId,
-    }) as AgentDelegationApproval;
-  }
-}
-```
-
-**Files to Modify:**
-- `src/lib/approval/types.ts` - Add `AgentDelegationApproval` type
-- `src/lib/approval/state.ts` - Extend for agent delegation approvals
-
-**Files to Create:**
-- `src/lib/approval/agent-approval.ts` - Agent-specific approval handling
-
-### 5. Database Schema Extension (HIGH Priority)
-
-**Current:** Schema has `users`, `sessions`, `conversations`, `messages`, `audit_logs`.
-
-**Integration:** Add tables for agents, tasks, workflows, and inter-agent messages.
-
-```typescript
-// src/lib/db/schema.ts - additions
-import { pgTable, text, timestamp, jsonb, integer, boolean, index } from 'drizzle-orm/pg-core';
-
-// Agent definitions (registered agents)
-export const agents = pgTable('agent', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull(),
-  agentType: text('agent_type').notNull(), // 'file' | 'search' | 'code' | 'custom'
-  description: text('description').notNull(),
-  capabilities: jsonb('capabilities').$type<string[]>().notNull(),
-  config: jsonb('config').$type<Record<string, unknown>>(),
-  isActive: boolean('is_active').default(true).notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  updatedAt: timestamp('updated_at').defaultNow().notNull(),
-}, (table) => ({
-  agentTypeIdx: index('agent_type_idx').on(table.agentType),
-}));
-
-// Agent tasks (individual task executions)
-export const agentTasks = pgTable('agent_task', {
-  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
-  agentId: text('agent_id').notNull().references(() => agents.id, { onDelete: 'cascade' }),
-  workflowId: text('workflow_id').references(() => workflows.id, { onDelete: 'set null' }),
-  parentTaskId: text('parent_task_id'), // For nested delegation
-  status: text('status').notNull().default('pending'), // pending | running | completed | failed
-  input: jsonb('input').$type<unknown>().notNull(),
-  output: jsonb('output').$type<unknown>(),
-  error: text('error'),
-  startedAt: timestamp('started_at'),
-  completedAt: timestamp('completed_at'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-}, (table) => ({
-  agentIdIdx: index('agent_task_agent_idx').on(table.agentId),
-  workflowIdIdx: index('agent_task_workflow_idx').on(table.workflowId),
-  statusIdx: index('agent_task_status_idx').on(table.status),
-}));
-
-// Inter-agent messages
-export const agentMessages = pgTable('agent_message', {
-  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
-  fromAgentId: text('from_agent_id').notNull(),
-  toAgentId: text('to_agent_id').notNull(),
-  workflowId: text('workflow_id').references(() => workflows.id, { onDelete: 'cascade' }),
-  messageType: text('message_type').notNull(), // 'request' | 'response' | 'notification' | 'context_request'
-  payload: jsonb('payload').$type<unknown>().notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-}, (table) => ({
-  workflowIdIdx: index('agent_message_workflow_idx').on(table.workflowId),
-  fromAgentIdx: index('agent_message_from_idx').on(table.fromAgentId),
-}));
-
-// Multi-agent workflows
-export const workflows = pgTable('workflow', {
-  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
-  conversationId: text('conversation_id').references(() => conversations.id, { onDelete: 'cascade' }),
-  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
-  status: text('status').notNull().default('pending'), // pending | running | completed | failed | cancelled
-  executionMode: text('execution_mode').notNull(), // 'sequential' | 'parallel' | 'adaptive'
-  currentStep: integer('current_step').default(0),
-  totalSteps: integer('total_steps').notNull(),
-  result: jsonb('result').$type<unknown>(),
-  error: text('error'),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  completedAt: timestamp('completed_at'),
-}, (table) => ({
-  conversationIdIdx: index('workflow_conversation_idx').on(table.conversationId),
-  userIdIdx: index('workflow_user_idx').on(table.userId),
-  statusIdx: index('workflow_status_idx').on(table.status),
-}));
-
-// Type exports
-export type Agent = typeof agents.$inferSelect;
-export type NewAgent = typeof agents.$inferInsert;
-export type AgentTask = typeof agentTasks.$inferSelect;
-export type NewAgentTask = typeof agentTasks.$inferInsert;
-export type AgentMessage = typeof agentMessages.$inferSelect;
-export type Workflow = typeof workflows.$inferSelect;
-export type NewWorkflow = typeof workflows.$inferInsert;
-```
-
-**Files to Modify:**
-- `src/lib/db/schema.ts` - Add new tables
+| Component | Responsibility | Location | Type |
+|-----------|---------------|----------|------|
+| StorageProvider (interface) | Abstract get/put/delete/exists operations | `src/lib/storage/provider.ts` | NEW - interface |
+| LocalStorageAdapter | Local filesystem storage (dev/default) | `src/lib/storage/local.ts` | NEW |
+| S3StorageAdapter | AWS S3 / S3-compatible storage | `src/lib/storage/s3.ts` | NEW (future) |
+| FileProcessorService | Extract text from PDF/DOCX/CSV/Excel/code | `src/lib/files/processor.ts` | NEW |
+| FileConverterService | Convert between formats (PDF->MD, DOCX->MD, etc.) | `src/lib/files/converter.ts` | NEW |
+| FileClassifierService | Auto-classify files by type and content | `src/lib/files/classifier.ts` | NEW |
+| FileQueries | Database CRUD for file metadata | `src/lib/db/queries.ts` | MODIFIED - add file queries |
+| File Schema | Drizzle table definitions for files | `src/lib/db/schema.ts` | MODIFIED - add tables |
+| `/api/files` | Upload, list, delete files | `src/app/api/files/route.ts` | NEW |
+| `/api/files/[id]/content` | Download/get file content | `src/app/api/files/[id]/content/route.ts` | NEW |
+| `/api/preview` | Get preview-ready content | `src/app/api/preview/route.ts` | NEW |
+| `/api/convert` | Convert file format | `src/app/api/convert/route.ts` | NEW |
+| FileSkills (decorator) | File skills registered with existing system | `src/skills/file-processing.ts` | MODIFIED - add new skills |
+| ChatInput (component) | Add file attachment to chat messages | `src/components/chat/chat-input.tsx` | MODIFIED - add upload trigger |
+| ChatMessage (component) | Render file attachments in messages | `src/components/chat/chat-message.tsx` | MODIFIED - add file card |
+| FilePreviewPanel (component) | In-conversation file preview | `src/components/files/preview-panel.tsx` | NEW |
+| FileManagerPanel (component) | Standalone file management UI | `src/components/files/manager-panel.tsx` | NEW |
 
 ---
 
@@ -390,323 +95,585 @@ export type NewWorkflow = typeof workflows.$inferInsert;
 
 ```
 src/
-+-- lib/
-|   +-- agents/                 # NEW - Agent system
-|   |   +-- types.ts            # Agent types extending SkillTypes
-|   |   +-- registry.ts         # Agent registration/discovery
-|   |   +-- lifecycle.ts        # Agent spawn/terminate/health
-|   |   +-- executor.ts         # Agent execution engine
-|   |   +-- llm-context.ts      # Agent-specific LLM handling
-|   |   +-- task-queue.ts       # Task queue management
-|   |   +-- communication.ts    # Inter-agent message bus
-|   |   +-- result-aggregator.ts# Result merge/compare/summarize
-|   |   +-- workflow-engine.ts  # Multi-agent workflow orchestration
-|   |   +-- predefined/         # Predefined agent implementations
-|   |       +-- file-agent.ts
-|   |       +-- search-agent.ts
-|   |       +-- code-agent.ts
-|   +-- skills/                 # EXISTING - Extended for agent support
-|   |   +-- types.ts            # MODIFY: Add agent interfaces
-|   |   +-- discovery.ts        # MODIFY: Support agent discovery
-|   |   +-- executor.ts         # KEEP: Used by agent executor
-|   |   +-- orchestration.ts    # KEEP: Sequential execution
-|   +-- mcp/                    # EXISTING - Extended for agent tools
-|   |   +-- agent-tools.ts      # NEW: Agent-as-MCP-tool registration
-|   |   +-- session.ts          # MODIFY: Include agent registry
-|   +-- approval/               # EXISTING - Extended for agent delegation
-|   |   +-- agent-approval.ts   # NEW: Agent-specific approvals
-|   |   +-- types.ts            # MODIFY: Add delegation types
-|   +-- db/
-|   |   +-- schema.ts           # MODIFY: Add agent/workflow tables
-+-- app/
-|   +-- api/
-|   |   +-- agents/             # NEW - Agent API endpoints
-|   |   |   +-- route.ts        # List/register agents
-|   |   |   +-- [id]/
-|   |   |       +-- route.ts    # Get/execute specific agent
-|   |   +-- workflows/          # NEW - Workflow API endpoints
-|   |   |   +-- route.ts        # Create/list workflows
-|   |   |   +-- [id]/
-|   |   |       +-- route.ts    # Get/cancel workflow
-|   |   |       +-- steps/
-|   |   |           +-- route.ts # Get workflow steps
-+-- agents/                     # NEW - Agent definitions (like skills/)
-    +-- file-agent.ts           # File processing agent
-    +-- search-agent.ts         # Web search agent
-    +-- code-agent.ts           # Code analysis agent
+  lib/
+    storage/                    # NEW - Storage abstraction layer
+      provider.ts               # StorageProvider interface + factory
+      local.ts                  # LocalStorageAdapter (filesystem)
+      s3.ts                     # S3StorageAdapter (future, placeholder)
+      types.ts                  # Storage types, config
+    files/                      # NEW - File processing pipeline
+      processor.ts              # Text extraction per file type
+      converter.ts              # Format conversion (PDF->MD, etc.)
+      classifier.ts             # Auto-classification logic
+      types.ts                  # FileType enum, processing results
+      errors.ts                 # File-specific error types
+    db/
+      schema.ts                 # MODIFIED - add files, fileContents, conversationFiles tables
+      queries.ts                # MODIFIED - add file CRUD queries
+    skills/
+      types.ts                  # MODIFIED - extend SkillCategory if needed
+      registry.ts               # MODIFIED - register new file skills
+    mcp/
+      tools/
+        bash.ts                 # EXISTING - no changes
+  skills/
+    file-processing.ts          # MODIFIED - add extract/convert/classify skills
+    data-analysis.ts            # EXISTING - no changes
+    web-search.ts               # EXISTING - no changes
+  app/
+    api/
+      files/                    # NEW
+        route.ts                # POST upload, GET list
+        [id]/
+          content/
+            route.ts            # GET file content/download
+          route.ts              # DELETE file
+      preview/
+        route.ts                # GET preview-ready content
+      convert/
+        route.ts                # POST convert format
+  components/
+    chat/
+      chat-input.tsx            # MODIFIED - file attachment trigger
+      chat-message.tsx          # MODIFIED - file attachment rendering
+      file-attachment.tsx       # NEW - file chip in message
+    files/
+      preview-panel.tsx         # NEW - inline file preview
+      preview-pdf.tsx           # NEW - PDF viewer (client-only)
+      preview-code.tsx          # NEW - code with syntax highlighting
+      preview-data.tsx          # NEW - CSV/Excel table view
+      preview-markdown.tsx      # NEW - converted content viewer
+      upload-button.tsx         # NEW - file upload trigger component
+      upload-progress.tsx       # NEW - upload progress indicator
+      file-card.tsx             # NEW - file metadata display card
+      file-manager-panel.tsx    # NEW - standalone file list/search/delete
+      file-search.tsx           # NEW - file search input
+  hooks/
+    use-file-upload.ts          # NEW - upload state management hook
+    use-file-manager.ts         # NEW - file list/query hook
+    use-file-preview.ts         # NEW - preview state hook
 ```
 
 ### Structure Rationale
 
-- **lib/agents/**: Core agent infrastructure, mirrors lib/skills pattern for consistency
-- **agents/**: Agent definitions as first-class citizens alongside skills
-- **api/agents/** and **api/workflows/**: REST endpoints for agent interaction
-- **lib/mcp/agent-tools.ts**: Bridges agents to MCP protocol
+- **`lib/storage/`** is a separate top-level module because the StorageProvider interface is used by upload routes, processing pipeline, and potentially by the MCP server for file-access tools. Keeping it isolated enables easy mocking in tests.
+- **`lib/files/`** contains pure logic for file processing -- no API or DB dependencies. This makes it testable in isolation and reusable from skills, API routes, or background workers.
+- **`api/files/`** follows the existing App Router pattern (see `/api/conversations/`, `/api/workflow-control/`). Using nested `[id]/content` follows REST conventions and keeps the upload endpoint clean.
+- **`components/files/`** is a new directory because file components are a distinct domain from chat or workflow. They share nothing with `components/chat/` except being imported by chat components.
+- **`hooks/use-file-*.ts`** follows the existing pattern of `use-model-preference.ts` -- custom hooks for complex client state.
 
 ---
 
 ## Architectural Patterns
 
-### Pattern 1: Agent-as-Skill Extension
+### Pattern 1: Storage Provider (Ports & Adapters)
 
-**What:** Agents extend the existing skill system with delegation capability.
+**What:** Define a `StorageProvider` interface that abstracts read/write/delete operations. Implement `LocalStorageAdapter` for development and local deployment. Add `S3StorageAdapter` (or R2) later.
 
-**When to use:** All sub-agents should follow this pattern for consistency.
+**When to use:** All file I/O throughout the application goes through this interface. Never access the filesystem directly from business logic.
 
-**Trade-offs:**
-- Pros: Reuses existing discovery/execution infrastructure, minimal code duplication
-- Cons: Skills may need to be more stateful for agent use cases
+**Trade-offs:** Adds one layer of indirection. But the PROJECT.md explicitly calls for an abstract storage layer (local/cloud switchable), and the v1.1 codebase already notes "local storage, cloud storage integration pending." This pattern directly addresses that technical debt.
+
+**Example:**
 
 ```typescript
-// src/lib/agents/decorator.ts
-import 'reflect-metadata';
-import type { AgentMetadata, AgentFunction, AgentContext, AgentResult } from './types';
+// src/lib/storage/provider.ts
+export interface StorageProvider {
+  /** Store a file. Returns the storage key (path/URL). */
+  put(key: string, data: Buffer | ReadableStream, options?: StoragePutOptions): Promise<string>;
+  /** Retrieve a file. Returns a Buffer. */
+  get(key: string): Promise<Buffer>;
+  /** Check if a file exists. */
+  exists(key: string): Promise<boolean>;
+  /** Delete a file. */
+  delete(key: string): Promise<void>;
+  /** Get a temporary signed URL for direct download (for previews). */
+  getSignedUrl(key: string, expiresIn?: number): Promise<string>;
+}
 
-const AGENT_METADATA_KEY = Symbol('agent:metadata');
+export interface StoragePutOptions {
+  contentType?: string;
+  metadata?: Record<string, string>;
+}
 
-export function agent(metadata: Omit<AgentMetadata, 'inputSchema' | 'timeout' | 'requiresApproval' | 'destructiveActions' | 'dependencies'>): MethodDecorator {
-  return (target: object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<unknown>) => {
-    const existingSchema = Reflect.getMetadata('skill:inputSchema', target, propertyKey) ?? {};
+// Factory function reads env var to select provider
+export function createStorageProvider(): StorageProvider {
+  const provider = process.env.STORAGE_PROVIDER || 'local';
+  switch (provider) {
+    case 'local':
+      return new LocalStorageAdapter({
+        basePath: process.env.STORAGE_LOCAL_PATH || './uploads',
+      });
+    case 's3':
+      return new S3StorageAdapter({
+        bucket: process.env.S3_BUCKET!,
+        region: process.env.S3_REGION!,
+        // ...
+      });
+    default:
+      throw new Error(`Unknown storage provider: ${provider}`);
+  }
+}
+```
 
-    const fullMetadata: AgentMetadata = {
-      ...metadata,
-      inputSchema: existingSchema,
-      timeout: 60000, // Default 1 minute for agents
-      requiresApproval: metadata.canDelegate, // Delegation requires approval
-      destructiveActions: [],
-      dependencies: [],
-    };
+**Why this matters for the codebase:** The existing `FileProcessingSkills.readFile()` in `src/skills/file-processing.ts` accesses the filesystem directly with `readFile(input.path, 'utf-8')`. This MUST be migrated to use the StorageProvider so skills can access uploaded files regardless of whether they are stored locally or in S3.
 
-    Reflect.defineMetadata(AGENT_METADATA_KEY, fullMetadata, target, propertyKey);
+### Pattern 2: File Processing Pipeline (Strategy Pattern)
+
+**What:** Each file type has a dedicated processor strategy. A dispatcher routes files to the correct processor based on MIME type.
+
+**When to use:** All file content extraction and format conversion.
+
+**Trade-offs:** More classes than a single monolithic processor. But each processor is independently testable and new file types are added by creating one new strategy class.
+
+**Example:**
+
+```typescript
+// src/lib/files/types.ts
+export type SupportedFileType = 'pdf' | 'docx' | 'csv' | 'xlsx' | 'code';
+
+// src/lib/files/processor.ts
+export interface FileProcessor {
+  /** Check if this processor can handle the given MIME type. */
+  canProcess(mimeType: string): boolean;
+  /** Extract text content from the file. */
+  extract(buffer: Buffer, fileName: string): Promise<FileExtractResult>;
+}
+
+export interface FileExtractResult {
+  text: string;
+  metadata: {
+    pageCount?: number;
+    sheetNames?: string[];
+    rowCount?: number;
+    language?: string;
+    encoding?: string;
   };
 }
 
-export function getAgentMetadata(target: object, propertyKey: string): AgentMetadata | undefined {
-  return Reflect.getMetadata(AGENT_METADATA_KEY, target, propertyKey);
+// Dispatcher
+export class FileProcessingService {
+  private processors: FileProcessor[] = [];
+
+  registerProcessor(processor: FileProcessor): void {
+    this.processors.push(processor);
+  }
+
+  async extract(buffer: Buffer, fileName: string, mimeType: string): Promise<FileExtractResult> {
+    const processor = this.processors.find(p => p.canProcess(mimeType));
+    if (!processor) {
+      throw new UnsupportedFileTypeError(mimeType, fileName);
+    }
+    return processor.extract(buffer, fileName);
+  }
 }
 ```
 
-### Pattern 2: Event-Driven Communication Bus
+### Pattern 3: File Content as Skill Context Extension
 
-**What:** Agents communicate via publish/subscribe channels rather than direct calls.
+**What:** When a user attaches a file to a chat message, the file's extracted text is prepended to the message content before being sent to the LLM. This follows the existing pattern where the chat API receives `{ messages, modelId, conversationId }` -- we extend the message content to include file context.
 
-**When to use:** All inter-agent communication should use the bus.
+**When to use:** Every chat message that references one or more uploaded files.
 
-**Trade-offs:**
-- Pros: Decoupled agents, easier debugging, supports parallel execution
-- Cons: Additional complexity, eventual consistency considerations
+**Trade-offs:** Increases token count per message. But this is the simplest integration path that does not require changing the LLM gateway, streaming logic, or MCP server. It works with all three LLM providers (Qwen, GLM, MiniMax) because it only changes the message text.
+
+**Example:**
 
 ```typescript
-// src/lib/agents/communication.ts
-import type { AgentMessage } from '@/lib/db/schema';
+// In the conversation page, when user sends a message with attached files:
+async function handleSend(content: string, attachedFileIds: string[]) {
+  // Fetch file contents for each attached file
+  const fileContents = await Promise.all(
+    attachedFileIds.map(async (id) => {
+      const res = await fetch(`/api/files/${id}/content`);
+      const data = await res.json();
+      return `--- File: ${data.fileName} (${data.fileType}) ---\n${data.textContent}\n--- End of ${data.fileName} ---`;
+    })
+  );
 
-type MessageHandler = (message: AgentMessage) => Promise<void>;
+  // Prepend file contents to message
+  const enrichedContent = fileContents.length > 0
+    ? `${fileContents.join('\n\n')}\n\nUser question: ${content}`
+    : content;
 
-export class AgentCommunicationBus {
-  private channels: Map<string, Set<MessageHandler>> = new Map();
-  private messageLog: AgentMessage[] = [];
-
-  subscribe(channel: string, handler: MessageHandler): () => void {
-    if (!this.channels.has(channel)) {
-      this.channels.set(channel, new Set());
-    }
-    this.channels.get(channel)!.add(handler);
-
-    return () => {
-      this.channels.get(channel)?.delete(handler);
-    };
-  }
-
-  async publish(message: Omit<AgentMessage, 'id' | 'createdAt'>): Promise<void> {
-    const fullMessage: AgentMessage = {
-      ...message,
-      id: crypto.randomUUID(),
-      createdAt: new Date(),
-    };
-
-    this.messageLog.push(fullMessage);
-
-    // Persist to database (fire-and-forget)
-    this.persistMessage(fullMessage).catch(console.error);
-
-    // Notify subscribers
-    const channelKey = `${message.workflowId}:${message.toAgentId}`;
-    const handlers = this.channels.get(channelKey) ?? new Set();
-
-    await Promise.all(
-      Array.from(handlers).map(handler => handler(fullMessage))
-    );
-  }
-
-  private async persistMessage(message: AgentMessage): Promise<void> {
-    // Implementation would use Drizzle to insert into agentMessages table
-  }
+  // Send to existing /api/chat endpoint -- no changes needed on server side
+  const response = await fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      messages: [...messages, { role: 'user', content: enrichedContent }],
+      modelId,
+      conversationId,
+    }),
+  });
+  // ... existing streaming logic
 }
-
-export const communicationBus = new AgentCommunicationBus();
 ```
 
-### Pattern 3: Result Aggregation Pipeline
+**Why this matters:** This approach means the `/api/chat` route handler does NOT need modification for file chat integration. The file content is resolved client-side and injected into the message text. This is the lowest-friction integration path.
 
-**What:** Standardized approach to combining results from multiple agents.
+**Alternative (more sophisticated, higher effort):** Pass file IDs alongside messages and have the server-side chat handler resolve file contents. This keeps file content out of the client and enables server-side token counting and truncation. This is recommended as a follow-up optimization but NOT for the initial implementation.
 
-**When to use:** When host agent needs to combine parallel/sequential results.
+### Pattern 4: File Skills Registration via Decorators
 
-**Trade-offs:**
-- Pros: Consistent result handling, supports multiple aggregation strategies
-- Cons: May over-engineer simple cases
+**What:** New file skills (extract-text, convert-format, classify-file) are added as `@skill()` decorated methods in the existing `FileProcessingSkills` class or a new `FileManagementSkills` class. They register automatically through the existing `initializeSkillRegistry()` flow.
+
+**When to use:** When files need to be processed as part of agent workflows (A2A multi-agent system from v1.1).
+
+**Trade-offs:** None -- this is the established pattern. The decorator infrastructure is already built and working.
+
+**Example:**
 
 ```typescript
-// src/lib/agents/result-aggregator.ts
-import type { AgentResult } from './types';
+// src/skills/file-processing.ts (EXTENDED)
+export class FileProcessingSkills {
+  // ... existing readFile, listFiles ...
 
-export type AggregationStrategy = 'merge' | 'compare' | 'summarize' | 'select_best';
-
-export interface AggregationConfig {
-  strategy: AggregationStrategy;
-  /** For 'select_best', the criteria to compare */
-  selectionCriteria?: 'fastest' | 'highest_confidence' | 'most_comprehensive';
-}
-
-export class ResultAggregator {
-  async aggregate(results: AgentResult[], config: AggregationConfig): Promise<AgentResult> {
-    switch (config.strategy) {
-      case 'merge':
-        return this.mergeResults(results);
-      case 'compare':
-        return this.compareResults(results);
-      case 'summarize':
-        return this.summarizeResults(results);
-      case 'select_best':
-        return this.selectBestResult(results, config.selectionCriteria ?? 'fastest');
-    }
-  }
-
-  private mergeResults(results: AgentResult[]): AgentResult {
-    const mergedData = results.map(r => r.data);
-    return {
-      success: results.every(r => r.success),
-      data: mergedData,
-      agentId: 'aggregator',
-      duration: Math.max(...results.map(r => r.duration)),
-      childResults: results,
-    };
-  }
-
-  private compareResults(results: AgentResult[]): AgentResult {
-    return {
-      success: true,
-      data: {
-        comparison: results.map(r => ({
-          agentId: r.agentId,
-          success: r.success,
-          summary: this.summarizeData(r.data),
-        })),
-      },
-      agentId: 'aggregator',
-      duration: Math.max(...results.map(r => r.duration)),
-    };
-  }
-
-  private summarizeResults(results: AgentResult[]): AgentResult {
-    // Would typically call LLM to summarize
-    return {
-      success: results.every(r => r.success),
-      data: { summary: 'Aggregated result', count: results.length },
-      agentId: 'aggregator',
-      duration: Math.max(...results.map(r => r.duration)),
-    };
-  }
-
-  private selectBestResult(results: AgentResult[], criteria: string): AgentResult {
-    if (criteria === 'fastest') {
-      return results.reduce((best, curr) =>
-        curr.duration < best.duration ? curr : best
-      );
-    }
-    // Other criteria would need more sophisticated evaluation
-    return results[0];
-  }
-
-  private summarizeData(data: unknown): string {
-    return typeof data === 'string' ? data.slice(0, 100) : JSON.stringify(data).slice(0, 100);
+  @skill({
+    id: 'file-extract-text',
+    name: 'Extract File Text',
+    description: 'Extract text content from an uploaded file (PDF, DOCX, CSV, Excel, code)',
+    version: '1.0.0',
+    category: 'file',
+    tags: ['file', 'extract', 'text', 'pdf', 'docx', 'csv'],
+    inputSchema: {
+      fileId: z.string().describe('ID of the uploaded file'),
+    },
+    requiresApproval: false,
+    destructiveActions: [],
+    dependencies: [],
+    timeout: 30000, // PDF extraction can be slow
+  })
+  async extractFileText(
+    input: { fileId: string },
+    context: SkillContext
+  ): Promise<SkillResult> {
+    // Use FileProcessingService to extract text
+    // Return extracted text as SkillResult
   }
 }
 ```
-
-### Pattern 4: Dual-Layer Agent Loop (pi-mono Core) - EXISTING
-
-**What:** A two-level loop architecture that separates "steering" (interruptions) from "follow-up" (continuations).
-
-**When to use:** Interactive scenarios where users sit in front of a screen and may interrupt or append messages.
-
-**Trade-offs:**
-- Pros: Clean separation of interrupt vs. continue semantics, responsive to user input
-- Cons: More complex than simple ReAct loop, requires careful state management
-
-### Pattern 5: A2A (Agent-to-Agent) Collaboration
-
-**What:** Protocol for multi-agent communication enabling specialized agents to collaborate on complex tasks.
-
-**When to use:** Complex decisions requiring multiple perspectives, tasks that benefit from role separation.
-
-**Trade-offs:**
-- Pros: Improved reliability through separation of concerns, built-in checks and balances
-- Cons: Coordination overhead, potential for increased token usage
-
-**Common Patterns:**
-
-| Pattern | Description | Use Case |
-|---------|-------------|----------|
-| **Coordinator** | Central orchestrator assigns tasks | Enterprise workflows |
-| **Pipeline** | Sequential agent processing | Content generation, data processing |
-| **Fan-out/Fan-in** | Parallel execution, result aggregation | Research, analysis |
-| **Hierarchical** | Nested delegation | Complex planning |
 
 ---
 
 ## Data Flow
 
-### Multi-Agent Workflow Execution Flow
+### Flow 1: File Upload
 
 ```
-[User Request]
+User selects file in ChatInput
     |
     v
-[Chat API] --> [Host Agent Selection]
-    |                |
-    v                v
-[LLM Gateway]   [Agent Registry]
-    |                |
-    v                v
-[Task Decomposition] --> [Workflow Engine]
-    |                         |
-    v                         v
-[Delegation Decision]   [Task Queue]
-    |                         |
-    +--------+--------+-------+
-             |        |
-             v        v
-     [Sub-Agent 1] [Sub-Agent 2] ... (parallel or sequential)
-             |        |
-             v        v
-        [Result]  [Result]
-             |        |
-             +--------+
-                  |
-                  v
-         [Result Aggregator]
-                  |
-                  v
-         [Final Response]
+UploadButton component -> useFileUpload hook
+    |
+    v
+POST /api/files (multipart/form-data)
+    |
+    v
+Route Handler:
+  1. auth() check (existing pattern from /api/chat)
+  2. request.formData() to get file
+  3. Validate: type, size (<=100MB), MIME
+  4. Generate storage key: `{userId}/{date}/{uuid}-{filename}`
+  5. StorageProvider.put(key, buffer)
+  6. FileProcessingService.extract(buffer, filename, mimeType)
+  7. FileClassifierService.classify(filename, mimeType, extractedText)
+  8. Insert into `files` table (metadata)
+  9. Insert extracted text into `fileContents` table
+  10. logAudit() (existing pattern)
+    |
+    v
+Response: { fileId, fileName, fileType, size, status: 'completed' }
+    |
+    v
+Client: FileAttachment chip appears in ChatInput, ready to send with message
 ```
 
-### Key Data Flows
+**Key detail:** The extraction happens synchronously during upload. For a 100MB file this could take several seconds. The response should be fast (file saved), and extraction should happen asynchronously. See Anti-Pattern 1 for why.
 
-1. **Task Delegation Flow:** Host agent receives user request -> LLM decomposes task -> Workflow engine creates task queue -> Sub-agents dequeue and execute
-2. **Inter-Agent Communication:** Agent publishes message to channel -> Bus routes to target -> Target agent handles via subscription
-3. **Result Aggregation Flow:** Sub-agents complete -> Results collected -> Aggregator applies strategy -> Host agent receives combined result
-4. **Approval Flow Extension:** Delegation requires approval -> Extended state machine creates delegation approval -> User approves/rejects -> Execution continues or stops
+**Revised Flow 1 (async extraction):**
+
+```
+POST /api/files
+    |
+    v
+Route Handler:
+  1-5. Same as above (save file, validate)
+  6. Insert into `files` table with status: 'processing'
+  7. Return { fileId, status: 'processing' } immediately
+  8. Fire-and-forget: processFileAsync(fileId)
+      |
+      v
+    processFileAsync():
+      a. StorageProvider.get(key) -> buffer
+      b. FileProcessingService.extract(buffer, ...)
+      c. FileClassifierService.classify(...)
+      d. Update `files` table: status -> 'completed', add metadata
+      e. Insert into `fileContents` table
+      f. logAudit()
+```
+
+### Flow 2: Chat with File Attachment
+
+```
+User types message + clicks send (with attached file IDs)
+    |
+    v
+ConversationPage.handleSend(content, attachedFileIds)
+    |
+    v
+Client-side:
+  1. GET /api/files/{id}/content for each attachedFileId
+  2. Construct enriched message: file content + user question
+  3. POST /api/chat with enriched message (existing endpoint)
+    |
+    v
+Server: existing streaming chat flow (no changes)
+    |
+    v
+Client: display response + file attachment chips in message bubble
+```
+
+### Flow 3: File Preview
+
+```
+User clicks file chip in chat message
+    |
+    v
+FilePreviewPanel opens (client component)
+    |
+    v
+GET /api/preview?fileId={id}&format={previewFormat}
+    |
+    v
+Route Handler:
+  1. auth() check
+  2. Verify file belongs to user
+  3. Look up fileContents table for extracted text
+  4. If PDF: return { type: 'pdf', url: signedDownloadUrl }
+  5. If code: return { type: 'code', language, content }
+  6. If data: return { type: 'table', headers, rows }
+  7. If markdown: return { type: 'markdown', content }
+    |
+    v
+Client: route to appropriate preview component
+  - PreviewPdf (pdfjs-dist, ssr: false)
+  - PreviewCode (existing react-syntax-highlighter)
+  - PreviewData (HTML table or data grid)
+  - PreviewMarkdown (existing react-markdown + remark-gfm)
+```
+
+### Flow 4: Format Conversion
+
+```
+User requests conversion (e.g., "convert to markdown")
+    |
+    v
+POST /api/convert { fileId, targetFormat: 'markdown' }
+    |
+    v
+Route Handler:
+  1. auth() check
+  2. Verify file ownership
+  3. FileConverterService.convert(buffer, sourceType, targetFormat)
+  4. Return converted content as text/plain or JSON
+    |
+    v
+Client: display converted content in PreviewMarkdown panel
+```
+
+### Flow 5: File Management (List/Search/Delete)
+
+```
+User opens FileManagerPanel (sidebar or modal)
+    |
+    v
+GET /api/files?search={query}&type={fileType}&page={n}
+    |
+    v
+Route Handler:
+  1. auth() check
+  2. Query files table WHERE userId = currentUser
+  3. Optional: filter by type, search by name
+  4. Return paginated list
+    |
+    v
+Client: display file cards with name, type, size, date
+    |
+    v
+User clicks delete
+    |
+    v
+DELETE /api/files/{id}
+    |
+    v
+Route Handler:
+  1. auth() check
+  2. Verify file ownership
+  3. StorageProvider.delete(key)
+  4. Delete from files table (CASCADE to fileContents)
+  5. logAudit()
+```
+
+---
+
+## Database Schema Extensions
+
+### New Tables (add to `src/lib/db/schema.ts`)
+
+```typescript
+// File type enum
+export const FileTypeEnum = ['pdf', 'docx', 'csv', 'xlsx', 'code'] as const;
+
+// File processing status
+export const FileStatusEnum = ['uploading', 'processing', 'completed', 'failed'] as const;
+
+// Files table - metadata for uploaded files
+export const files = pgTable('file', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  fileName: text('file_name').notNull(),
+  originalName: text('original_name').notNull(),
+  fileType: text('file_type', { enum: FileTypeEnum }).notNull(),
+  mimeType: text('mime_type').notNull(),
+  fileSize: integer('file_size').notNull(), // bytes
+  storageKey: text('storage_key').notNull(), // path in storage provider
+  status: text('status', { enum: FileStatusEnum }).notNull().default('uploading'),
+  metadata: jsonb('metadata').$type<Record<string, unknown>>(), // extracted metadata
+  checksum: text('checksum'), // SHA-256 for dedup
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index('file_user_id_idx').on(table.userId),
+  fileTypeIdx: index('file_type_idx').on(table.fileType),
+  statusIdx: index('file_status_idx').on(table.status),
+  createdAtIdx: index('file_created_at_idx').on(table.createdAt),
+}));
+
+// File contents table - extracted text content (separate for size management)
+export const fileContents = pgTable('file_content', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  fileId: uuid('file_id').notNull().references(() => files.id, { onDelete: 'cascade' }).unique(),
+  textContent: text('text_content'), // NULL if extraction failed or pending
+  convertedMarkdown: text('converted_markdown'), // pre-converted markdown (optional)
+  extractedAt: timestamp('extracted_at'),
+}, (table) => ({
+  fileIdIdx: index('file_content_file_id_idx').on(table.fileId),
+}));
+
+// Conversation-File junction table - links files to conversations
+export const conversationFiles = pgTable('conversation_file', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  conversationId: text('conversation_id').notNull().references(() => conversations.id, { onDelete: 'cascade' }),
+  fileId: uuid('file_id').notNull().references(() => files.id, { onDelete: 'cascade' }),
+  addedAt: timestamp('added_at').defaultNow().notNull(),
+}, (table) => ({
+  conversationIdx: index('conversation_file_conv_idx').on(table.conversationId),
+  fileIdIdx: index('conversation_file_file_idx').on(table.fileId),
+  uniqueConvFile: index('conversation_file_unique_idx').on(table.conversationId, table.fileId),
+}));
+```
+
+### Why Three Tables Instead of One
+
+1. **`files`** stores metadata only. This keeps the file list query fast (no need to load potentially large text content).
+2. **`fileContents`** is separated because text content from a 100MB PDF could be several MB of text. Keeping it in a separate table allows the files list endpoint to be fast and avoids loading large text blobs when only metadata is needed.
+3. **`conversationFiles`** is a junction table because a file can be referenced in multiple conversations. This avoids duplicating file metadata and enables "find all conversations that mention file X."
+
+### Why `textContent` is `text` not `jsonb`
+
+Text content from PDF/DOCX extraction is plain text or markdown. Using PostgreSQL `text` type is more efficient for large strings than JSONB (no JSON parsing overhead). The `convertedMarkdown` field is also plain text. If structured extraction results (like tables with headers) are needed, they go in the `files.metadata` JSONB field.
+
+---
+
+## Integration Points with Existing Systems
+
+### 1. Chat Integration (MODIFIED existing components)
+
+| Existing Component | Modification | Risk |
+|--------------------|-------------|------|
+| `ChatInput` | Add file attachment trigger button | LOW - additive UI change |
+| `ChatMessage` | Add file chip rendering in user messages | LOW - additive UI change |
+| `ConversationPage` | `handleSend()` accepts file IDs, resolves content client-side | MEDIUM - changes message construction logic |
+| `/api/chat` | NO CHANGES for initial implementation | NONE |
+| Messages table | NO CHANGES -- file references are in conversationFiles junction | NONE |
+
+### 2. Skills System Integration (MODIFIED existing components)
+
+| Existing Component | Modification | Risk |
+|--------------------|-------------|------|
+| `FileProcessingSkills` class | Add `extractFileText`, `convertFileFormat`, `classifyFile` skills | LOW - follows existing decorator pattern |
+| `SkillCategory` type | Add `'document'` if needed (or reuse `'file'`) | LOW - type addition |
+| `initializeSkillRegistry()` | No changes -- auto-discovers from imported modules | NONE |
+
+### 3. MCP Tool Registration (NEW tools, existing pattern)
+
+| Component | Change | Notes |
+|-----------|--------|-------|
+| MCP ToolRegistry | Register `file-extract`, `file-convert` tools | Uses existing `skillToMcpTool()` adapter |
+| MCP session | No structural changes | Tools are session-scoped per existing pattern |
+
+### 4. Auth & Middleware (NO CHANGES)
+
+All new API routes (`/api/files/*`, `/api/preview`, `/api/convert`) are protected by the existing middleware pattern -- they start with `/api/` and are not `/api/auth/`, so they are automatically protected. Each route handler also calls `auth()` explicitly (following the pattern in `/api/chat/route.ts`).
+
+### 5. Audit Logging (NEW audit actions)
+
+Add these to the existing `logAudit()` calls:
+- `file_upload` -- when a file is uploaded
+- `file_download` -- when file content is accessed
+- `file_delete` -- when a file is deleted
+- `file_convert` -- when format conversion is requested
+
+### 6. Agent Workflow Integration (v1.1 compatibility)
+
+The existing `SubAgentExecutor` wraps `SkillExecutor` and uses `createSkillContext()`. The new file skills (extract, convert, classify) work within this framework without modification because they follow the `SkillFunction` signature: `(input: unknown, context: SkillContext) => Promise<SkillResult>`.
+
+The existing `file` agent type (from `AgentTypeEnum`) can be enhanced to use the new file skills for agent-driven file processing within multi-agent workflows.
+
+---
+
+## Anti-Patterns
+
+### Anti-Pattern 1: Synchronous Extraction During Upload
+
+**What people do:** Extract text from the uploaded file in the same request handler that saves it, then return the result.
+
+**Why it's wrong:** PDF text extraction can take 5-30 seconds for large documents. The upload response would timeout (Next.js default 30s maxDuration, current chat route uses 30s). The user would stare at a spinner for 30+ seconds with no feedback.
+
+**Do this instead:** Save the file and return immediately with `status: 'processing'`. Process asynchronously (fire-and-forget pattern, consistent with existing `logAudit().catch(() => {})` pattern). Poll or use SSE for status updates.
+
+### Anti-Pattern 2: Storing File Content in the Files Table
+
+**What people do:** Add a `textContent` column directly to the `files` table.
+
+**Why it's wrong:** File list queries (`GET /api/files`) would load megabytes of text for every file, making pagination painfully slow. The `files` table would bloat quickly.
+
+**Do this instead:** Separate `fileContents` table. Only join when content is actually needed (preview, chat attachment, conversion).
+
+### Anti-Pattern 3: Client-Side File Parsing
+
+**What people do:** Send the file to the client browser and parse it with JavaScript (e.g., client-side PDF.js).
+
+**Why it's wrong:** Increases client bundle size significantly (pdfjs-dist is ~2MB). Requires shipping WASM binaries. Security risk -- exposes raw file content to client-side JavaScript. Cannot persist extracted text for later use (RAG, search).
+
+**Do this instead:** Parse server-side in the processing pipeline. Only send extracted text to the client for display.
+
+### Anti-Pattern 4: File Path in Message Content
+
+**What people do:** Store the file path (e.g., `/uploads/user123/file.pdf`) directly in the `messages.content` text field.
+
+**Why it's wrong:** Couples message content to storage implementation. If the storage path changes (local -> S3), all historical messages break. Makes it impossible to search file content independently.
+
+**Do this instead:** Use the `conversationFiles` junction table to link files to conversations. Resolve file content at render time or at message send time using file IDs.
+
+### Anti-Pattern 5: Using External Libraries for Simple Operations
+
+**What people do:** Pull in a heavy library (e.g., SheetJS full bundle) just to parse a CSV file.
+
+**Why it's wrong:** SheetJS is ~500KB. For CSV parsing, PapaParse (~40KB) is sufficient. For code files, native `fs.readFile` with the existing `react-syntax-highlighter` is all that is needed.
+
+**Do this instead:** Match library to complexity. CSV = PapaParse. Excel = SheetJS. PDF = pdf-parse (simple) or pdfjs-dist (if rendering needed). DOCX = mammoth. Code = native fs + syntax highlighter.
 
 ---
 
@@ -714,119 +681,167 @@ export class ResultAggregator {
 
 | Scale | Architecture Adjustments |
 |-------|--------------------------|
-| 1-50 users (current) | In-memory task queue, single-process agents, PostgreSQL for persistence |
-| 50-500 users | Redis for task queue and pub/sub, connection pooling for LLM providers |
-| 500+ users | Horizontal scaling with stateless agent workers, distributed task queue (BullMQ), read replicas |
+| 0-1k users (current target: mid-size teams 10-50) | Local filesystem storage. Single PostgreSQL instance. No CDN. Processing happens in-route async. |
+| 1k-100k users | Move to S3/R2 with presigned URLs for uploads/downloads. Add CDN for static file serving. Consider a processing queue (BullMQ + Redis) instead of fire-and-forget. |
+| 100k+ users | Dedicated processing workers. Object storage with lifecycle policies. Full-text search on file contents (pg_trgm or dedicated search index). Consider separate file service microservice. |
 
 ### Scaling Priorities
 
-1. **First bottleneck:** LLM API rate limits - implement request queuing and batching
-2. **Second bottleneck:** Agent execution concurrency - limit concurrent agents per user, implement fair scheduling
+1. **First bottleneck:** Disk space on local filesystem. A team of 50 uploading 10 files/day at 10MB average = 5GB/month. Manageable for a year on a single server, but add monitoring and cleanup policies from day one.
+2. **Second bottleneck:** PDF extraction CPU/memory. Large PDFs are CPU-intensive. The async processing pattern protects the upload endpoint, but a burst of uploads could exhaust server resources. A simple job queue (even in-process with concurrency limit) would help.
+3. **Third bottleneck:** PostgreSQL text content storage. If the team uploads many large documents, the `fileContents.textContent` column could grow to GBs. Consider adding a retention policy or archiving old content.
+
+### Serverless Considerations
+
+If deployed on Vercel serverless:
+- **Body size limit:** 4.5MB per function invocation. Files up to 100MB (project requirement) MUST use direct-to-storage upload with presigned URLs, not route through the Next.js server.
+- **Function duration:** 30s max (current `maxDuration = 30` in chat route). File extraction must be async and not block the upload response.
+- **Local filesystem:** Not persistent across invocations. The `LocalStorageAdapter` only works in self-hosted deployments. For Vercel, S3/R2 is mandatory.
+
+This is a critical decision point. The PROJECT.md says "initially public cloud" but the current deployment model appears self-hosted. The abstract storage layer handles both, but the upload strategy differs:
+- **Self-hosted:** `POST /api/files` with multipart/form-data, save to local disk
+- **Vercel serverless:** `POST /api/files` returns presigned URL, client uploads directly to S3/R2, then `POST /api/files/confirm` to register the file in the database
 
 ---
 
-## Anti-Patterns to Avoid
+## Build Order (Dependency-Based)
 
-### Anti-Pattern 1: Agents Calling LLM Directly Without Gateway
+The following order minimizes rework and ensures each phase has testable output:
 
-**What people do:** Sub-agents make direct API calls to LLM providers.
+### Phase 1: Storage Foundation
+**Prerequisites:** None (new module)
+**Build:**
+1. `StorageProvider` interface + factory
+2. `LocalStorageAdapter` implementation
+3. `S3StorageAdapter` stub (throws "not implemented")
+4. Unit tests for storage layer
+**Deliverable:** Files can be saved and retrieved via a clean interface.
 
-**Why it's wrong:** Bypasses retry logic, monitoring, and provider abstraction in LLM Gateway.
+### Phase 2: Database Schema + Queries
+**Prerequisites:** Phase 1 (need storage key format decided)
+**Build:**
+1. Add `files`, `fileContents`, `conversationFiles` tables to `schema.ts`
+2. Run `npm run db:generate && npm run db:push`
+3. Add file CRUD queries to `queries.ts`
+4. Unit tests for queries
+**Deliverable:** File metadata can be persisted and queried.
 
-**Do this instead:** All agents use `streamChat()` from `src/lib/llm/index.ts`.
+### Phase 3: File Upload API
+**Prerequisites:** Phase 1 + Phase 2
+**Build:**
+1. `POST /api/files/route.ts` -- upload with validation, save to storage, insert metadata
+2. `DELETE /api/files/[id]/route.ts` -- delete from storage + database
+3. `GET /api/files/route.ts` -- list files with pagination
+4. `GET /api/files/[id]/content/route.ts` -- get file content/download
+5. Integration tests for upload flow
+**Deliverable:** Users can upload, list, view, and delete files via API.
 
-### Anti-Pattern 2: Synchronous Agent Execution for Parallel Tasks
+### Phase 4: File Processing Pipeline
+**Prerequisites:** Phase 3 (files must be stored to process them)
+**Build:**
+1. `FileProcessingService` with type-specific processors
+2. PDF processor (pdf-parse)
+3. DOCX processor (mammoth)
+4. CSV processor (papaparse)
+5. Excel processor (SheetJS/xlsx)
+6. Code processor (native, syntax detection)
+7. `FileClassifierService`
+8. Async processing triggered after upload
+9. Unit tests for each processor
+**Deliverable:** Uploaded files are automatically processed, text extracted, and classified.
 
-**What people do:** Execute sub-agents sequentially when tasks are independent.
+### Phase 5: Chat Integration
+**Prerequisites:** Phase 4 (file content must exist to attach to messages)
+**Build:**
+1. `useFileUpload` hook
+2. `UploadButton` + `UploadProgress` components
+3. Modify `ChatInput` to support file attachments
+4. Client-side file content resolution in `handleSend()`
+5. `FileAttachment` component for message rendering
+6. Modify `ChatMessage` to show file chips
+7. E2E test: upload file, send message, verify response references file content
+**Deliverable:** Users can attach files to chat messages and get AI responses that reference file content.
 
-**Why it's wrong:** Wastes time, poor user experience for parallelizable tasks.
+### Phase 6: File Preview
+**Prerequisites:** Phase 4 (needs extracted content) + Phase 5 (needs to be triggered from chat)
+**Build:**
+1. `GET /api/preview/route.ts`
+2. `FilePreviewPanel` component
+3. `PreviewPdf` (client-only, pdfjs-dist with `next/dynamic ssr: false`)
+4. `PreviewCode` (reuse existing `react-syntax-highlighter`)
+5. `PreviewData` (HTML table component)
+6. `PreviewMarkdown` (reuse existing `react-markdown` + `remark-gfm`)
+**Deliverable:** Users can preview uploaded files inline in the chat interface.
 
-**Do this instead:** Use `Promise.all()` with Task Queue for independent tasks, track in Workflow Engine.
+### Phase 7: Format Conversion
+**Prerequisites:** Phase 4 (processing pipeline must exist)
+**Build:**
+1. `FileConverterService` (PDF->MD, DOCX->MD, CSV->JSON, etc.)
+2. `POST /api/convert/route.ts`
+3. Conversion UI in preview panel
+4. Unit tests for conversions
+**Deliverable:** Users can convert files between formats.
 
-### Anti-Pattern 3: Storing Agent State in Memory Only
+### Phase 8: File Management UI
+**Prerequisites:** Phase 3 (list/delete API exists)
+**Build:**
+1. `useFileManager` hook
+2. `FileManagerPanel` component
+3. `FileCard` component
+4. `FileSearch` component
+5. Sidebar integration or modal trigger
+**Deliverable:** Users can browse, search, and manage their uploaded files.
 
-**What people do:** Keep workflow state in memory without database persistence.
+### Phase 9: Skills + MCP Integration
+**Prerequisites:** Phase 4 (processing pipeline) + existing skills system
+**Build:**
+1. Add `extractFileText`, `convertFileFormat`, `classifyFile` skills to `FileProcessingSkills`
+2. Register via existing `skillToMcpTool()` adapter
+3. Integration with agent workflow system (file agent uses new skills)
+**Deliverable:** Agent workflows can process files as part of multi-agent tasks.
 
-**Why it's wrong:** Lost state on restart, no audit trail, cannot resume interrupted workflows.
+### Phase Dependencies Graph
 
-**Do this instead:** Persist all workflow state to PostgreSQL via new schema tables.
+```
+Phase 1 (Storage)
+    |
+    v
+Phase 2 (Database)
+    |
+    v
+Phase 3 (Upload API) ---------> Phase 8 (Management UI)
+    |
+    v
+Phase 4 (Processing) ---------> Phase 7 (Conversion)
+    |                                |
+    v                                v
+Phase 5 (Chat Integration)    Phase 6 (Preview)
+    |
+    v
+Phase 9 (Skills + MCP)
+```
 
-### Anti-Pattern 4: Bypassing Approval Flow for Agent Delegation
-
-**What people do:** Allow agents to delegate without user approval.
-
-**Why it's wrong:** Security risk - malicious prompts could spawn unlimited sub-agents.
-
-**Do this instead:** All delegation requires approval via extended `AgentApprovalStateMachine`.
-
-### Anti-Pattern 5: Unstructured Agent Communication
-
-**What people do:** Let agents communicate via free-form natural language without contracts.
-
-**Why it's wrong:** Parsing failures, inconsistent behavior, difficult to debug, schema drift.
-
-**Do this instead:** Use structured outputs with JSON schemas, versioned contracts between agents.
-
----
-
-## Build Order
-
-Based on dependencies and integration points:
-
-### Phase 1: Foundation (Week 1-2)
-1. **Database Schema Extension** - Add `agents`, `agentTasks`, `agentMessages`, `workflows` tables
-2. **Agent Types** - Create `src/lib/agents/types.ts` extending skill types
-3. **Agent Registry** - Create `src/lib/agents/registry.ts` (similar to skill registry pattern)
-4. **Agent Decorator** - Create `src/lib/agents/decorator.ts` for agent definition
-
-### Phase 2: Core Execution (Week 2-3)
-5. **Agent Executor** - Create `src/lib/agents/executor.ts` (extends skill executor)
-6. **Task Queue** - Create `src/lib/agents/task-queue.ts` (in-memory initially)
-7. **LLM Context Handler** - Create `src/lib/agents/llm-context.ts`
-
-### Phase 3: Communication & Workflow (Week 3-4)
-8. **Communication Bus** - Create `src/lib/agents/communication.ts`
-9. **Workflow Engine** - Create `src/lib/agents/workflow-engine.ts`
-10. **Result Aggregator** - Create `src/lib/agents/result-aggregator.ts`
-
-### Phase 4: Integration (Week 4-5)
-11. **MCP Agent Tools** - Create `src/lib/mcp/agent-tools.ts`
-12. **Agent Approval Extension** - Create `src/lib/approval/agent-approval.ts`
-13. **API Endpoints** - Create `/api/agents` and `/api/workflows` routes
-
-### Phase 5: Predefined Agents (Week 5-6)
-14. **File Agent** - Create `src/agents/file-agent.ts`
-15. **Search Agent** - Create `src/agents/search-agent.ts`
-16. **Code Agent** - Create `src/agents/code-agent.ts`
-
-### Phase 6: UI & Testing (Week 6-7)
-17. **Agent Panel UI** - Extend sidebar to show agents
-18. **Workflow Progress UI** - Display multi-agent execution progress
-19. **Integration Tests** - End-to-end multi-agent workflow tests
+Phases 8, 7, and 6 can be built in parallel after Phase 4. Phase 9 depends on Phase 5 being complete (for end-to-end testing of file skills in chat context).
 
 ---
 
 ## Sources
 
-### Official Documentation
-- [MCP Official Documentation](https://modelcontextprotocol.io/development/roadmap) - Model Context Protocol specification
-- [Announcing the Agent2Agent Protocol (A2A)](https://developers.googleblog.com/en/a2a-a-new-era-of-agent-interoperability/) - HIGH confidence (official announcement)
-- [LangGraph Multi-Agent Workflows](https://blog.langchain.com/langgraph-multi-agent-workflows/) - HIGH confidence (official documentation)
-- [Command: A New Tool for Multi-Agent Architectures in LangGraph](https://blog.langchain.com/command-a-new-tool-for-multi-agent-architectures-in-langgraph/) - HIGH confidence
-
-### Architecture Guides
-- [Building Scalable Multi-Agent Systems: Integrating MCP and A2A Protocols](https://medium.com/@ashispapu/building-scalable-multi-agent-systems-integrating-mcp-and-a2a-protocols-dbdfd590ae97) - MEDIUM confidence (practical implementation guide)
-- [Multi-Agent System Architecture Guide 2026](https://www.clickittech.com/ai/multi-agent-system-architecture/) - HIGH confidence
-- [MCP and A2A: A Tale of Two Protocols](https://mcpmarket.com/news/2da90308-b24e-466c-a8f9-97a0e24d021f) - MEDIUM confidence
-
-### Research Papers
-- [AgentTrace: Structured Logging Framework](https://arxiv.org/abs/2602.10133) - Agent audit and tracing
-- [AI Agent Systems Survey](https://arxiv.org/html/2601.13671v1) - MCP and A2A as dual foundation
-
-### Existing Codebase
-- Direct analysis of `src/lib/skills/`, `src/lib/mcp/`, `src/lib/approval/`, `src/lib/db/schema.ts` - HIGH confidence
+- [Next.js File Uploads Guide (2026)](https://oneuptime.com/blog/post/2026-01-24-nextjs-file-uploads/view) -- HIGH confidence, Jan 2026 publication
+- [Next.js 16 Route Handlers](https://strapi.io/blog/nextjs-16-route-handlers-explained-3-advanced-usecases) -- HIGH confidence, official Next.js patterns
+- [Vercel 4.5MB Body Size Limit KB](https://vercel.com/kb/guide/how-to-bypass-vercel-body-size-limit-serverless-functions) -- HIGH confidence, official Vercel documentation
+- [PDF Parsing Libraries Comparison (Strapi, 2025)](https://strapi.io/blog/7-best-javascript-pdf-parsing-libraries-nodejs-2025) -- MEDIUM confidence
+- [pdf-parse NPM](https://www.npmjs.com/package/pdf-parse) -- HIGH confidence, official package page
+- [Mammoth.js DOCX to Markdown](https://gitcode.csdn.net/66d1d4a8e2ce0119e0a19f35.html) -- MEDIUM confidence, community guide
+- [SheetJS vs ExcelJS vs node-xlsx (2026)](https://www.pkgpulse.com/blog/sheetjs-vs-exceljs-vs-node-xlsx-excel-files-node-2026) -- MEDIUM confidence, 2026 comparison
+- [Storage Abstraction Pattern](https://elasticscale.com/blog/abstracting-away-from-object-storage-like-s3-is-always-a-good-idea/) -- MEDIUM confidence, architecture pattern discussion
+- [React-PDF with Next.js App Router](https://blog.react-pdf.dev/how-to-build-a-react-pdf-viewer-for-nextjs-in-minutes) -- MEDIUM confidence, implementation guide
+- [tus Protocol for Resumable Uploads](https://tus.io/) -- HIGH confidence, official protocol specification
+- [Next.js App Router PDF Integration](https://github.com/react-pdf-kit/starter-rp-nextjs-app-router-js) -- MEDIUM confidence, starter repository
+- [Existing codebase analysis](https://github.com/xavier/next-mind) -- HIGH confidence, direct code inspection
 
 ---
 
-*Architecture research for: AI Agent Framework (Next-Mind) with A2A Multi-Agent Integration*
-*Researched: 2026-03-25*
+*Architecture research for: v1.2 File Upload, Processing, and Management*
+*Researched: 2026-03-26*
+*Focus: Integration with existing Next.js 16 + Drizzle ORM + MCP + Skills architecture*
