@@ -31,7 +31,7 @@ export default auth((req) => {
   }
 
   // Protect chat pages
-  if (req.nextUrl.pathname === '/' || req.nextUrl.pathname.startsWith('/chat')) {
+  if (req.nextUrl.pathname === '/' || req.nextUrl.pathname.startsWith('/chat') || req.nextUrl.pathname.startsWith('/files')) {
     if (!isLoggedIn) {
       return NextResponse.redirect(new URL('/login', req.url));
     }

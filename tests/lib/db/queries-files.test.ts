@@ -1,30 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// Mock the database module
-const mockSelect = vi.fn();
-const mockFrom = vi.fn();
-const mockWhere = vi.fn();
-const mockOrderBy = vi.fn();
-const mockLimit = vi.fn();
-const mockOffset = vi.fn();
-const mockAsc = vi.fn((col) => col);
-const mockDesc = vi.fn((col) => col);
-
-// Chain builder
-function createChain() {
-  const chain: Record<string, ReturnType<typeof vi.fn>> = {};
-  const proxy = new Proxy(chain, {
-    get(target, prop) {
-      if (prop === 'then' || prop === 'catch' || prop === 'finally') return undefined;
-      if (!target[prop]) {
-        target[prop] = vi.fn().mockReturnValue(proxy);
-      }
-      return target[prop];
-    },
-  });
-  return proxy;
-}
-
 vi.mock('drizzle-orm', () => ({
   eq: vi.fn((col, val) => ({ col, val, type: 'eq' })),
   and: vi.fn((...conds) => conds),
@@ -33,14 +8,14 @@ vi.mock('drizzle-orm', () => ({
   sql: vi.fn((strings: TemplateStringsArray, ...values: unknown[]) => ({ strings, values })),
 }));
 
-// Mock the db module
-const mockDb = vi.fn();
-vi.mock('@/lib/db', () => ({
-  db: mockDb,
-}));
+// Mock schema -- includes db because queries.ts imports { db } from './schema'
+// db is a drizzle instance with .select() method
+const mockDb = {
+  select: vi.fn(),
+};
 
-// Mock schema
 vi.mock('@/lib/db/schema', () => ({
+  db: mockDb,
   files: {
     id: 'id',
     userId: 'userId',
@@ -57,6 +32,8 @@ vi.mock('@/lib/db/schema', () => ({
     createdAt: 'createdAt',
     updatedAt: 'updatedAt',
   },
+  FileTypeEnum: ['document', 'code', 'data'],
+  FileStatusEnum: ['uploaded', 'processing', 'ready', 'failed'],
 }));
 
 describe('getFilesByUserPaginated', () => {
@@ -90,12 +67,11 @@ describe('getFilesByUserPaginated', () => {
       ]),
     };
 
-    mockDb.mockImplementation((op) => {
-      if (op?.strings?.[0]?.includes?.('count')) {
-        return countChain;
-      }
-      return dataChain;
-    });
+    // db.select() is called twice -- once for count, once for data
+    // Use mockReturnValueOnce to return different chains
+    mockDb.select
+      .mockReturnValueOnce(countChain)
+      .mockReturnValueOnce(dataChain);
 
     const { getFilesByUserPaginated } = await import('@/lib/db/queries');
     const result = await getFilesByUserPaginated('user-1');
@@ -124,12 +100,9 @@ describe('getFilesByUserPaginated', () => {
       offset: vi.fn().mockResolvedValue([]),
     };
 
-    mockDb.mockImplementation((op) => {
-      if (op?.strings?.[0]?.includes?.('count')) {
-        return countChain;
-      }
-      return dataChain;
-    });
+    mockDb.select
+      .mockReturnValueOnce(countChain)
+      .mockReturnValueOnce(dataChain);
 
     const { getFilesByUserPaginated } = await import('@/lib/db/queries');
     const result = await getFilesByUserPaginated('user-1', { fileType: 'document' });
@@ -157,18 +130,17 @@ describe('getFilesByUserPaginated', () => {
       where: vi.fn().mockResolvedValue([{ count: 1 }]),
     };
 
-    mockDb.mockImplementation((op) => {
-      if (op?.strings?.[0]?.includes?.('count')) {
-        return countChain;
-      }
-      return dataChain;
-    });
+    mockDb.select
+      .mockReturnValueOnce(countChain)
+      .mockReturnValueOnce(dataChain);
 
     const { getFilesByUserPaginated } = await import('@/lib/db/queries');
     const result = await getFilesByUserPaginated('user-1');
 
     // Verify select was called with a metadata-only object (no extractedContent/extractedMarkdown)
-    const selectCall = dataChain.select.mock.calls[0][0];
+    // mockDb.select is called twice: first for count, second for data
+    // The data select is the second call
+    const selectCall = mockDb.select.mock.calls[1][0];
     expect(selectCall).not.toHaveProperty('extractedContent');
     expect(selectCall).not.toHaveProperty('extractedMarkdown');
     expect(selectCall).toHaveProperty('id');
@@ -192,12 +164,9 @@ describe('getFilesByUserPaginated', () => {
       offset: vi.fn().mockResolvedValue([]),
     };
 
-    mockDb.mockImplementation((op) => {
-      if (op?.strings?.[0]?.includes?.('count')) {
-        return countChain;
-      }
-      return dataChain;
-    });
+    mockDb.select
+      .mockReturnValueOnce(countChain)
+      .mockReturnValueOnce(dataChain);
 
     const { getFilesByUserPaginated } = await import('@/lib/db/queries');
     await getFilesByUserPaginated('user-1', { sortBy: 'size', sortOrder: 'asc' });

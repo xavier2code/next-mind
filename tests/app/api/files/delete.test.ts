@@ -22,7 +22,7 @@ vi.mock('@/lib/storage/provider', () => ({
 }));
 
 // Mock audit
-const mockLogAudit = vi.fn();
+const mockLogAudit = vi.fn().mockResolvedValue(undefined);
 vi.mock('@/lib/audit', () => ({
   logAudit: (...args: unknown[]) => mockLogAudit(...args),
 }));

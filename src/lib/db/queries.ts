@@ -1,7 +1,7 @@
 /**
  * Database queries for A2A infrastructure (agents, tasks, workflows)
  */
-import { eq, and, desc } from 'drizzle-orm';
+import { eq, and, desc, asc, sql } from 'drizzle-orm';
 import { db, workflows, tasks, agents, agentMessages, AgentMessageTypeEnum, files, conversationFiles, type Workflow, type Task, type Agent, type NewWorkflow, type NewTask, type NewAgent, type AgentMessage, type NewAgentMessage, type File, type NewFile, type ConversationFile, type NewConversationFile } from './schema';
 import type { TaskStatus, WorkflowStatus, WorkflowCheckpoint } from './schema';
 
@@ -478,11 +478,86 @@ export async function updateFileExtraction(
     extractedMarkdown: string;
     status: typeof FileStatusEnum[number];
     errorMessage?: string | null;
+    fileType?: typeof FileTypeEnum[number];
+    classification?: string | null;
   }
 ): Promise<File | undefined> {
   const [file] = await db.update(files)
-    .set({ ...data, updatedAt: new Date() })
+    .set({
+      extractedContent: data.extractedContent,
+      extractedMarkdown: data.extractedMarkdown,
+      status: data.status,
+      errorMessage: data.errorMessage ?? null,
+      ...(data.fileType ? { fileType: data.fileType } : {}),
+      ...(data.classification !== undefined ? { classification: data.classification } : {}),
+      updatedAt: new Date(),
+    })
     .where(eq(files.id, fileId))
     .returning();
   return file;
+}
+
+/**
+ * Paginated file list query for file management UI (Phase 9).
+ * Returns metadata-only columns (excludes extractedContent/extractedMarkdown).
+ */
+export async function getFilesByUserPaginated(
+  userId: string,
+  options: {
+    page?: number;
+    pageSize?: number;
+    sortBy?: 'filename' | 'size' | 'createdAt' | 'fileType';
+    sortOrder?: 'asc' | 'desc';
+    fileType?: 'document' | 'code' | 'data' | 'all';
+  } = {}
+): Promise<{ files: File[]; total: number; page: number; totalPages: number }> {
+  const {
+    page = 1,
+    pageSize = 20,
+    sortBy = 'createdAt',
+    sortOrder = 'desc',
+    fileType = 'all',
+  } = options;
+
+  const conditions = [eq(files.userId, userId)];
+  if (fileType !== 'all') {
+    conditions.push(eq(files.fileType, fileType));
+  }
+  const whereClause = and(...conditions);
+
+  // Get total count
+  const [{ count }] = await db.select({ count: sql<number>`count(*)::int` })
+    .from(files)
+    .where(whereClause);
+
+  // Get paginated results -- SELECT only metadata columns, exclude extractedContent/extractedMarkdown
+  const orderColumn = files[sortBy];
+  const orderFn = sortOrder === 'asc' ? asc : desc;
+
+  const result = await db.select({
+    id: files.id,
+    userId: files.userId,
+    filename: files.filename,
+    mimeType: files.mimeType,
+    size: files.size,
+    fileType: files.fileType,
+    storagePath: files.storagePath,
+    status: files.status,
+    classification: files.classification,
+    errorMessage: files.errorMessage,
+    createdAt: files.createdAt,
+    updatedAt: files.updatedAt,
+  })
+    .from(files)
+    .where(whereClause)
+    .orderBy(orderFn(orderColumn))
+    .limit(pageSize)
+    .offset((page - 1) * pageSize);
+
+  return {
+    files: result as File[],
+    total: count,
+    page,
+    totalPages: Math.ceil(count / pageSize),
+  };
 }
