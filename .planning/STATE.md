@@ -4,13 +4,13 @@ milestone: v1.2
 milestone_name: 文件处理
 current_plan: Not started
 status: Ready to execute
-stopped_at: Phase 9 planned (3 plans)
-last_updated: "2026-03-27T00:00:00.000Z"
+stopped_at: Completed 09-01-PLAN.md
+last_updated: "2026-03-27T00:38:46.492Z"
 progress:
   total_phases: 4
   completed_phases: 2
   total_plans: 10
-  completed_plans: 7
+  completed_plans: 8
 ---
 
 # Project State
@@ -65,6 +65,7 @@ Total Plans in Phase: 3
 | Phase 08 P02 | 5 | 3 tasks | 9 files |
 | Phase 08 P03 | 172 | 2 tasks | 10 files |
 | Phase 08 P04 | 2 | 3 tasks | 6 files |
+| Phase 09 P01 | 4 | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -94,6 +95,9 @@ Recent decisions affecting current work:
 - [Phase 08]: Fire-and-forget extraction trigger from upload route with logAudit lifecycle events (start/complete/failed)
 - [Phase 08]: Auto-fade gated on onRetry prop: upload errors auto-fade, extraction errors persist per 08-UI-SPEC
 - [Phase 08]: Extraction failure mapped to error status in PendingFile with Extraction failed message
+- [Phase 09]: JSON auto-classification uses >50% string value ratio heuristic for config vs data detection
+- [Phase 09]: updateFileExtraction extended with optional fileType/classification fields for auto-classification
+- [Phase 09]: Aliased imports (deleteDbFile/deleteStorageFile) in delete route to avoid name collision
 
 ### Pending Todos
 
@@ -107,9 +111,9 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-27T00:00:00.000Z
-Stopped at: Phase 9 planned (3 plans)
-Resume file: .planning/phases/09-file-management-preview/09-01-PLAN.md
+Last session: 2026-03-27T00:38:46.490Z
+Stopped at: Completed 09-01-PLAN.md
+Resume file: None
 
 ---
 *State updated: 2026-03-27 for v1.2 roadmap — Phase 9 File Management & Preview planned*

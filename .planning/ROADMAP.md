@@ -126,7 +126,7 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 09-01: Backend API (paginated list, delete) and auto-classification module
+- [x] 09-01: Backend API (paginated list, delete) and auto-classification module
 - [ ] 09-02: File table UI with sort/filter/pagination and data hooks
 - [ ] 09-03: Preview panel, page assembly, and sidebar entry
 

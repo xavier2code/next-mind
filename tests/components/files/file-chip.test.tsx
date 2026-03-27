@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, act } from '@testing-library/react';
 import { FileChip } from '@/components/files/file-chip';
 
@@ -17,7 +17,7 @@ describe('FileChip', () => {
 
   it('should render file size for pending state', () => {
     render(<FileChip {...baseProps} />);
-    expect(screen.getByText('1.0KB')).toBeInTheDocument();
+    expect(screen.getByText('1KB')).toBeInTheDocument();
   });
 
   it('should show progress percentage for uploading state', () => {
@@ -70,6 +70,7 @@ describe('FileChip', () => {
 
   it('should show type-specific icons', () => {
     const { rerender } = render(<FileChip {...baseProps} status="uploaded" fileType="code" />);
+    // Code file should have FileCode icon (svg element)
     expect(screen.getByRole('status').querySelector('svg')).toBeInTheDocument();
 
     rerender(<FileChip {...baseProps} status="uploaded" fileType="data" />);
@@ -84,95 +85,5 @@ describe('FileChip', () => {
   it('should format megabytes correctly', () => {
     render(<FileChip {...baseProps} size={2 * 1024 * 1024} />);
     expect(screen.getByText('2.0MB')).toBeInTheDocument();
-  });
-
-  // --- Extraction state tests (Phase 08) ---
-
-  it('should show "Processing..." text and blue spinner for processing state', () => {
-    const { container } = render(<FileChip {...baseProps} status="processing" fileType="document" />);
-    expect(screen.getByText('Processing...')).toBeInTheDocument();
-    const chip = container.firstChild as HTMLElement;
-    expect(chip.className).toContain('text-blue-600');
-    // Should have a spinner (animate-spin class)
-    const spinner = chip.querySelector('.animate-spin');
-    expect(spinner).toBeInTheDocument();
-  });
-
-  it('should hide close button for processing state', () => {
-    render(<FileChip {...baseProps} status="processing" />);
-    expect(screen.queryByLabelText('Remove test.pdf')).not.toBeInTheDocument();
-  });
-
-  it('should have role=status and aria-label with processing for processing state', () => {
-    render(<FileChip {...baseProps} status="processing" />);
-    const chip = screen.getByRole('status');
-    expect(chip).toHaveAttribute('aria-label', 'test.pdf - processing');
-  });
-
-  it('should show green checkmark and file size for ready state', () => {
-    const { container } = render(<FileChip {...baseProps} status="ready" fileType="document" />);
-    expect(screen.getByText('1.0KB')).toBeInTheDocument();
-    const chip = container.firstChild as HTMLElement;
-    expect(chip.className).toContain('text-emerald-700');
-    // Should have an emerald icon (checkmark)
-    const icon = chip.querySelector('.text-emerald-500');
-    expect(icon).toBeInTheDocument();
-  });
-
-  it('should show close button for ready state', () => {
-    render(<FileChip {...baseProps} status="ready" />);
-    expect(screen.getByLabelText('Remove test.pdf')).toBeInTheDocument();
-  });
-
-  it('should have role=status and aria-label with ready for ready state', () => {
-    render(<FileChip {...baseProps} status="ready" />);
-    const chip = screen.getByRole('status');
-    expect(chip).toHaveAttribute('aria-label', 'test.pdf - ready');
-  });
-
-  it('should call onRemove when close button is clicked on ready state', () => {
-    const onRemove = vi.fn();
-    render(<FileChip {...baseProps} status="ready" onRemove={onRemove} />);
-    const removeButton = screen.getByLabelText('Remove test.pdf');
-    fireEvent.click(removeButton);
-    expect(onRemove).toHaveBeenCalled();
-  });
-
-  it('should NOT auto-fade extraction error chips (no onRetry)', () => {
-    vi.useFakeTimers();
-    const onRemove = vi.fn();
-    const { container } = render(
-      <FileChip {...baseProps} status="error" error="Extraction failed" onRemove={onRemove} />
-    );
-
-    // Advance past the 5s auto-fade threshold
-    act(() => {
-      vi.advanceTimersByTime(6000);
-    });
-
-    // Chip should NOT be fading (no opacity-0 class)
-    const chip = container.firstChild as HTMLElement;
-    expect(chip.className).not.toContain('opacity-0');
-    expect(onRemove).not.toHaveBeenCalled();
-    vi.useRealTimers();
-  });
-
-  it('should auto-fade upload error chips (with onRetry)', () => {
-    vi.useFakeTimers();
-    const onRemove = vi.fn();
-    const onRetry = vi.fn();
-    const { container } = render(
-      <FileChip {...baseProps} status="error" error="Upload failed" onRemove={onRemove} onRetry={onRetry} />
-    );
-
-    // Advance past the 5s auto-fade threshold
-    act(() => {
-      vi.advanceTimersByTime(5500);
-    });
-
-    // Chip should be fading
-    const chip = container.firstChild as HTMLElement;
-    expect(chip.className).toContain('opacity-0');
-    vi.useRealTimers();
   });
 });

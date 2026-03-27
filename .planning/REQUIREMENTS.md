@@ -32,11 +32,11 @@ Requirements for v1.2 milestone. Each maps to roadmap phases.
 
 ### File Management & Preview (MGMT)
 
-- [ ] **MGMT-01**: User can view a list of all uploaded files with metadata (filename, type, size, upload date, status)
-- [ ] **MGMT-02**: User can delete uploaded files (removes both storage and database record)
-- [ ] **MGMT-03**: User can filter file list by file type category (document, code, data)
+- [x] **MGMT-01**: User can view a list of all uploaded files with metadata (filename, type, size, upload date, status)
+- [x] **MGMT-02**: User can delete uploaded files (removes both storage and database record)
+- [x] **MGMT-03**: User can filter file list by file type category (document, code, data)
 - [ ] **MGMT-04**: User can preview extracted file content in a viewer panel (Markdown rendered for documents, syntax highlighted for code, table view for data files)
-- [ ] **MGMT-05**: System auto-classifies uploaded files based on content analysis (not just file extension)
+- [x] **MGMT-05**: System auto-classifies uploaded files based on content analysis (not just file extension)
 
 ### Chat Integration (CHAT)
 
@@ -113,11 +113,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | EXTR-07 | Phase 8 | Complete |
 | EXTR-08 | Phase 8 | Complete |
 | EXTR-09 | Phase 8 | Complete |
-| MGMT-01 | Phase 9 | Pending |
-| MGMT-02 | Phase 9 | Pending |
-| MGMT-03 | Phase 9 | Pending |
+| MGMT-01 | Phase 9 | Complete |
+| MGMT-02 | Phase 9 | Complete |
+| MGMT-03 | Phase 9 | Complete |
 | MGMT-04 | Phase 9 | Pending |
-| MGMT-05 | Phase 9 | Pending |
+| MGMT-05 | Phase 9 | Complete |
 | CHAT-01 | Phase 10 | Pending |
 | CHAT-02 | Phase 10 | Pending |
 | CHAT-03 | Phase 10 | Pending |

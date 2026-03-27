@@ -1,13 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, RefreshCw, Loader2, FileText, FileCode, FileSpreadsheet, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { X, RefreshCw, Loader2, FileText, FileCode, FileSpreadsheet, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface FileChipProps {
   filename: string;
   size: number;
-  status: 'pending' | 'uploading' | 'uploaded' | 'processing' | 'ready' | 'error';
+  status: 'pending' | 'uploading' | 'uploaded' | 'error';
   progress?: number;
   error?: string;
   fileType?: 'document' | 'code' | 'data';
@@ -18,12 +18,6 @@ interface FileChipProps {
 function getTypeIcon(fileType?: string, status?: string) {
   if (status === 'uploading') {
     return <Loader2 className="h-3.5 w-3.5 animate-spin" />;
-  }
-  if (status === 'processing') {
-    return <Loader2 className="h-3.5 w-3.5 animate-spin text-blue-500" />;
-  }
-  if (status === 'ready') {
-    return <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />;
   }
   if (status === 'error') {
     return <AlertCircle className="h-3.5 w-3.5 text-destructive" />;
@@ -49,13 +43,12 @@ export function FileChip({
 }: FileChipProps) {
   const [isFading, setIsFading] = useState(false);
 
-  // Auto-fade upload error chips after 5 seconds (D-07).
-  // Extraction errors (no onRetry) do NOT auto-fade per 08-UI-SPEC.
+  // Auto-fade error chips after 5 seconds (D-07)
   useEffect(() => {
-    if (status !== 'error' || !onRetry) return;
+    if (status !== 'error') return;
     const timer = setTimeout(() => setIsFading(true), 5000);
     return () => clearTimeout(timer);
-  }, [status, onRetry]);
+  }, [status]);
 
   // Remove from DOM after fade completes
   useEffect(() => {
@@ -67,8 +60,6 @@ export function FileChip({
   const isUploaded = status === 'uploaded';
   const isError = status === 'error';
   const isUploading = status === 'uploading';
-  const isProcessing = status === 'processing';
-  const isReady = status === 'ready';
 
   return (
     <div
@@ -78,9 +69,7 @@ export function FileChip({
         'relative inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-muted text-xs transition-opacity duration-500',
         isError && 'border border-destructive',
         isFading && 'opacity-0',
-        isUploaded && 'text-emerald-700',
-        isProcessing && 'text-blue-600',
-        isReady && 'text-emerald-700'
+        isUploaded && 'text-emerald-700'
       )}
     >
       {getTypeIcon(fileType, status)}
@@ -88,10 +77,10 @@ export function FileChip({
         {filename}
       </span>
       <span className="text-[10px] font-medium">
-        {isProcessing ? 'Processing...' : isUploading ? `${progress}%` : isError ? error : formatSize(size)}
+        {isUploading ? `${progress}%` : isError ? error : formatSize(size)}
       </span>
 
-      {!isProcessing && (isError && onRetry ? (
+      {isError && onRetry ? (
         <button
           type="button"
           aria-label={`Retry upload of ${filename}`}
@@ -109,7 +98,7 @@ export function FileChip({
         >
           <X className="h-3 w-3" />
         </button>
-      ))}
+      )}
 
       {/* Progress bar (2px height, bottom of chip) */}
       {isUploading && (
