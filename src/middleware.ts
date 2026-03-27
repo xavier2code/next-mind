@@ -14,11 +14,12 @@ export default auth((req) => {
   const isAuthPage = req.nextUrl.pathname.startsWith('/login') ||
                      req.nextUrl.pathname.startsWith('/register');
   const isApiAuthRoute = req.nextUrl.pathname.startsWith('/api/auth');
+  const isHealthRoute = req.nextUrl.pathname === '/api/health';
   const isMcpRoute = req.nextUrl.pathname.startsWith('/api/mcp');
   const isProtectedApiRoute = req.nextUrl.pathname.startsWith('/api/') && !isApiAuthRoute;
 
-  // Allow auth pages and auth API routes
-  if (isAuthPage || isApiAuthRoute) {
+  // Allow health endpoint, auth pages, and auth API routes
+  if (isHealthRoute || isAuthPage || isApiAuthRoute) {
     if (isLoggedIn && isAuthPage) {
       return NextResponse.redirect(new URL('/', req.url));
     }
