@@ -14,7 +14,7 @@
 - [ ] **DOCK-05**: .env.docker 提供容器化环境所需的完整环境变量配置
 - [ ] **DOCK-06**: unstorage 上传目录通过 Docker volume 持久化
 - [ ] **DOCK-07**: 用户可通过 `docker compose up` 一键启动完整开发/测试环境
-- [ ] **DOCK-08**: next.config.ts 配置 `output: 'standalone'` 以优化 Docker 镜像大小
+- [x] **DOCK-08**: next.config.ts 配置 `output: 'standalone'` 以优化 Docker 镜像大小
 
 ### 测试基础设施
 
@@ -23,7 +23,7 @@
 - [ ] **TINF-03**: LLM API 调用可被 mock（Playwright route.fulfill 或类似机制），无需真实 API key 即可运行测试
 - [ ] **TINF-04**: 提供 seed 脚本，可在 Docker 环境中创建测试用户和基础数据
 - [ ] **TINF-05**: /api/health 端点返回应用和数据库连通状态
-- [ ] **TINF-06**: Drizzle 迁移文件包含 v1.1 和 v1.2 的所有表结构变更
+- [x] **TINF-06**: Drizzle 迁移文件包含 v1.1 和 v1.2 的所有表结构变更
 
 ### 回归验证 — v1.0
 
@@ -86,13 +86,13 @@ Deferred to future milestones.
 | DOCK-05 | Phase 11 | Pending |
 | DOCK-06 | Phase 11 | Pending |
 | DOCK-07 | Phase 11 | Pending |
-| DOCK-08 | Phase 11 | Pending |
+| DOCK-08 | Phase 11 | Complete |
 | TINF-01 | Phase 12 | Pending |
 | TINF-02 | Phase 12 | Pending |
 | TINF-03 | Phase 12 | Pending |
 | TINF-04 | Phase 12 | Pending |
 | TINF-05 | Phase 12 | Pending |
-| TINF-06 | Phase 11 | Pending |
+| TINF-06 | Phase 11 | Complete |
 | V10-01 | Phase 13 | Pending |
 | V10-02 | Phase 13 | Pending |
 | V10-03 | Phase 13 | Pending |
