@@ -37,8 +37,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# drizzle
-drizzle/
+# drizzle (migration SQL is tracked for Docker deployment)
 
 # IDE
 .idea/
