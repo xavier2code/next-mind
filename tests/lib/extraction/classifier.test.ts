@@ -5,7 +5,7 @@ describe('classifyByContent', () => {
     const { classifyByContent } = await import('@/lib/extraction/classifier');
     const result = await classifyByContent(
       'config.json',
-      '{"port": 3000, "host": "localhost"}',
+      '{"port": "3000", "host": "localhost", "env": "production"}',
       null
     );
     expect(result.correctedType).toBe('code');
@@ -34,35 +34,37 @@ describe('classifyByContent', () => {
     expect(result.classification).toContain('config');
   });
 
-  it('returns data for CSV file', async () => {
+  it('returns null for CSV file (extension already correct)', async () => {
     const { classifyByContent } = await import('@/lib/extraction/classifier');
     const result = await classifyByContent(
       'report.csv',
       null,
       'Name,Age\nAlice,30\nBob,25'
     );
-    // CSV is always data per the plan
-    expect(result.correctedType).toBe('data');
+    // CSV extension already maps to 'data' -- no correction needed
+    expect(result.correctedType).toBeNull();
   });
 
-  it('returns code for TypeScript file', async () => {
+  it('returns null for TypeScript file (extension already correct)', async () => {
     const { classifyByContent } = await import('@/lib/extraction/classifier');
     const result = await classifyByContent(
       'code.ts',
       'function hello() { return "world"; }',
       null
     );
-    expect(result.correctedType).toBe('code');
+    // .ts extension already maps to 'code' -- no correction needed
+    expect(result.correctedType).toBeNull();
   });
 
-  it('returns document for PDF file', async () => {
+  it('returns null for PDF file (extension already correct)', async () => {
     const { classifyByContent } = await import('@/lib/extraction/classifier');
     const result = await classifyByContent(
       'report.pdf',
       null,
       '# Report\n\nSome content'
     );
-    expect(result.correctedType).toBe('document');
+    // .pdf extension already maps to 'document' -- no correction needed
+    expect(result.correctedType).toBeNull();
   });
 
   it('returns null correction when classification matches current fileType', async () => {

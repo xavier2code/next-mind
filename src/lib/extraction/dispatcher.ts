@@ -13,6 +13,7 @@ import { getFileById, updateFileStatus, updateFileExtraction } from '@/lib/db/qu
 import { getFile } from '@/lib/storage/provider';
 import { extractionSemaphore } from './concurrency';
 import { logAudit } from '@/lib/audit';
+import { classifyByContent } from './classifier';
 import type { Extractor } from './types';
 
 /** Timeout for single-file extraction in milliseconds (D-05). */
@@ -110,11 +111,16 @@ export async function extractFile(fileId: string): Promise<void> {
       EXTRACTION_TIMEOUT_MS
     );
 
+    // Auto-classify based on content (MGMT-05, D-09)
+    const classificationResult = await classifyByContent(file.filename, result.extractedContent, result.extractedMarkdown);
+
     await updateFileExtraction(fileId, {
       extractedContent: result.extractedContent,
       extractedMarkdown: result.extractedMarkdown,
       status: 'ready',
       errorMessage: result.warnings?.length ? result.warnings.join('; ') : null,
+      ...(classificationResult.correctedType ? { fileType: classificationResult.correctedType } : {}),
+      ...(classificationResult.classification ? { classification: classificationResult.classification } : {}),
     });
 
     // Audit: extraction completed (fire-and-forget per CLAUDE.md)
