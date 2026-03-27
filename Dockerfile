@@ -17,12 +17,9 @@ COPY . .
 
 ENV NODE_ENV=production
 
-# Install drizzle-kit for migration generation during build (D-01)
-RUN npm install drizzle-kit@0.31.10 --save-dev
-
-# Build Next.js with standalone output (D-05: try Turbopack first)
+# Build Next.js with standalone output (D-05: use webpack in Docker — Turbopack has module resolution issues in containers)
 RUN --mount=type=cache,target=/app/.next/cache \
-    npm run build
+    npx next build --webpack
 
 # ---- Stage 3: Runner ----
 FROM docker.xuanyuan.run/library/node:22-alpine AS runner
