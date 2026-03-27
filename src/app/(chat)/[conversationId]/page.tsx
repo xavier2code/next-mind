@@ -5,12 +5,19 @@ import { useParams } from 'next/navigation';
 import { ChatList } from '@/components/chat/chat-list';
 import { ChatInput } from '@/components/chat/chat-input';
 import { useModelPreference } from '@/hooks/use-model-preference';
+import { injectFileContent } from '@/lib/chat/inject-file-content';
+import type { AttachmentFile } from '@/lib/chat/types';
 
 export default function ConversationPage() {
   const params = useParams();
   const conversationId = params.conversationId as string;
   const { modelId, setModelId } = useModelPreference();
-  const [messages, setMessages] = useState<Array<{ id: string; role: 'user' | 'assistant'; content: string }>>([]);
+  const [messages, setMessages] = useState<Array<{
+    id: string;
+    role: 'user' | 'assistant';
+    content: string;
+    attachments?: AttachmentFile[];
+  }>>([]);
   const [loading, setLoading] = useState(true);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -38,12 +45,44 @@ export default function ConversationPage() {
     loadConversation();
   }, [conversationId, setModelId]);
 
-  async function handleSend(content: string) {
-    const userMessage = { id: crypto.randomUUID(), role: 'user' as const, content };
+  async function handleSend(content: string, fileIds?: string[], editedContents?: Map<string, string>) {
+    // Inject file content if files are attached (CHAT-01, CHAT-05)
+    let enrichedContent = content;
+    const attachments: AttachmentFile[] = [];
+    if (fileIds && fileIds.length > 0) {
+      try {
+        const result = await injectFileContent(content, fileIds, editedContents);
+        enrichedContent = result.enrichedContent;
+        attachments.push(...result.attachments);
+      } catch {
+        // If injection fails, send plain message
+      }
+    }
+
+    const userMessageId = crypto.randomUUID();
+    const userMessage = {
+      id: userMessageId,
+      role: 'user' as const,
+      content: enrichedContent,
+      attachments: attachments.length > 0 ? attachments : undefined,
+    };
     setMessages(prev => [...prev, userMessage]);
     setIsLoading(true);
 
     try {
+      // Link files to conversation (D-04): fire-and-forget
+      if (fileIds && fileIds.length > 0) {
+        Promise.all(
+          fileIds.map(fileId =>
+            fetch('/api/conversations/files/link', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ fileId, conversationId, messageId: userMessageId }),
+            }).catch(() => {})
+          )
+        );
+      }
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

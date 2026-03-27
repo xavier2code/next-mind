@@ -10,7 +10,7 @@ import { FileChip } from '@/components/files/file-chip';
 import { useFileUpload } from '@/hooks/use-file-upload';
 
 interface ChatInputProps {
-  onSend: (message: string, fileIds?: string[]) => void;
+  onSend: (message: string, fileIds?: string[], editedContents?: Map<string, string>) => void;
   modelId: string;
   onModelChange: (modelId: string) => void;
   disabled?: boolean;
@@ -32,6 +32,7 @@ export function ChatInput({ onSend, modelId, onModelChange, disabled }: ChatInpu
     getUploadedFileIds,
     setEditedContent,
     getExtractedMarkdown,
+    getEditedContentsMap,
   } = useFileUpload();
 
   const [editingFileId, setEditingFileId] = useState<string | null>(null);
@@ -48,7 +49,8 @@ export function ChatInput({ onSend, modelId, onModelChange, disabled }: ChatInpu
     if ((!input.trim() && files.length === 0) || disabled || isUploading) return;
 
     const fileIds = getUploadedFileIds();
-    onSend(input.trim(), fileIds.length > 0 ? fileIds : undefined);
+    const editedContentsMap = getEditedContentsMap();
+    onSend(input.trim(), fileIds.length > 0 ? fileIds : undefined, editedContentsMap.size > 0 ? editedContentsMap : undefined);
     setInput('');
     clearFiles();
   }

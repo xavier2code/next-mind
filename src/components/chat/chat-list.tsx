@@ -4,7 +4,12 @@ import { useEffect, useRef } from 'react';
 import { ChatMessage } from './chat-message';
 
 interface ChatListProps {
-  messages: Array<{ id: string; role: 'user' | 'assistant'; content: string }>;
+  messages: Array<{
+    id: string;
+    role: 'user' | 'assistant';
+    content: string;
+    attachments?: Array<{ id: string; filename: string; fileType: string; size: number }>;
+  }>;
   isLoading?: boolean;
 }
 

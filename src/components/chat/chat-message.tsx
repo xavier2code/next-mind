@@ -4,13 +4,20 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { oneLight } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import Link from 'next/link';
 import { User, Bot } from 'lucide-react';
 import { ChatMessageWorkflow } from './chat-message-workflow';
+import { getTypeIcon, formatSize } from '@/components/files/file-chip';
 import type { WaveInfo } from '@/components/workflow/pipeline-view';
 import type { WorkflowStatus } from '@/components/workflow/workflow-status-badge';
 
 interface ChatMessageProps {
-  message: { id: string; role: 'user' | 'assistant'; content: string };
+  message: {
+    id: string;
+    role: 'user' | 'assistant';
+    content: string;
+    attachments?: Array<{ id: string; filename: string; fileType: string; size: number }>;
+  };
   workflow?: {
     id: string;
     status: WorkflowStatus;
@@ -66,6 +73,23 @@ export function ChatMessage({ message, workflow }: ChatMessageProps) {
             {message.content}
           </ReactMarkdown>
         </div>
+        {/* Attachment bar (D-08): only for user messages with attachments */}
+        {isUser && message.attachments && message.attachments.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mt-2" aria-label="附件">
+            {message.attachments.map((att) => (
+              <Link
+                key={att.id}
+                href={`/files?id=${att.id}`}
+                title={`${att.filename} - ${formatSize(att.size)}`}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 text-xs text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-700 transition-colors"
+              >
+                {getTypeIcon(att.fileType)}
+                <span className="truncate max-w-[160px]">{att.filename}</span>
+                <span>{formatSize(att.size)}</span>
+              </Link>
+            ))}
+          </div>
+        )}
         {/* D-01: Embed workflow panel below user message */}
         {isUser && workflow && (
           <ChatMessageWorkflow
