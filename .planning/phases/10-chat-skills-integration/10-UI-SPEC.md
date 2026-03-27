@@ -1,7 +1,8 @@
 ---
 phase: 10
 slug: chat-skills-integration
-status: draft
+status: approved
+reviewed_at: 2026-03-27
 shadcn_initialized: true
 preset: base-nova
 created: 2026-03-27
@@ -74,7 +75,7 @@ Source: 07-UI-SPEC, 08-UI-SPEC, 09-UI-SPEC. Attachment bar spacing follows the e
 
 ## Typography
 
-Carries forward from Phase 7/8/9. No new typography roles introduced. 2 font weights total: 400 (regular) and 600 (semibold).
+Carries forward from Phase 7/8/9. No new typography roles introduced. 3 font weights (no new weights added in this phase): 400 (regular), 500 (medium, inherited), 600 (semibold).
 
 | Role | Size | Weight | Line Height | Usage |
 |------|------|--------|-------------|-------|
