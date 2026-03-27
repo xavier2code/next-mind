@@ -24,6 +24,7 @@
     "@mariozechner/pi-ai": "^0.62.0",
     "@modelcontextprotocol/sdk": "^1.27.1",
     "@sinclair/typebox": "^0.34.48",
+    "@tanstack/react-table": "^8.21.3",
     "ai": "^6.0.137",
     "bcryptjs": "^3.0.3",
     "busboy": "^1.6.0",
