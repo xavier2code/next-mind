@@ -1,0 +1,44 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build output
+.next
+out
+dist
+
+# Version control
+.git
+.gitignore
+
+# Planning / docs (not needed in image)
+.planning
+docs
+*.md
+!README.md
+
+# Environment files (injected via env_file in docker-compose)
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode
+.idea
+
+# Testing
+tests
+e2e
+coverage
+
+# Docker (prevent recursive copy)
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Data (persisted via volumes)
+data
