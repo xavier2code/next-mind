@@ -8,12 +8,12 @@
 ### Docker 容器化
 
 - [x] **DOCK-01**: 项目包含多阶段 Dockerfile，基于 Node 22-alpine，构建产物使用 standalone 输出模式
-- [ ] **DOCK-02**: docker-compose.yml 定义 PostgreSQL + Next.js 两个服务，PostgreSQL 带 healthcheck
-- [ ] **DOCK-03**: 容器启动时自动执行 Drizzle 数据库迁移（entrypoint 脚本）
+- [x] **DOCK-02**: docker-compose.yml 定义 PostgreSQL + Next.js 两个服务，PostgreSQL 带 healthcheck
+- [x] **DOCK-03**: 容器启动时自动执行 Drizzle 数据库迁移（entrypoint 脚本）
 - [x] **DOCK-04**: .dockerignore 排除 node_modules、.git、.planning 等非必要文件
-- [ ] **DOCK-05**: .env.docker 提供容器化环境所需的完整环境变量配置
-- [ ] **DOCK-06**: unstorage 上传目录通过 Docker volume 持久化
-- [ ] **DOCK-07**: 用户可通过 `docker compose up` 一键启动完整开发/测试环境
+- [x] **DOCK-05**: .env.docker 提供容器化环境所需的完整环境变量配置
+- [x] **DOCK-06**: unstorage 上传目录通过 Docker volume 持久化
+- [x] **DOCK-07**: 用户可通过 `docker compose up` 一键启动完整开发/测试环境
 - [x] **DOCK-08**: next.config.ts 配置 `output: 'standalone'` 以优化 Docker 镜像大小
 
 ### 测试基础设施
@@ -80,12 +80,12 @@ Deferred to future milestones.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | DOCK-01 | Phase 11 | Complete |
-| DOCK-02 | Phase 11 | Pending |
-| DOCK-03 | Phase 11 | Pending |
+| DOCK-02 | Phase 11 | Complete |
+| DOCK-03 | Phase 11 | Complete |
 | DOCK-04 | Phase 11 | Complete |
-| DOCK-05 | Phase 11 | Pending |
-| DOCK-06 | Phase 11 | Pending |
-| DOCK-07 | Phase 11 | Pending |
+| DOCK-05 | Phase 11 | Complete |
+| DOCK-06 | Phase 11 | Complete |
+| DOCK-07 | Phase 11 | Complete |
 | DOCK-08 | Phase 11 | Complete |
 | TINF-01 | Phase 12 | Pending |
 | TINF-02 | Phase 12 | Pending |

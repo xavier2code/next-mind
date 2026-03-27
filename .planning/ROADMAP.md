@@ -162,7 +162,7 @@ Plans:
 Plans:
 - [x] 11-01: Standalone output config and Drizzle migration regeneration
 - [x] 11-02: Multi-stage Dockerfile with .dockerignore
-- [ ] 11-03: docker-compose.yml, entrypoint script, .env.docker
+- [x] 11-03: docker-compose.yml, entrypoint script, .env.docker
 - [ ] 11-04: Phase verification (docker compose up end-to-end)
 
 ### Phase 12: Test Infrastructure
@@ -237,7 +237,7 @@ Phases execute in numeric order: 11 → 12 → 13 → 14
 | 8. Content Extraction | v1.2 | 4/4 | Complete | 2026-03-26 |
 | 9. File Management & Preview | v1.2 | 3/3 | Complete | 2026-03-27 |
 | 10. Chat & Skills Integration | v1.2 | 4/4 | Complete | 2026-03-27 |
-| 11. Docker Environment | v1.3 | 2/4 | In Progress|  |
+| 11. Docker Environment | v1.3 | 3/4 | In Progress|  |
 | 12. Test Infrastructure | v1.3 | 0/4 | Not started | - |
 | 13. E2E Regression | v1.3 | 0/4 | Not started | - |
 | 14. Verification & Fixes | v1.3 | 0/4 | Not started | - |
