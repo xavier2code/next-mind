@@ -38,15 +38,12 @@ created: 2026-03-27
 
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 10-01-01 | 01 | 1 | CHAT-01 | unit | `npx vitest run tests/chat/inject-file-content.test.ts` | ❌ W0 | ⬜ pending |
-| 10-01-02 | 01 | 1 | CHAT-02 | unit | `npx vitest run tests/chat/inject-file-content.test.ts` | ❌ W0 | ⬜ pending |
-| 10-02-01 | 02 | 1 | CHAT-03, CHAT-04 | unit | `npx vitest run tests/chat/inject-file-content.test.ts` | ❌ W0 | ⬜ pending |
-| 10-03-01 | 03 | 1 | CHAT-05 | unit | `npx vitest run tests/components/file-chip-edit.test.tsx` | ❌ W0 | ⬜ pending |
-| 10-04-01 | 04 | 1 | CHAT-01, DB-02 | unit | `npx vitest run tests/chat/attachment-bar.test.tsx` | ❌ W0 | ⬜ pending |
-| 10-05-01 | 05 | 2 | SKIL-01 | unit | `npx vitest run tests/skills/file-extract.test.ts` | ❌ W0 | ⬜ pending |
-| 10-06-01 | 06 | 2 | SKIL-02 | unit | `npx vitest run tests/skills/file-convert.test.ts` | ❌ W0 | ⬜ pending |
-| 10-07-01 | 07 | 2 | SKIL-03 | unit | `npx vitest run tests/skills/file-classify.test.ts` | ❌ W0 | ⬜ pending |
-| 10-08-01 | 08 | 2 | SKIL-04 | unit | `npx vitest run tests/skills/file-read-list.test.ts` | ❌ W0 | ⬜ pending |
+| 10-01-00 | 01 | 1 | CHAT-01~04 | interface | `test -f src/lib/chat/types.ts && grep -q "AttachmentFile" src/lib/chat/types.ts` | N/A (scaffold) | ⬜ pending |
+| 10-01-01 | 01 | 1 | CHAT-01~04 | unit (TDD) | `npx vitest run tests/chat/inject-file-content.test.ts` | ❌ W0 | ⬜ pending |
+| 10-02-01 | 02 | 1 | SKIL-01~04 | unit (TDD) | `npx vitest run tests/skills/file-processing.test.ts` | ❌ W0 | ⬜ pending |
+| 10-03-01 | 03 | 2 | CHAT-05 | unit | `npx vitest run tests/components/file-chip-edit.test.tsx` | ❌ W0 | ⬜ pending |
+| 10-03-02 | 03 | 2 | CHAT-05 | unit | `npx vitest run tests/hooks/use-file-upload.test.ts` | ❌ W0 | ⬜ pending |
+| 10-04-01 | 04 | 3 | CHAT-01~05, SKIL-01~04 | manual | echo "Manual verification checkpoint" | N/A | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
@@ -54,13 +51,10 @@ created: 2026-03-27
 
 ## Wave 0 Requirements
 
-- [ ] `tests/chat/inject-file-content.test.ts` — stubs for CHAT-01~04
-- [ ] `tests/components/file-chip-edit.test.tsx` — stubs for CHAT-05
-- [ ] `tests/chat/attachment-bar.test.tsx` — stubs for CHAT-01 attachment display
-- [ ] `tests/skills/file-extract.test.ts` — stubs for SKIL-01
-- [ ] `tests/skills/file-convert.test.ts` — stubs for SKIL-02
-- [ ] `tests/skills/file-classify.test.ts` — stubs for SKIL-03
-- [ ] `tests/skills/file-read-list.test.ts` — stubs for SKIL-04
+- [ ] `tests/chat/inject-file-content.test.ts` — stubs for CHAT-01~04 (injection module)
+- [ ] `tests/skills/file-processing.test.ts` — stubs for SKIL-01~04 (file processing skills)
+- [ ] `tests/components/file-chip-edit.test.tsx` — stubs for CHAT-05 (FileChip inline editor)
+- [ ] `tests/hooks/use-file-upload.test.ts` — stubs for CHAT-05 (editedContent tracking in hook)
 
 *Existing infrastructure covers test framework and setup.*
 

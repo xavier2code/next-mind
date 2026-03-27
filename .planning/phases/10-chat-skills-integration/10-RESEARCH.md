@@ -478,10 +478,10 @@ Step 2.6: SKIPPED (no external dependencies identified -- all work is code-only 
 ### Phase Requirements -> Test Map
 | Req ID | Behavior | Test Type | Automated Command | File Exists? |
 |--------|----------|-----------|-------------------|-------------|
-| CHAT-01 | File content fetched and injected into message | unit | `npx vitest run tests/lib/chat/file-content-injection.test.ts -x` | No -- Wave 0 |
-| CHAT-02 | File blocks use correct delimiter format | unit | `npx vitest run tests/lib/chat/format-file-blocks.test.ts -x` | No -- Wave 0 |
-| CHAT-03 | Multiple files concatenated in correct order | unit | `npx vitest run tests/lib/chat/format-file-blocks.test.ts -x` | No — Wave 0 |
-| CHAT-04 | Content truncated when exceeding character threshold | unit | `npx vitest run tests/lib/chat/truncate-content.test.ts -x` | No — Wave 0 |
+| CHAT-01 | File content fetched and injected into message | unit | `npx vitest run tests/chat/inject-file-content.test.ts -x` | No -- Wave 0 |
+| CHAT-02 | File blocks use correct delimiter format | unit | `npx vitest run tests/chat/inject-file-content.test.ts -x` | No -- Wave 0 |
+| CHAT-03 | Multiple files concatenated in correct order | unit | `npx vitest run tests/chat/inject-file-content.test.ts -x` | No — Wave 0 |
+| CHAT-04 | Content truncated when exceeding character threshold | unit | `npx vitest run tests/chat/inject-file-content.test.ts -x` | No — Wave 0 |
 | CHAT-05 | Edited file content used instead of extracted | unit | `npx vitest run tests/hooks/use-file-upload.test.ts -x` | Partial (hook exists, edit not yet) |
 | SKIL-01 | file-extract skill returns extracted content | unit | `npx vitest run tests/skills/file-processing.test.ts -x` | No — Wave 0 |
 | SKIL-02 | file-convert skill converts format | unit | `npx vitest run tests/skills/file-processing.test.ts -x` | No — Wave 0 |
@@ -489,14 +489,13 @@ Step 2.6: SKIPPED (no external dependencies identified -- all work is code-only 
 | SKIL-04 | Updated file-read/file-list use database | unit | `npx vitest run tests/skills/file-processing.test.ts -x` | No — Wave 0 |
 
 ### Sampling Rate
-- **Per task commit:** `npx vitest run tests/lib/chat/ tests/skills/ tests/hooks/`
+- **Per task commit:** `npx vitest run tests/chat/ tests/skills/ tests/hooks/`
 - **Per wave merge:** `npm test`
 - **Phase gate:** Full suite green before `/gsd:verify-work`
 
 ### Wave 0 Gaps
-- [ ] `tests/lib/chat/format-file-blocks.test.ts` — covers CHAT-02, CHAT-03 (file block formatting)
-- [ ] `tests/lib/chat/truncate-content.test.ts` — covers CHAT-04 (content truncation)
-- [ ] `tests/lib/chat/file-content-injection.test.ts` — covers CHAT-01 (end-to-end injection logic)
+- [ ] `tests/chat/inject-file-content.test.ts` — covers CHAT-01~04 (injection, formatting, truncation)
+- [ ] `tests/components/file-chip-edit.test.tsx` — covers CHAT-05 (FileChip inline editor)
 - [ ] `tests/skills/file-processing.test.ts` — covers SKIL-01/02/03/04 (all new + updated skills)
 - [ ] `tests/hooks/use-file-upload.test.ts` — extend existing for CHAT-05 (editedContent tracking)
 
