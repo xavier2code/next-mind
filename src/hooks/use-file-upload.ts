@@ -11,6 +11,8 @@ export interface PendingFile {
   status: 'pending' | 'uploading' | 'uploaded' | 'processing' | 'ready' | 'error';
   progress: number;
   error?: string;
+  extractedMarkdown?: string;  // Fetched when file becomes 'ready' (for inline editor)
+  editedContent?: string;  // User-edited Markdown content (overrides extractedMarkdown)
   uploadedFile?: {
     id: string;
     filename: string;
@@ -30,6 +32,10 @@ export interface FileUploadState {
   retryFile: (id: string) => void;
   clearFiles: () => void;
   getUploadedFileIds: () => string[];
+  setEditedContent: (fileId: string, content: string) => void;
+  getEditedContent: (fileId: string) => string | undefined;
+  getExtractedMarkdown: (fileId: string) => string | undefined;
+  getEditedContentsMap: () => Map<string, string>;
 }
 
 const MAX_FILES = 5; // Per D-05
@@ -110,7 +116,20 @@ export function useFileUpload(): FileUploadState {
         return { ...f, status: 'processing' };
       }
       if (f.status === 'processing' && extractionStatusValue === 'ready') {
-        return { ...f, status: 'ready' };
+        // Fetch extractedMarkdown for the inline editor
+        fetch(`/api/files/${f.uploadedFile!.id}`)
+          .then(r => r.json())
+          .then(data => {
+            setFiles(prev => prev.map(pf =>
+              pf.id === f.id ? { ...pf, status: 'ready' as const, extractedMarkdown: data.extractedMarkdown } : pf
+            ));
+          })
+          .catch(() => {
+            setFiles(prev => prev.map(pf =>
+              pf.id === f.id ? { ...pf, status: 'ready' as const } : pf
+            ));
+          });
+        return f; // Don't update yet, will update after fetch
       }
       if (f.status === 'processing' && extractionStatusValue === 'failed') {
         return { ...f, status: 'error', error: 'Extraction failed' };
@@ -250,6 +269,36 @@ export function useFileUpload(): FileUploadState {
       .map(f => f.uploadedFile!.id);
   }, [files]);
 
+  // Set edited content for a specific file
+  const setEditedContent = useCallback((fileId: string, content: string) => {
+    setFiles(prev => prev.map(f =>
+      f.id === fileId ? { ...f, editedContent: content } : f
+    ));
+  }, []);
+
+  // Get edited content for a specific file
+  const getEditedContent = useCallback((fileId: string): string | undefined => {
+    const file = files.find(f => f.id === fileId);
+    return file?.editedContent;
+  }, [files]);
+
+  // Get extractedMarkdown for a specific file
+  const getExtractedMarkdown = useCallback((fileId: string): string | undefined => {
+    const file = files.find(f => f.id === fileId);
+    return file?.extractedMarkdown;
+  }, [files]);
+
+  // Build a map of fileId -> editedContent for all files that have edits
+  const getEditedContentsMap = useCallback((): Map<string, string> => {
+    const map = new Map<string, string>();
+    for (const f of files) {
+      if (f.editedContent) {
+        map.set(f.uploadedFile?.id || f.id, f.editedContent);
+      }
+    }
+    return map;
+  }, [files]);
+
   return {
     files,
     isUploading,
@@ -258,5 +307,9 @@ export function useFileUpload(): FileUploadState {
     retryFile,
     clearFiles,
     getUploadedFileIds,
+    setEditedContent,
+    getEditedContent,
+    getExtractedMarkdown,
+    getEditedContentsMap,
   };
 }

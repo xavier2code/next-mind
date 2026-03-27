@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: 文件处理
-current_plan: "10-02"
-status: In progress
-stopped_at: Completed 10-01-PLAN.md
-last_updated: "2026-03-27T02:01:00.000Z"
+current_plan: 1
+status: Executing Phase 10
+stopped_at: Phase 10 UI-SPEC approved
+last_updated: "2026-03-27T01:56:34.860Z"
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 14
-  completed_plans: 11
+  completed_plans: 10
 ---
 
 # Project State
@@ -24,16 +24,16 @@ See: .planning/PROJECT.md (updated 2026-03-26)
 
 ## Current Position
 
-Phase: 10
-Plan: 2 of 4
-Current Plan: 10-02
+Phase: 10 (chat-skills-integration) — EXECUTING
+Plan: 1 of 4
+Current Plan: 1
 Total Plans in Phase: 4
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 31 (v1.0: 11, v1.1: 17, v1.2: 4)
+- Total plans completed: 30 (v1.0: 11, v1.1: 17, v1.2: 3)
 
 **By Phase:**
 
@@ -52,9 +52,9 @@ Total Plans in Phase: 4
 | Phase | Requirements | Status |
 |-------|-------------|--------|
 | 7. Storage & Upload | 10 | Complete |
-| 8. Content Extraction | 9 | Complete |
-| 9. File Management & Preview | 5 | In progress (2/3) |
-| 10. Chat & Skills Integration | 9 | In progress (1/4) |
+| 8. Content Extraction | 9 | Planned (4 plans) |
+| 9. File Management & Preview | 5 | Planned (3 plans) |
+| 10. Chat & Skills Integration | 9 | Not started |
 
 **Recent Trend:**
 
@@ -97,8 +97,6 @@ Recent decisions affecting current work:
 - [Phase 08]: Extraction failure mapped to error status in PendingFile with Extraction failed message
 - [Phase 09]: Hand-built HTML table wrappers instead of shadcn Table (Radix-based, incompatible with base-nova)
 - [Phase 09]: Column definitions use factory function fileColumns(callbacks) to pass onSelectFile/onDeleteFile without prop drilling
-- [Phase 10]: Duplicated formatSize from file-chip.tsx to keep chat utility module free of React imports
-- [Phase 10]: MAX_TOTAL_CHARS set to 10000 characters for file content truncation (CHAT-04)
 
 ### Pending Todos
 
@@ -112,9 +110,9 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-27T02:01:00.000Z
-Stopped at: Completed 10-01-PLAN.md
-Resume file: None
+Last session: 2026-03-27T01:15:34.661Z
+Stopped at: Phase 10 UI-SPEC approved
+Resume file: .planning/phases/10-chat-skills-integration/10-UI-SPEC.md
 
 ---
-*State updated: 2026-03-27 for v1.2 roadmap — Phase 10 Chat & Skills Integration in progress*
+*State updated: 2026-03-27 for v1.2 roadmap — Phase 9 File Management & Preview planned*
