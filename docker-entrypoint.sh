@@ -21,7 +21,7 @@ until pg_isready -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -q; do
 done
 
 echo "PostgreSQL is ready. Running Drizzle migrations..."
-npx drizzle-kit migrate
+/opt/drizzle-kit/node_modules/.bin/drizzle-kit migrate --config=drizzle.config.json
 
 echo "Starting Next.js application..."
 exec "$@"

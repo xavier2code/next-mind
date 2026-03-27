@@ -42,14 +42,14 @@ COPY --from=builder /app/public ./public
 
 # Copy migration files and drizzle config for entrypoint (D-01)
 COPY --from=builder /app/drizzle ./drizzle
-COPY --from=builder /app/drizzle.config.ts ./drizzle.config.ts
+COPY --from=builder /app/drizzle.config.json ./drizzle.config.json
 
 # Copy entrypoint script (created by Plan 03)
 COPY docker-entrypoint.sh ./docker-entrypoint.sh
 RUN chmod +x ./docker-entrypoint.sh
 
-# Install drizzle-kit for runtime migration (D-01: devDependency, not in standalone)
-RUN npm install drizzle-kit@0.31.10
+# Install drizzle-kit for runtime migration in a separate directory (standalone node_modules is pruned)
+RUN npm install --prefix /opt/drizzle-kit drizzle-kit@0.31.10 drizzle-orm postgres
 
 # Create uploads directory (D-10: volume mount target)
 RUN mkdir -p /app/data/uploads
