@@ -33,6 +33,13 @@
 - **Agent 通信** -- Agent 间消息总线，支持上下文请求、状态通知、进度更新
 - **工作流 UI** -- 实时状态面板、Agent 任务列表、日志查看、暂停/恢复/取消控制
 
+### v1.2 文件处理
+
+- **文件上传** -- 小文件直接上传 + 大文件流式分块上传，支持进度显示
+- **内容提取** -- 自动提取 PDF、Word、图片等文件的文本内容
+- **文件管理** -- 文件列表浏览、上传/删除操作、预览与下载
+- **对话注入** -- 将文件内容直接注入对话上下文，供 LLM 分析处理
+
 ## 技术栈
 
 | 类别 | 技术 |
@@ -58,7 +65,7 @@
 ### 安装
 
 ```bash
-git clone https://github.com/your-org/next-mind.git
+git clone https://github.com/xavier2code/next-mind.git
 cd next-mind
 
 npm install
@@ -67,7 +74,52 @@ cp .env.example .env
 # 编辑 .env 填入必要配置
 ```
 
-### 配置
+### 方式一：Docker 部署（推荐）
+
+> 一键启动完整的 Next.js + PostgreSQL 环境，无需本地安装 Node.js 和数据库。
+
+**前提条件：** 已安装 Docker 和 Docker Compose。
+
+```bash
+# 1. 复制并编辑环境配置
+cp .env.docker .env.local
+# 编辑 .env.local，填入 AUTH_SECRET 和至少一个 LLM API Key
+# 生成 AUTH_SECRET: openssl rand -base64 32
+
+# 2. 一键启动
+docker compose up -d
+
+# 3. 查看日志
+docker compose logs -f app
+```
+
+启动后访问 http://localhost:3000
+
+**服务说明：**
+
+| 服务 | 端口 | 说明 |
+|------|------|------|
+| app (Next.js) | 3000 | 应用主服务，自动执行数据库迁移 |
+| postgres | 5432 | PostgreSQL 16 数据库 |
+
+**常用操作：**
+
+```bash
+docker compose up -d          # 启动（后台）
+docker compose down           # 停止
+docker compose logs -f app    # 查看应用日志
+docker compose restart app    # 重启应用
+docker compose exec app sh    # 进入容器
+
+# 创建测试用户
+docker compose exec app npx tsx scripts/seed.ts
+```
+
+**数据持久化：** 数据库数据通过 Docker volume `pgdata` 持久化，上传文件挂载在 `./data/uploads`。
+
+### 方式二：本地开发
+
+**前提条件：** Node.js 20+、PostgreSQL 15+
 
 编辑 `.env` 文件：
 
@@ -86,16 +138,8 @@ GLM_API_KEY=your-glm-api-key
 MINIMAX_API_KEY=your-minimax-api-key
 ```
 
-### 数据库迁移
-
 ```bash
-npm run db:generate  # 生成迁移
-npm run db:migrate   # 执行迁移
-```
-
-### 运行
-
-```bash
+npm run db:migrate   # 执行数据库迁移
 npm run dev          # 开发模式 (Turbopack)
 npm run build        # 生产构建
 npm start            # 启动生产服务
@@ -226,13 +270,17 @@ npm run db:studio      # Drizzle Studio 数据库管理
 
 ## 路线图
 
+### 已完成
+
+- [x] 文件上传与处理（PDF/Word/图片）
+- [x] Docker 容器化部署
+- [x] E2E 测试基础设施（Playwright + 认证会话复用 + LLM Mock）
+
 ### 未来规划
 
-- [ ] 文件上传与处理（PDF/Word/图片）
 - [ ] RAG 知识检索系统
 - [ ] 完整 REST API 接口
 - [ ] 云存储集成
-- [ ] 私有化部署支持
 - [ ] 移动端适配
 - [ ] 多租户支持
 
