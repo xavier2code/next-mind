@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { z } from 'zod';
 import 'reflect-metadata';
 import { skill, getSkillMetadata } from '@/lib/skills/decorator';
@@ -6,6 +6,16 @@ import type { SkillMetadata, SkillContext, SkillResult } from '@/lib/skills/type
 import { fileSkills } from '@/skills/file-processing';
 import { dataSkills } from '@/skills/data-analysis';
 import { webSkills } from '@/skills/web-search';
+
+// Mock database queries for file skills
+vi.mock('@/lib/db/queries', () => ({
+  getFileById: vi.fn(),
+  getFilesByUser: vi.fn(),
+}));
+
+import { getFileById, getFilesByUser } from '@/lib/db/queries';
+const mockedGetFileById = vi.mocked(getFileById);
+const mockedGetFilesByUser = vi.mocked(getFilesByUser);
 
 /**
  * Helper to apply skill decorator to a method programmatically
@@ -27,6 +37,16 @@ function applySkillDecorator(
 
 describe('Predefined Skills', () => {
   describe('File Processing Skills', () => {
+    const mockContext: SkillContext = {
+      userId: 'test-user',
+      sessionId: 'test-session',
+      previousResults: new Map(),
+    };
+
+    beforeEach(() => {
+      vi.clearAllMocks();
+    });
+
     it('should have fileSkills instance with read method', () => {
       expect(fileSkills).toBeDefined();
       expect(typeof fileSkills.readFile).toBe('function');
@@ -58,26 +78,33 @@ describe('Predefined Skills', () => {
     });
 
     it('should execute readFile and return success result', async () => {
-      const result = await fileSkills.readFile({ path: '/etc/hosts' }, {
+      mockedGetFileById.mockResolvedValue({
+        id: 'test-id',
         userId: 'test-user',
-        sessionId: 'test-session',
-        previousResults: new Map(),
+        filename: 'test.txt',
+        mimeType: 'text/plain',
+        size: 100,
+        fileType: 'document',
+        storagePath: '/uploads/test.txt',
+        status: 'ready',
+        extractedContent: 'file content',
+        extractedMarkdown: '# File Content',
+        classification: null,
+        errorMessage: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
       });
+
+      const result = await fileSkills.readFile({ fileId: 'test-id' }, mockContext);
 
       expect(result.success).toBe(true);
       expect(result.data).toBeDefined();
-      expect(typeof result.data).toBe('string');
     });
 
     it('should execute listFiles and return success result', async () => {
-      const result = await fileSkills.listFiles(
-        { path: '.', pattern: '*.ts' },
-        {
-          userId: 'test-user',
-          sessionId: 'test-session',
-          previousResults: new Map(),
-        }
-      );
+      mockedGetFilesByUser.mockResolvedValue([]);
+
+      const result = await fileSkills.listFiles({}, mockContext);
 
       expect(result.success).toBe(true);
       expect(result.data).toBeDefined();

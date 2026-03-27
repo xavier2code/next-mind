@@ -191,7 +191,7 @@ export const agentMessages = pgTable('agent_message', {
 
 // File Storage Tables
 
-export const FileTypeEnum = ['document', 'code', 'data'] as const;
+export const FileTypeEnum = ['document', 'code', 'data', 'image', 'other'] as const;
 export const FileStatusEnum = ['uploaded', 'processing', 'ready', 'failed'] as const;
 
 export const files = pgTable('file', {
@@ -226,7 +226,6 @@ export const conversationFiles = pgTable('conversation_file', {
   conversationIdx: index('conversation_file_conv_idx').on(table.conversationId),
   messageIdx: index('conversation_file_msg_idx').on(table.messageId),
 }));
-
 // Type exports
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
