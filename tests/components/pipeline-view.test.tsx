@@ -106,8 +106,8 @@ describe('PipelineView', () => {
   it('shows agent type and skill ID for each task', () => {
     render(<PipelineView workflowId="test-workflow" initialWaves={mockWaves} />);
 
-    expect(screen.getByText(/file \/ file-read/)).toBeInTheDocument();
-    expect(screen.getByText(/search \/ web-search/)).toBeInTheDocument();
+    expect(screen.getByText(/File Agent.*file-read/)).toBeInTheDocument();
+    expect(screen.getByText(/Search Agent.*web-search/)).toBeInTheDocument();
   });
 
   it('creates EventSource with correct URL', () => {

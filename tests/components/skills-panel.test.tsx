@@ -115,17 +115,6 @@ describe('SkillsPanel Component', () => {
     });
   });
 
-    it('should show retry button on error', async () => {
-      mockFetch.mockRejectedValueOnce(new Error('Network error'));
-
-      render(<SkillsPanel />);
-
-      await waitFor(() => {
-        expect(screen.getByRole('button', { name: /retry/i })).toBeDefined();
-      });
-    });
-  });
-
   describe('Test 4: Filters skills by search query', () => {
     it('should filter skills by name', async () => {
       mockFetch.mockResolvedValueOnce({

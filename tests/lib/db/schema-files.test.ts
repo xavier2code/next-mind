@@ -44,7 +44,7 @@ describe('File Storage Tables', () => {
 
   describe('Enum values', () => {
     it('should have correct FileTypeEnum values', () => {
-      expect(FileTypeEnum).toEqual(['document', 'code', 'data']);
+      expect(FileTypeEnum).toEqual(['document', 'code', 'data', 'image', 'other']);
     });
 
     it('should have correct FileStatusEnum values', () => {

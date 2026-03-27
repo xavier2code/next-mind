@@ -67,11 +67,11 @@ describe('A2A Infrastructure Tables', () => {
     });
 
     it('should have correct TaskStatusEnum values', () => {
-      expect(TaskStatusEnum).toEqual(['pending', 'running', 'completed', 'failed']);
+      expect(TaskStatusEnum).toEqual(['pending', 'running', 'completed', 'failed', 'cancelled']);
     });
 
     it('should have correct WorkflowStatusEnum values', () => {
-      expect(WorkflowStatusEnum).toEqual(['pending', 'running', 'completed', 'failed']);
+      expect(WorkflowStatusEnum).toEqual(['pending', 'running', 'pausing', 'paused', 'completed', 'failed', 'cancelled']);
     });
   });
 });
