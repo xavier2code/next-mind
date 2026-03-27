@@ -1,16 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.2
-milestone_name: 文件处理
+milestone: v1.3
+milestone_name: 全量回归验证
 current_plan: None
-status: Milestone complete — ready for next milestone
-stopped_at: v1.2 milestone archived
-last_updated: "2026-03-27T10:30:00.000Z"
+status: Defining requirements
+stopped_at: null
+last_updated: "2026-03-27T12:00:00.000Z"
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 14
-  completed_plans: 14
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
@@ -20,12 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** 让团队成员通过统一的对话界面，高效处理文件、管理知识、调用工具，完成80%以上的日常工作任务
-**Current focus:** Planning next milestone — use `/gsd:new-milestone`
+**Current focus:** v1.3 全量回归验证
 
 ## Current Position
 
-Milestone: v1.2 complete
-Next: TBD (use `/gsd:new-milestone`)
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-27 — Milestone v1.3 started
 
 ## Performance Metrics
 
@@ -63,11 +65,12 @@ None yet.
 - **mammoth.js Turbopack compatibility**: Resolved — dynamic import() workaround used
 - **busboy + Next.js 16 App Router**: Resolved — streaming upload working
 - **Deployment target**: Still TBD — self-hosted vs Vercel serverless
+- **v1.2 遗留验证项**: 将在 v1.3 中通过容器化环境解决
 
 ## Session Continuity
 
 Last session: 2026-03-27
-Status: v1.2 milestone archived, ready for next milestone
+Status: v1.3 milestone started, defining requirements
 
 ---
-*State updated: 2026-03-27 after v1.2 milestone completion*
+*State updated: 2026-03-27 after v1.3 milestone started*
