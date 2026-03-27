@@ -17,7 +17,7 @@ describe('FileChip', () => {
 
   it('should render file size for pending state', () => {
     render(<FileChip {...baseProps} />);
-    expect(screen.getByText('1KB')).toBeInTheDocument();
+    expect(screen.getByText('1.0KB')).toBeInTheDocument();
   });
 
   it('should show progress percentage for uploading state', () => {
