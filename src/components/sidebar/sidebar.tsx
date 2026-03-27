@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { PanelLeftClose, PanelLeft, Plus, MessageSquare } from 'lucide-react';
+import { useRouter, usePathname } from 'next/navigation';
+import { PanelLeftClose, PanelLeft, Plus, FolderOpen, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { cn } from '@/lib/utils';
 import { SearchInput } from './search-input';
 import { ConversationList } from './conversation-list';
 
@@ -15,6 +16,7 @@ interface SidebarProps {
 
 export function Sidebar({ open, onToggle }: SidebarProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [searchQuery, setSearchQuery] = useState('');
 
   const handleNewChat = () => {
@@ -45,11 +47,29 @@ export function Sidebar({ open, onToggle }: SidebarProps) {
         <div className="p-4">
           <Button
             onClick={handleNewChat}
-            className="w-full justify-start gap-2"
+            className={cn(
+              "w-full justify-start gap-2",
+              (pathname === '/' || pathname.startsWith('/chat')) && "bg-accent text-accent-foreground"
+            )}
             variant="outline"
           >
             <Plus className="h-4 w-4" />
             New chat
+          </Button>
+        </div>
+
+        {/* Files Button */}
+        <div className="px-4 pb-2">
+          <Button
+            onClick={() => router.push('/files')}
+            className={cn(
+              "w-full justify-start gap-2",
+              pathname.startsWith('/files') && "bg-accent text-accent-foreground"
+            )}
+            variant="outline"
+          >
+            <FolderOpen className="h-4 w-4" />
+            Files
           </Button>
         </div>
 
