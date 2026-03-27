@@ -281,8 +281,9 @@ describe('inject-file-content', () => {
     });
 
     it('truncates mid-file and skips remaining files', async () => {
-      // First file takes most of the budget, second should be skipped
-      const firstContent = 'A'.repeat(9500);
+      // First file is so large that it gets truncated mid-content.
+      // Second file should be entirely skipped.
+      const firstContent = 'A'.repeat(15000);
       const secondContent = 'B'.repeat(5000);
 
       let callCount = 0;
@@ -292,7 +293,7 @@ describe('inject-file-content', () => {
           return Promise.resolve({
             ok: true,
             json: () => Promise.resolve({
-              id: 'f1', filename: 'first.txt', mimeType: 'text/plain', size: 10000,
+              id: 'f1', filename: 'first.txt', mimeType: 'text/plain', size: 20000,
               fileType: 'document', status: 'ready', extractedContent: null,
               extractedMarkdown: firstContent,
             }),
@@ -311,7 +312,7 @@ describe('inject-file-content', () => {
       const { injectFileContent } = await import('@/lib/chat/inject-file-content');
       const result = await injectFileContent('Go', ['f1', 'f2']);
 
-      // First file should be included, second skipped due to truncation
+      // First file should be partially included and truncated
       expect(result.enrichedContent).toContain('first.txt');
       expect(result.enrichedContent).not.toContain('second.txt');
       expect(result.enrichedContent).toContain('[Content truncated...]');
