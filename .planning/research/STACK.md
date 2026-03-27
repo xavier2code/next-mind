@@ -1,177 +1,346 @@
-# Stack Research: v1.2 File Processing Additions
+# Stack Research: v1.3 Docker Containerization + Regression Testing
 
-**Domain:** Multi-type file upload, content extraction, format conversion, preview, and management
-**Researched:** 2026-03-26
-**Confidence:** HIGH (npm versions verified directly, official docs consulted, patterns validated against Next.js App Router constraints)
+**Domain:** Next.js 16 App Containerization and Test Infrastructure
+**Researched:** 2026-03-27
+**Confidence:** HIGH
 
 ## Context
 
-This document covers stack additions needed exclusively for the v1.2 milestone: multi-type file upload, processing, and management. All existing stack decisions from v1.0/v1.1 remain unchanged -- this document specifies only what to ADD.
+This document covers stack additions needed exclusively for the v1.3 milestone: Docker containerized environment and comprehensive regression testing. All existing stack decisions from v1.0/v1.1/v1.2 remain unchanged -- this document specifies only what to ADD or MODIFY.
 
-Existing stack: Next.js 16.2.1, TypeScript 5.8, PostgreSQL + Drizzle ORM, shadcn/ui, Zod, Auth.js v5.
+Existing stack: Next.js 16.2.1, TypeScript 5.8, PostgreSQL + Drizzle ORM 0.45.x, shadcn/ui, Vitest 4.1.x, Playwright 1.58.x, Auth.js v5, unstorage 1.17.4.
 
-Existing file capabilities: `FileProcessingSkills` class with `file-read` and `file-list` skills (local filesystem only, raw text only). `file-agent` agent card references these skills. No upload, no content extraction, no format conversion, no cloud storage.
+Existing test infrastructure: 62 unit test files in `tests/`, 2 E2E specs in `e2e/`, v8 coverage provider, jsdom environment, path aliases configured.
 
 ---
 
 ## Recommended Stack Additions
 
-### File Upload Transport
+### Core Containerization
 
 | Technology | Version | Purpose | Why Recommended |
 |------------|---------|---------|-----------------|
-| **Native `request.formData()`** | Web API (built-in) | Small file uploads (<10MB) | Zero dependencies. Next.js App Router Route Handlers support the Web API `Request.formData()`. Sufficient for most document/code/data files under 10MB. |
-| **busboy** | 1.6.0 | Streaming large file uploads (10-100MB) | Only streaming multipart parser that works with Next.js App Router Route Handlers via `ReadableStream`. `multer` requires Express-style middleware (incompatible). `formidable` has compatibility issues with App Router. busboy never buffers entire file into memory -- critical for 100MB uploads. |
+| **Docker Engine** | 27+ | Container runtime | Industry standard. Docker Compose v2.27+ drops the obsolete `version:` field. Compose v1 fully deprecated (June 2023). |
+| **Docker Compose** | v2.27+ | Multi-service orchestration | Orchestrates Next.js app + PostgreSQL. No `version:` field needed (obsolete since Compose v2). Supports `depends_on: condition: service_healthy` for startup ordering. |
+| **Node.js (Docker base)** | 22-alpine | Runtime inside container | Next.js 16 requires minimum 20.9+ (Node 18 dropped). Node 22 LTS is in Maintenance LTS until April 2026. Alpine variant reduces image ~40MB vs slim. Project uses Node 24.14.0 locally for development but 22-alpine is the right choice for the Docker image -- maximum stability, battle-tested with Next.js 16. |
+| **PostgreSQL (Docker image)** | 17-alpine | Database service | Latest PostgreSQL major version. Alpine variant for minimal footprint. Official `postgres` image includes `pg_isready` for healthchecks. |
+| **`output: 'standalone'`** | next.config.ts flag | Optimized self-contained build | Next.js standalone mode traces server dependencies and produces a minimal output. Without it, the full `node_modules` (~300-500MB) must be copied into the Docker image. Reduces image from 2GB+ to ~200MB. |
 
-**Decision: Use `request.formData()` for files under 10MB, `busboy` for files 10-100MB.** Implement an abstraction layer (`FileUploader` interface) so the upload transport is swappable. Both write to the abstract storage layer (see below).
+### Regression Testing Infrastructure
 
-**Why NOT UploadThing:** UploadThing is a managed SaaS ($10/mo for 100GB). Next-Mind needs self-hosted control and an abstract storage layer. UploadThing's v7 locks files to their infrastructure. The PROJECT.md explicitly states "abstract storage layer (local/cloud switchable)" as a v1.2 deliverable, and "concrete cloud provider integration" is deferred to a future milestone. UploadThing would add a SaaS dependency that contradicts this goal.
+| Technology | Version | Purpose | Why Recommended |
+|------------|---------|---------|-----------------|
+| **Vitest** | 4.1.x (already installed) | Unit + integration tests | Already configured with jsdom, path aliases, v8 coverage. 62 test files exist across lib, app/api, hooks, and chat directories. No changes to the framework needed. |
+| **@testing-library/react** | 16.3.x (already installed) | Component testing | Already installed and configured via `tests/setup.ts` with cleanup. |
+| **Playwright** | 1.58.x (already installed) | E2E regression tests | Already configured for Chromium with CI mode (retries: 2, single worker). 2 spec files exist. Needs expansion for full v1.0-v1.2 regression coverage. |
+| **@playwright/test** | 1.58.x (already installed) | E2E test runner | Part of existing stack. webServer config starts `npm run dev` on localhost:3000. |
 
-**Why NOT TUS protocol:** TUS requires running a separate TUS server process (tus-node-server). Adds operational complexity for a mid-size team tool. Resumable uploads are valuable but overkill for 100MB max file size. Can revisit if requirements grow.
+**No new npm packages are needed for this milestone.** Docker and Docker Compose are external tools. The existing Vitest + Playwright stack is sufficient.
 
-**next.config.ts change required:**
+---
+
+## Docker Configuration
+
+### Dockerfile (Multi-Stage Build)
+
+Based on the official `vercel/next.js/examples/with-docker` pattern, adapted for next-mind:
+
+```dockerfile
+# syntax=docker/dockerfile:1
+
+ARG NODE_VERSION=22-alpine
+
+# --- Stage 1: Base ---
+FROM node:${NODE_VERSION} AS base
+
+# --- Stage 2: Dependencies ---
+FROM base AS deps
+RUN apk add --no-cache libc6-compat
+WORKDIR /app
+COPY package.json package-lock.json* ./
+RUN npm ci
+
+# --- Stage 3: Builder ---
+FROM base AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+
+# Set build-time env vars (needed for next build)
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN npx next build
+
+# --- Stage 4: Runner ---
+FROM base AS runner
+WORKDIR /app
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nextjs
+
+# Copy standalone output
+COPY --from=builder /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+
+# Copy migration files for entrypoint
+COPY --from=builder /app/drizzle ./drizzle
+COPY entrypoint.sh ./entrypoint.sh
+RUN chmod +x ./entrypoint.sh
+
+USER nextjs
+EXPOSE 3000
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
+
+ENTRYPOINT ["./entrypoint.sh"]
+CMD ["node", "server.js"]
+```
+
+**Key adaptations for next-mind:**
+- **Node 22-alpine** (not 24) for stability. The official example defaults to Node 24.13.0-slim but Node 24 LTS only entered Active LTS in October 2025. Node 22 has been battle-tested longer.
+- **Copy `drizzle/` migration files** into the runner stage so the entrypoint can run migrations.
+- **Include `entrypoint.sh`** that runs `drizzle-kit migrate` before starting the server.
+- **`libc6-compat`** installed in deps stage for Node.js compatibility on Alpine (musl vs glibc).
+- **Non-root user** (`nextjs:nodejs`, UID 1001) for security best practice.
+
+### next.config.ts Modification Required
+
+Add `output: 'standalone'` to the existing config:
+
 ```typescript
+import type { NextConfig } from 'next';
+
 const nextConfig: NextConfig = {
+  output: 'standalone',  // <-- ADD THIS for Docker
   typedRoutes: true,
   serverActions: {
-    bodySizeLimit: '10mb', // Default is 1MB -- raise for small file uploads
+    bodySizeLimit: '10mb',
   },
 };
+
+export default nextConfig;
 ```
 
-### Abstract Storage Layer
+### entrypoint.sh
 
-| Technology | Version | Purpose | Why Recommended |
-|------------|---------|---------|-----------------|
-| **unstorage** | 1.17.4 | Abstract key-value storage with pluggable drivers | Built by UnJS (same ecosystem as Nitro/Nuxt). Provides unified async API (`get`, `set`, `has`, `delete`, `getMeta`, `setMeta`, `keys`) across all drivers. Officially supports: Filesystem, S3 (any S3-compatible including Cloudflare R2, MinIO), Redis, Memory, MongoDB, SQL, Azure, Cloudflare KV/R2, and more. Multi-driver mounting lets you use local filesystem for development and S3 for production with zero code changes. Zero-dependency core. |
+```bash
+#!/bin/sh
+set -e
 
-**Driver configuration:**
+echo "Running database migrations..."
+npx drizzle-kit migrate
+
+echo "Starting Next.js server..."
+exec "$@"
+```
+
+Uses `exec "$@"` to replace the shell process with the Node.js server (proper signal handling for graceful shutdown).
+
+### docker-compose.yml
+
+```yaml
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: nextmind
+      POSTGRES_PASSWORD: nextmind
+      POSTGRES_DB: nextmind
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nextmind -d nextmind"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://nextmind:nextmind@db:5432/nextmind
+      AUTH_SECRET: ${AUTH_SECRET:-dev-secret-key-min-32-characters-long-xxxxxxxx}
+      QWEN_API_KEY: ${QWEN_API_KEY:-}
+      GLM_API_KEY: ${GLM_API_KEY:-}
+      MINIMAX_API_KEY: ${MINIMAX_API_KEY:-}
+      MCP_UID: "1001"
+      MCP_GID: "1001"
+      STORAGE_DRIVER: local
+      STORAGE_LOCAL_PATH: /app/data/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - uploads:/app/data/uploads
+
+volumes:
+  pgdata:
+  uploads:
+```
+
+**Key design decisions:**
+- **No `version:` field** -- obsolete in Docker Compose v2.27+. Including it causes warnings/errors.
+- **`depends_on: condition: service_healthy`** -- app waits for PostgreSQL to actually accept connections, not just for the container to start. Requires the healthcheck definition on the db service.
+- **`start_period: 30s`** on the healthcheck -- gives PostgreSQL time to initialize before health check failures start counting.
+- **Named volumes** (`pgdata`, `uploads`) -- data persists across `docker compose down` (but not `docker compose down -v`).
+- **`MCP_UID`/`MCP_GID` set to 1001** -- matches the non-root user in the Dockerfile, so bash tool execution runs with the correct permissions.
+- **LLM API keys from host environment** -- Docker Compose reads from the host's `.env` file automatically. Empty defaults mean the app starts but LLM features fail gracefully.
+
+### .dockerignore
+
+```
+node_modules
+.next
+.git
+.gitignore
+README.md
+CLAUDE.md
+.env
+.env.local
+.env*.local
+drizzle/
+coverage/
+test-results/
+playwright-report/
+*.md
+.vscode/
+.idea/
+.claude/
+e2e/
+tests/
+```
+
+**Critical: `drizzle/` is excluded from build context** (it's large) but **copied explicitly in the Dockerfile** from the builder stage. This is intentional -- the build context exclude prevents Docker from sending migration snapshots to the daemon, while the Dockerfile COPY instruction pulls them from the builder's output.
+
+### docker-compose.dev.yml (Optional Override)
+
+For development with hot-reload:
+
+```yaml
+services:
+  app:
+    build:
+      target: deps
+    command: npx next dev --turbopack
+    volumes:
+      - .:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+```
+
+Usage: `docker compose -f docker-compose.yml -f docker-compose.dev.yml up`
+
+---
+
+## Regression Testing Strategy
+
+### What Exists Already
+
+| Metric | Count | Status |
+|--------|-------|--------|
+| Unit test files | ~62 files in `tests/` | Well-organized by module |
+| Test directories | `tests/lib/`, `tests/app/api/`, `tests/hooks/`, `tests/chat/`, `tests/skills/`, `tests/integration/` | Comprehensive structure |
+| E2E spec files | 2 files in `e2e/` (`auth.spec.ts`, `session.spec.ts`) | Needs expansion |
+| Coverage provider | v8, reporters: text/json/html | Configured, no thresholds |
+| CI configuration | retries: 2, 1 worker on CI | Already CI-ready |
+| Path aliases | `@/*` mapped to `./src/*` | Works in both Vitest and Next.js |
+| Test timeout | 10,000ms | Reasonable for unit tests |
+
+### What to Add (No New Dependencies)
+
+**1. Expand E2E test coverage** from 2 specs to cover v1.0-v1.2 features:
+
+| Feature Area | Existing E2E | Needed E2E |
+|-------------|-------------|-----------|
+| Authentication | auth.spec.ts | Already covered |
+| Session management | session.spec.ts | Already covered |
+| Chat interface | Missing | New: send message, receive response, streaming |
+| MCP tools | Missing | New: tool invocation, bash tool, resource access |
+| Skills panel | Missing | New: skill list, skill execution, approval flow |
+| Agent workflow | Missing | New: task decomposition, workflow status, pause/resume |
+| File upload | Missing | New: upload file, file list, file preview, extract content |
+| File management | Missing | New: delete file, file status tracking |
+
+**2. Add coverage thresholds** to `vitest.config.ts`:
+
 ```typescript
-// Development: local filesystem
-import { createStorage } from 'unstorage';
-import fsDriver from 'unstorage/drivers/fs';
-
-const storage = createStorage({
-  driver: fsDriver({ base: './uploads' }),
-});
-
-// Production: S3-compatible (e.g., Cloudflare R2, MinIO, AWS S3)
-import s3Driver from 'unstorage/drivers/s3';
-
-const storage = createStorage({
-  driver: s3Driver({
-    accessKeyId: process.env.S3_ACCESS_KEY,
-    secretAccessKey: process.env.S3_SECRET_KEY,
-    endpoint: process.env.S3_ENDPOINT,    // e.g., https://<uid>.r2.cloudflarestorage.com
-    bucket: process.env.S3_BUCKET,
-    region: process.env.S3_REGION,        // 'auto' for R2
-  }),
-});
+coverage: {
+  provider: 'v8',
+  reporter: ['text', 'json', 'html'],
+  exclude: ['node_modules/', 'tests/', '*.config.ts'],
+  thresholds: {
+    branches: 60,
+    functions: 60,
+    lines: 60,
+    statements: 60,
+  },
+},
 ```
 
-**Why unstorage over custom abstraction:** Writing a custom storage abstraction is non-trivial (streaming, multipart upload to S3, presigned URLs, metadata). unstorage handles all of this. The driver model maps directly to the PROJECT.md requirement of "local/cloud switchable." Future cloud integration (deferred milestone) just means adding env vars and switching the driver.
+Set thresholds at 60% initially (not 80%+) to avoid blocking development. The existing 62 test files likely already exceed this. Raise thresholds incrementally in future milestones.
 
-**Why NOT raw AWS SDK:** `@aws-sdk/client-s3` (3.1017.0) is powerful but adds ~2MB to bundle and requires writing S3-specific code. unstorage's S3 driver uses `fetch` internally (lightweight) and provides the same API as filesystem. No S3-specific code in application logic.
+**3. Add a `test:regression` npm script:**
 
-**File path convention within storage:** Use keys structured as `{userId}/{fileId}/{filename}`. File IDs generated with `nanoid`. This enables per-user isolation and easy migration between drivers.
-
-### File Identification and Metadata
-
-| Technology | Version | Purpose | Why Recommended |
-|------------|---------|---------|-----------------|
-| **nanoid** | 5.1.7 | Generate short, URL-safe unique file IDs | Already a common pattern. Non-sequential (security benefit). 21-char default is sufficient. No need for UUIDs (too long for URLs/filenames). |
-| **mime-types** | 3.0.2 | Map file extensions to MIME types and vice versa | Standard Node.js library. Needed for content-type headers, file validation, and preview rendering decisions. |
-| **zod** | 4.3.6 (already installed) | File metadata validation | Already in the project. Use for validating upload input schemas, file type constraints, size limits. No new dependency. |
-
-### Content Extraction
-
-| Technology | Version | Purpose | Why Recommended |
-|------------|---------|---------|-----------------|
-| **unpdf** | 1.4.0 | PDF text extraction | Built by UnJS (same ecosystem as unstorage). Wraps PDF.js with a serverless-friendly build. Extracts text and images from PDFs. Works in Node.js, Deno, Bun. Lightweight, modern, actively maintained. Cleaner API than raw `pdfjs-dist`. |
-| **mammoth** | 1.12.0 | DOCX to HTML conversion | Most popular `.docx` to HTML converter. Lightweight (~50KB). Handles bold, italic, tables, lists, headings. Configurable via style map. Works in Node.js and browser. |
-| **turndown** | 7.2.2 | HTML to Markdown conversion | The de facto standard for HTML-to-Markdown in JavaScript. Needed because mammoth outputs HTML, but the project needs Markdown for LLM consumption and `react-markdown` rendering. Plugin architecture supports GFM tables. |
-| **@types/turndown** | 5.0.6 | TypeScript types for turndown | Type definitions for turndown. |
-| **papaparse** | 5.5.3 | CSV parsing and generation | Industry standard for CSV in JavaScript. Streaming support for large files. Auto-detects delimiters. Header row mapping. ~30KB. |
-| **exceljs** | 4.4.0 | Excel (.xlsx) reading and writing | MIT-licensed (fully open source). OOP API with streaming support. Reads `.xlsx` and `.xls` formats. Converts sheets to JSON arrays. Better for structured data extraction than SheetJS community edition. |
-
-**Content extraction pipeline:**
-
-```
-PDF  -> unpdf.extractText() -> raw text string
-DOCX -> mammoth.convertToHtml() -> turndown service -> Markdown
-CSV  -> PapaParse parse (streaming) -> JSON array of row objects
-XLSX -> exceljs.workbook.xlsx.readFile() -> sheet to JSON -> structured data
-Code -> fs.readFile() (already supported by file-read skill) -> raw text
+```json
+{
+  "test:regression": "vitest run && playwright test"
+}
 ```
 
-**Why unpdf over pdf-parse:** pdf-parse (2.4.5) is popular but older and relies on pdf.js v2.x internally. unpdf uses a modern, serverless-optimized build of PDF.js and is part of the UnJS ecosystem we're already adopting for storage. pdf-parse has known issues with certain PDF encodings and has a larger dependency footprint.
+Runs unit tests first (fast), then E2E tests (slow). Fails fast if unit tests fail.
 
-**Why unpdf over pdfjs-dist (5.5.207):** pdfjs-dist is Mozilla's raw PDF.js distribution. Powerful but low-level -- requires ~50 lines of boilerplate for basic text extraction (document loading, page iteration, text content items). unpdf wraps this into a clean `extractText()` call. If we ever need PDF rendering (preview), pdfjs-dist can be added later for that specific use case.
+**4. Manual walkthrough checklist** (not code, but documentation):
 
-**Why mammoth + turndown over alternatives:**
-- **mammoth** outputs HTML, not Markdown. This is actually a strength -- HTML is a richer intermediate representation.
-- **turndown** converts HTML to clean Markdown with GFM support.
-- This two-step pipeline (DOCX -> HTML -> Markdown) gives better results than direct DOCX-to-Markdown tools.
-- Alternative `docx2md` exists but is less maintained and has worse formatting preservation.
-- **Pandoc** (CLI tool) would be more powerful but requires a system binary dependency -- not suitable for serverless/edge deployment.
+A structured checklist for each milestone (v1.0, v1.1, v1.2) with PASS/FAIL per feature. This is the "manual walkthrough" component of regression testing. Format:
 
-**Why exceljs over SheetJS (xlsx):**
-- SheetJS community edition (Apache 2.0) is moving features behind a commercial Pro license. The free tier has limited streaming and no styling support.
-- exceljs is MIT-licensed with no feature gating. Streaming support is excellent.
-- For this project's use case (reading Excel data as structured JSON), exceljs is more than sufficient.
-- Both have similar download volumes (~4-5M/week). API quality is comparable.
-
-**Why NOT Unstructured.io:** The v1.0 research listed Unstructured.io for document parsing. It supports 64+ file types with OCR. However: (1) it's a Python service requiring a separate server process or Docker container, (2) adds significant operational complexity for a mid-size team tool, (3) the v1.2 scope is limited to 4 specific file types (PDF, DOCX, code, CSV/Excel) which are all handled by the JavaScript libraries above, (4) image/scan OCR is explicitly out of scope per PROJECT.md. Unstructured.io may be reconsidered if future milestones add image processing or wider format support.
-
-### Database Schema Additions
-
-No new database libraries needed. Use existing **Drizzle ORM** (0.45.1) and **PostgreSQL**. New tables required:
-
-| Table | Purpose |
-|-------|---------|
-| `files` | File metadata (id, userId, originalName, storedKey, mimeType, size, status, extractedText, extractedData, category, createdAt, updatedAt) |
-| `conversation_files` | Junction table linking files to conversations (conversationId, fileId) |
-
-These will be added to the existing `schema.ts` using Drizzle's `pgTable`.
-
-### UI Components
-
-| Technology | Purpose | Notes |
-|----------|---------|-------|
-| **shadcn/ui** (existing) | File upload dropzone, file list, preview panels | Use existing shadcn/ui base. Build custom components: `FileDropzone`, `FileList`, `FilePreview`. |
-| **react-markdown** (existing, 10.1.0) | Render extracted Markdown content | Already in the project for chat messages. Reuse for file content preview. |
-| **react-syntax-highlighter** (existing, 16.1.1) | Code file preview with syntax highlighting | Already in the project. Reuse for `.ts`, `.py`, `.js`, etc. preview. |
-| **@base-ui/react** (existing, 1.3.0) | Dialog, tabs for file management UI | Already in the project. |
-
-No new UI libraries needed. The existing shadcn/ui + markdown + syntax highlighting stack covers all preview needs.
+```
+## v1.0 Regression Checklist
+- [ ] Auth: Login with credentials
+- [ ] Auth: Google OAuth login
+- [ ] LLM: Send chat message, receive streaming response
+- [ ] MCP: Tool invocation via chat
+- [ ] MCP: Bash tool execution
+- [ ] Skills: View skill panel
+- [ ] Skills: Execute skill
+- [ ] Approval: Approval request flow
+- [ ] Audit: Audit log entries created
+...
+```
 
 ---
 
 ## Installation
 
+No new npm packages required. Docker and Docker Compose are external tools.
+
 ```bash
-# Abstract storage layer
-npm install unstorage
+# Docker installation (macOS)
+brew install --cask docker
 
-# File upload (streaming for large files)
-npm install busboy
+# Or download Docker Desktop from https://www.docker.com/products/docker-desktop/
 
-# File identification
-npm install nanoid mime-types
+# Verify
+docker --version           # Should be 27+
+docker compose version     # Should be v2.27+
 
-# PDF text extraction
-npm install unpdf
+# One-command full stack startup
+docker compose up --build
 
-# DOCX -> HTML -> Markdown pipeline
-npm install mammoth turndown
-npm install -D @types/turndown
-
-# CSV and Excel parsing
-npm install papaparse exceljs
-npm install -D @types/papaparse
+# Run tests against Docker environment
+docker compose exec app npx vitest run          # Unit tests
+npx playwright test                              # E2E tests (from host, targeting localhost:3000)
 ```
-
-**No new dev dependencies beyond types.** Total new runtime dependencies: 8 packages.
 
 ---
 
@@ -179,14 +348,16 @@ npm install -D @types/papaparse
 
 | Recommended | Alternative | When to Use Alternative |
 |-------------|-------------|-------------------------|
-| unstorage | Custom storage abstraction | If you need fine-grained control over multipart S3 uploads, presigned URL generation, or custom retry logic that unstorage doesn't expose. |
-| unstorage | MinIO JavaScript SDK directly | If you commit to MinIO as the only storage backend and want MinIO-specific features (versioning, lifecycle policies). |
-| busboy + request.formData() | UploadThing v7 | If you want zero-upload-infrastructure code and are OK with a $10/mo SaaS dependency. Best for quick MVP without storage abstraction needs. |
-| busboy | TUS protocol (tus-node-server) | If files exceed 100MB or users have unreliable connections requiring resumable uploads. Adds a separate server process. |
-| mammoth + turndown | Pandoc (via CLI wrapper) | If you need lossless formatting preservation (complex tables, nested styles, images embedded in DOCX). Requires system binary. |
-| exceljs | SheetJS (xlsx) community edition | If you need to read obscure spreadsheet formats (XLSB, XLSM macros, ODS) that exceljs doesn't support. |
-| unpdf | pdf-parse | If you encounter PDFs that unpdf cannot handle (rare encoding issues). pdf-parse has a larger community for troubleshooting. |
-| unpdf | pdfjs-dist directly | If you need PDF rendering (visual preview in browser) rather than just text extraction. pdfjs-dist has a canvas renderer. |
+| Node 22-alpine | Node 24-slim | If you encounter C/C++ native module issues on Alpine (e.g., if adding sharp for image optimization later). Node 24 entered LTS in October 2025 and is supported, but 22 is more battle-tested. |
+| Node 22-alpine | Node 22-slim | If you need glibc compatibility for native modules. Slim is Debian-based (~100MB larger than Alpine). Not needed for this project -- all dependencies are pure JS or have Alpine-compatible builds. |
+| Multi-stage Dockerfile | Single-stage Dockerfile | Only for throwaway prototypes. Multi-stage reduces image from 2GB+ to ~200MB. Never acceptable for production. |
+| Docker Compose | Kubernetes / Helm | Massive overkill for a single-app team deployment. Only consider for multi-region scaling, auto-scaling, or enterprise orchestration. |
+| `output: 'standalone'` | Copy entire `.next` + `node_modules` | Never. Without standalone, Docker image includes 300-500MB of unnecessary dev dependencies. |
+| Entrypoint script for migrations | Separate init container | Not applicable -- Docker Compose has no init containers. The entrypoint script is the standard pattern for Compose-based deployments. |
+| `pg_isready` healthcheck | TCP socket check | `pg_isready` verifies the database actually accepts connections, not just that the port is open. Superior for real readiness. |
+| Vitest (existing) | Jest | No reason to switch. Vitest is faster, has native ESM support, and is already configured with 62 test files. |
+| Playwright (existing) | Cypress, Selenium | Playwright already configured, better multi-browser support than Cypress, lighter than Selenium. |
+| Coverage thresholds at 60% | 80%+ thresholds | 80% would likely fail immediately and block the regression milestone. Start at 60%, raise incrementally. |
 
 ---
 
@@ -194,60 +365,47 @@ npm install -D @types/papaparse
 
 | Avoid | Why | Use Instead |
 |-------|-----|-------------|
-| **multer** | Requires Express-style `req`/`res` objects. Incompatible with Next.js App Router Route Handlers which use Web API `Request`/`Response`. No workaround without significant adaptation layer. | busboy (native streaming) or `request.formData()` |
-| **formidable** | Has known compatibility issues with Next.js App Router. GitHub issues (#50147, #48164) show it fails silently or throws in certain App Router versions. | busboy |
-| **UploadThing** | Managed SaaS dependency ($10/mo). Locks files to their infrastructure. Contradicts the abstract storage layer requirement. Future migration would be painful. | busboy + unstorage |
-| **TUS protocol** | Requires running a separate TUS server process (tus-node-server). Over-engineered for 100MB max file size. Adds operational complexity disproportionate to the benefit. | busboy streaming (sufficient for 100MB) |
-| **SheetJS Pro** | Commercial license with feature gating. Community edition has limited functionality. | exceljs (MIT, no feature gating) |
-| **Unstructured.io** | Python service requiring Docker. Overkill for 4 file types. OCR is out of scope for v1.2. | unpdf + mammoth + papaparse + exceljs |
-| **next/image for PDF preview** | Next.js Image Optimization doesn't handle PDFs. | Text-based preview (Markdown rendering) or dedicated pdfjs-dist if visual preview needed later |
-| **Server Actions for large file uploads** | 1MB default limit. Even with `bodySizeLimit` raised, Server Actions buffer entire request body. Not suitable for streaming 100MB files. | Route Handlers with busboy for large files; Server Actions only for metadata operations |
+| `version:` field in docker-compose.yml | Obsolete since Docker Compose v2 (GA 2022). Causes warnings in v2.25+, errors in newer versions. | Omit entirely. |
+| Node 18 in Dockerfile | Next.js 16 dropped Node 18 support. Build will fail. | Node 22-alpine (minimum 20.9+). |
+| Docker Compose v1 (`docker-compose`) | Fully deprecated (June 2023). No updates. | Docker Compose v2 (`docker compose` -- no hyphen). |
+| `node:XX-alpine` with glibc-dependent native modules | Alpine uses musl libc. Some native modules (sharp, certain bcrypt builds) fail. | `node:XX-slim` (Debian-based). For this project, bcryptjs (pure JS) is used, so Alpine is safe. |
+| Hardcoded credentials in docker-compose.yml | Security risk if committed to VCS. | `${VAR:-default}` substitution or Docker secrets. |
+| Playwright browsers in production image | Adds ~400MB of browser binaries to the production Docker image. | Run Playwright from the host against `localhost:3000`, or use a separate test stage/service. |
+| `drizzle-kit push` in containers | Pushes schema directly without migration history. No rollback. Dangerous with ephemeral containers. | `drizzle-kit migrate` with versioned migration files. |
+| New test frameworks (Jest, Mocha, etc.) | Unnecessary migration cost. Existing Vitest + Playwright covers all testing needs. | Keep Vitest 4.1 + Playwright 1.58. |
+| Redis for this milestone | Single-instance state is noted as a limitation, but Redis migration is explicitly deferred. | In-memory singletons are fine for Docker single-instance. |
+| nginx reverse proxy for this milestone | Adds complexity. The project is building a regression testing environment, not a production deployment. | Direct container port mapping (`ports: "3000:3000"`). Add nginx in a future deployment milestone. |
+| Separate test database container | Over-engineering for regression testing. The PostgreSQL container can be used directly. | Single `db` service, fresh data on `docker compose down -v && docker compose up`. |
 
 ---
 
 ## Stack Patterns by Variant
 
-**If using local filesystem storage (development):**
-```typescript
-import { createStorage } from 'unstorage';
-import fsDriver from 'unstorage/drivers/fs';
+**If running E2E tests against Docker environment:**
+- Start services: `docker compose up --build -d`
+- Wait for healthchecks: `docker compose ps` (app shows "healthy")
+- Run Playwright from the host: `npx playwright test` (targets `localhost:3000`)
+- Because Playwright browsers should NOT be in the production image
 
-const storage = createStorage({
-  driver: fsDriver({ base: './data/uploads' }),
-});
-```
-- Store files in `./data/uploads/` directory (gitignored)
-- No external service dependencies
-- Files persist across dev server restarts
+**If running unit tests inside the container:**
+- `docker compose exec app npx vitest run`
+- Because tests need the same Node.js version and dependencies as production
 
-**If using S3-compatible storage (production):**
-```typescript
-import { createStorage } from 'unstorage';
-import s3Driver from 'unstorage/drivers/s3';
+**If adding Drizzle Studio for database inspection:**
+- `docker compose exec app npx drizzle-kit studio --host 0.0.0.0`
+- Or run from host if `drizzle-kit` is installed locally
+- Because Studio is a development-only tool
 
-const storage = createStorage({
-  driver: s3Driver({
-    accessKeyId: process.env.S3_ACCESS_KEY!,
-    secretAccessKey: process.env.S3_SECRET_KEY!,
-    endpoint: process.env.S3_ENDPOINT!,
-    bucket: process.env.S3_BUCKET!,
-    region: process.env.S3_REGION || 'auto',
-  }),
-});
-```
-- Works with AWS S3, Cloudflare R2, MinIO, Wasabi, DigitalOcean Spaces
-- Environment variable switch -- no code changes between providers
-- R2 recommended: no egress fees, S3-compatible API
+**If resetting the database for a clean regression run:**
+- `docker compose down -v` (removes volumes)
+- `docker compose up --build -d` (fresh database, migrations run via entrypoint)
+- Because regression tests need a clean state
 
-**If upload size is under 10MB (documents, code files, small datasets):**
-- Use `request.formData()` in Route Handler
-- Simpler code, no streaming needed
-- Entire file fits in memory
-
-**If upload size is 10-100MB (large PDFs, big Excel files):**
-- Use busboy streaming parser in Route Handler
-- Stream directly to storage layer (no temp file)
-- Pipe busboy file stream to unstorage `set()` or writable stream
+**If deploying beyond v1.3 (future, not this milestone):**
+- Add nginx reverse proxy in front of Next.js
+- Set `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY` for multi-instance support
+- Use Docker secrets instead of environment variables for sensitive values
+- Because production deployment has different security requirements
 
 ---
 
@@ -255,63 +413,60 @@ const storage = createStorage({
 
 | Package A | Compatible With | Notes |
 |-----------|-----------------|-------|
-| unstorage 1.17.4 | Node.js 18+ | No issues with Next.js 16 / Node 20+ |
-| busboy 1.6.0 | Node.js 18+ | Pure Node.js, no browser support (which is correct for server-side) |
-| unpdf 1.4.0 | Node.js 18+, browser | Serverless-optimized PDF.js build |
-| mammoth 1.12.0 | Node.js 16+, browser | Pure JS, no native dependencies |
-| turndown 7.2.2 | Node.js, browser | Pure JS |
-| papaparse 5.5.3 | Node.js, browser | Pure JS, supports Web Workers |
-| exceljs 4.4.0 | Node.js 16+ | Uses Node.js streams internally |
-| nanoid 5.1.7 | Node.js 18+, browser | ESM-only in v5 (matches Next.js) |
-| mime-types 3.0.2 | Node.js, browser | Pure JS |
-
-**ESM compatibility:** All recommended packages support ESM (required by Next.js 16). `exceljs` is CJS but works via Node.js interop. No ESM-only packages that would cause issues.
+| Next.js 16.2.1 | Node.js 20.9+, 22.x, 24.x | Node 18 dropped. Project uses 24.14.0 locally, Docker uses 22-alpine. |
+| Drizzle ORM 0.45.x | PostgreSQL 14, 15, 16, 17 | No issues with PostgreSQL 17. |
+| Drizzle Kit 0.31.x | Drizzle ORM 0.45.x | Same version lineage. Migration files in `drizzle/` are portable. |
+| Vitest 4.1.x | Node.js 18+, Vite 6.x | Compatible with Node 22-alpine. |
+| Playwright 1.58.x | Node.js 18+ | Compatible. Browser binaries separate from Node.js version. |
+| Auth.js v5 beta.30 | Next.js 15+, Node.js 18+ | Compatible with Next.js 16. |
+| `postgres` driver 3.4.x | PostgreSQL 10+ | No compatibility issues. |
+| `output: 'standalone'` | Next.js 12+ | Fully supported in Next.js 16. Required for Docker. |
+| Docker Compose v2.27+ | Docker Engine 23+ | `depends_on: condition: service_healthy` requires Compose v2.1+. |
+| PostgreSQL 17 | Drizzle ORM, `postgres` driver | Fully compatible. No known issues. |
+| Node 22 EOL | April 30, 2026 | Well within project timeframe. Can upgrade to Node 24-alpine before EOL. |
 
 ---
 
 ## Integration Points with Existing Code
 
-### Skills System Integration
-The existing `FileProcessingSkills` class (`src/skills/file-processing.ts`) has `file-read` and `file-list` skills using raw `fs` operations. These should be refactored to use the `unstorage` abstraction instead of `fs` directly. New skills to add:
+### next.config.ts Change
+Add `output: 'standalone'`. This is a one-line change that enables Docker optimization. No other config changes needed.
 
-| Skill ID | Name | Purpose |
-|----------|------|---------|
-| `file-extract-text` | Extract Text | Extract text content from PDF, DOCX, code files |
-| `file-extract-data` | Extract Data | Parse CSV/Excel into structured JSON |
-| `file-convert` | Convert Format | PDF/DOCX to Markdown, CSV to JSON |
-| `file-upload` | Upload File | Upload file via storage abstraction |
+### Database Migrations in Docker
+The existing `drizzle/` directory has one migration file (`0000_breezy_rhino.sql`). The entrypoint script runs `drizzle-kit migrate` on container startup, which applies any pending migrations. New migrations from v1.2 (files, conversationFiles tables) should already be generated before the Docker setup is created.
 
-### File Agent Integration
-The existing `fileAgentCard` (`src/agents/file-agent.ts`) references `file-read` and `file-list`. Update `skillIds` to include new extraction/conversion skills and update the `systemPrompt` to describe the new capabilities.
+### File Storage Volumes
+The `.env.example` shows `STORAGE_LOCAL_PATH=./data/uploads`. In Docker, this maps to the `uploads` named volume at `/app/data/uploads`. The `STORAGE_DRIVER=local` environment variable ensures the storage layer uses the filesystem driver inside the container.
 
-### Database Integration
-New tables (`files`, `conversation_files`) follow the existing Drizzle ORM patterns in `src/lib/db/schema.ts`. Use `uuid` for primary keys (consistent with agents/workflows/tasks tables), `timestamp` for dates, `jsonb` for extracted data.
+### MCP Tool Execution
+The bash tool runs commands as the user specified by `MCP_UID`/`MCP_GID` environment variables. In the Docker container, the `nextjs` user has UID 1001, so these must match. The docker-compose.yml sets both to 1001.
 
-### Chat Integration
-Files uploaded in a conversation context should be linked via `conversation_files`. When a user references a file in chat, the message content can include the extracted text (for LLM context) and a file reference (for UI rendering).
+### E2E Test Configuration
+The existing `playwright.config.ts` uses `baseURL: 'http://localhost:3000'` and `webServer.command: 'npm run dev'`. For Docker-based E2E testing, this works if Playwright runs from the host while the app runs in the container. No Playwright config changes needed.
 
 ---
 
 ## Sources
 
-- **unstorage drivers documentation** - https://unstorage.unjs.io/drivers (verified 2026-03-26, lists all 18 built-in drivers)
-- **unstorage S3 driver** - https://unstorage.unjs.io/drivers/s3 (verified 2026-03-26, S3-compatible providers confirmed)
-- **unpdf GitHub** - https://github.com/unjs/unpdf (verified 2026-03-26)
-- **mammoth npm** - https://www.npmjs.com/package/mammoth (verified 2026-03-26)
-- **mammoth outputs HTML not Markdown** - GitHub README confirms `convertToHtml()` is primary API (MEDIUM confidence)
-- **turndown GitHub** - https://github.com/mixmark-io/turndown (verified 2026-03-26)
-- **papaparse npm** - https://www.npmjs.com/package/papaparse (verified 2026-03-26)
-- **exceljs npm** - https://www.npmjs.com/package/exceljs (verified 2026-03-26)
-- **SheetJS license** - https://docs.sheetjs.com/docs/miscellany/license/ (Apache 2.0 for CE, features moving to Pro)
-- **busboy npm** - https://www.npmjs.com/package/busboy (verified 2026-03-26)
-- **busboy + Next.js streaming** - https://dev.to/grimshinigami/how-to-handle-large-filefiles-streams-in-nextjs-13-using-busboymulter-25gb (practical guide, 2025)
-- **Next.js serverActions bodySizeLimit** - https://nextjs.org/docs/app/api-reference/config/next-config-js/serverActions (official docs, verified 2026-03-26)
-- **request.formData() memory limitation** - https://github.com/vercel/next.js/discussions/86985 (official GitHub discussion)
-- **UploadThing v7 docs** - https://docs.uploadthing.com/v7 (verified 2026-03-26, confirmed SaaS model)
-- **npm versions** - All versions verified directly via `npm view` on 2026-03-26
-- **pdfjs-dist** - https://www.npmjs.com/package/pdfjs-dist (version 5.5.207, verified 2026-03-26)
-- **pdf-parse** - https://www.npmjs.com/package/pdf-parse (version 2.4.5, verified 2026-03-26)
+- [Next.js 16 Blog Post](https://nextjs.org/blog/next-16) -- Node.js 20.9+ requirement (HIGH confidence, official)
+- [Next.js Self-Hosting Guide](https://nextjs.org/docs/app/guides/self-hosting) -- Docker deployment, streaming, multi-instance (HIGH confidence, official, updated March 25, 2026)
+- [Official with-docker Example](https://github.com/vercel/next.js/blob/canary/examples/with-docker/Dockerfile) -- Canonical Dockerfile pattern (HIGH confidence, official)
+- [Official with-docker README](https://github.com/vercel/next.js/blob/canary/examples/with-docker/README.md) -- Alpine variant instructions (HIGH confidence, official)
+- [Next.js Deployment Docs](https://nextjs.org/docs/app/getting-started/deploying) -- Standalone output documentation (HIGH confidence, official)
+- [Docker Compose version obsolete](https://adamj.eu/tech/2025/05/05/docker-remove-obsolete-compose-version/) -- `version:` field removal (HIGH confidence, verified May 2025)
+- [Docker Hub: postgres](https://hub.docker.com/_/postgres) -- Official PostgreSQL Docker image (HIGH confidence, official)
+- [Docker Postgres Best Practices](https://www.docker.com/blog/how-to-use-the-postgres-docker-official-image/) -- Healthcheck patterns (HIGH confidence, official Docker blog)
+- [Node.js Release Schedule](https://nodejs.org/en/blog/announcements/evolving-the-nodejs-release-schedule) -- Node 22 EOL April 2026 (HIGH confidence, official)
+- [Drizzle ORM Best Practices](https://gist.github.com/productdevbook/7c9ce3bbeb96b3fabc3c7c2aa2abc717) -- `generate` for production, `push` for dev (MEDIUM confidence, community)
+- [Drizzle Migrations in Docker](https://budivoogt.com/blog/drizzle-migrations) -- Docker migration patterns (MEDIUM confidence, blog)
+- [Playwright + Docker](https://www.digitalocean.com/community/tutorials/how-to-run-end-to-end-tests-using-playwright-and-docker) -- E2E testing against containers (MEDIUM confidence, tutorial)
+- [Next.js 15/16 Docker Optimization](https://javascript.plainenglish.io/next-js-15-self-hosting-with-docker-complete-guide-0826e15236da) -- 80% image size reduction (MEDIUM confidence, community)
+- [Docker for E2E Test Environments](https://oneuptime.com/blog/post/2026-02-08-how-to-use-docker-for-end-to-end-testing-environments/view) -- Feb 2026 guide (MEDIUM confidence)
+- [Existing package.json](package.json) -- Verified all installed versions (HIGH confidence, direct inspection)
+- [Existing vitest.config.ts](vitest.config.ts) -- Verified test configuration (HIGH confidence, direct inspection)
+- [Existing playwright.config.ts](playwright.config.ts) -- Verified E2E configuration (HIGH confidence, direct inspection)
+- [Existing drizzle.config.ts](drizzle.config.ts) -- Verified migration configuration (HIGH confidence, direct inspection)
 
 ---
-*Stack research for: v1.2 File Processing (Next-Mind)*
-*Researched: 2026-03-26*
+*Stack research for: v1.3 Docker Containerization + Regression Testing (Next-Mind)*
+*Researched: 2026-03-27*
