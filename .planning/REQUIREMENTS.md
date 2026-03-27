@@ -40,10 +40,10 @@ Requirements for v1.2 milestone. Each maps to roadmap phases.
 
 ### Chat Integration (CHAT)
 
-- [ ] **CHAT-01**: User can attach files to chat messages and have the AI respond based on file content
-- [ ] **CHAT-02**: System injects extracted file content into LLM context with clear delimiters when a message references files
-- [ ] **CHAT-03**: User can attach multiple files to a single message and have the AI reason across all of them
-- [ ] **CHAT-04**: System manages token budget when injecting file content, truncating if necessary to stay within model context limits
+- [x] **CHAT-01**: User can attach files to chat messages and have the AI respond based on file content
+- [x] **CHAT-02**: System injects extracted file content into LLM context with clear delimiters when a message references files
+- [x] **CHAT-03**: User can attach multiple files to a single message and have the AI reason across all of them
+- [x] **CHAT-04**: System manages token budget when injecting file content, truncating if necessary to stay within model context limits
 - [ ] **CHAT-05**: User can edit extracted file content (Markdown editor) before sending to the AI, and the AI uses the edited version
 
 ### Skills Integration (SKIL)
@@ -118,10 +118,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MGMT-03 | Phase 9 | Complete |
 | MGMT-04 | Phase 9 | Pending |
 | MGMT-05 | Phase 9 | Complete |
-| CHAT-01 | Phase 10 | Pending |
-| CHAT-02 | Phase 10 | Pending |
-| CHAT-03 | Phase 10 | Pending |
-| CHAT-04 | Phase 10 | Pending |
+| CHAT-01 | Phase 10 | Complete |
+| CHAT-02 | Phase 10 | Complete |
+| CHAT-03 | Phase 10 | Complete |
+| CHAT-04 | Phase 10 | Complete |
 | CHAT-05 | Phase 10 | Pending |
 | SKIL-01 | Phase 10 | Pending |
 | SKIL-02 | Phase 10 | Pending |
