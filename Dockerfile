@@ -1,5 +1,5 @@
 # ---- Stage 1: Dependencies ----
-FROM node:22-alpine AS deps
+FROM docker.xuanyuan.run/library/node:22-alpine AS deps
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
@@ -8,7 +8,7 @@ RUN --mount=type=cache,target=/root/.npm \
     npm ci
 
 # ---- Stage 2: Builder ----
-FROM node:22-alpine AS builder
+FROM docker.xuanyuan.run/library/node:22-alpine AS builder
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 
@@ -25,7 +25,7 @@ RUN --mount=type=cache,target=/app/.next/cache \
     npm run build
 
 # ---- Stage 3: Runner ----
-FROM node:22-alpine AS runner
+FROM docker.xuanyuan.run/library/node:22-alpine AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
