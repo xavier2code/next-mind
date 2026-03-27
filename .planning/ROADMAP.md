@@ -138,8 +138,8 @@ Plans:
 
 Plans:
 - [x] 10-01: File content injection module (types, formatting, truncation)
-- [ ] 10-02: File processing skills (file-extract, file-convert, file-classify, updated file-read/list)
-- [ ] 10-03: Chat UI integration (attachment bar, inline editor, handleSend wiring)
+- [x] 10-02: File processing skills (file-extract, file-convert, file-classify, updated file-read/list)
+- [x] 10-03: Chat UI integration (attachment bar, inline editor, handleSend wiring)
 - [ ] 10-04: Phase verification
 
 ## Progress
@@ -155,7 +155,7 @@ Plans:
 | 7. Storage & Upload | v1.2 | 3/3 | Complete | 2026-03-26 |
 | 8. Content Extraction | v1.2 | 4/4 | Complete | 2026-03-26 |
 | 9. File Management & Preview | v1.2 | 2/3 | In progress | - |
-| 10. Chat & Skills Integration | v1.2 | 1/4 | In progress | - |
+| 10. Chat & Skills Integration | v1.2 | 3/4 | In Progress|  |
 
 ---
 *Roadmap updated: 2026-03-27*

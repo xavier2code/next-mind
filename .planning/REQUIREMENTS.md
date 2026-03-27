@@ -44,7 +44,7 @@ Requirements for v1.2 milestone. Each maps to roadmap phases.
 - [x] **CHAT-02**: System injects extracted file content into LLM context with clear delimiters when a message references files
 - [x] **CHAT-03**: User can attach multiple files to a single message and have the AI reason across all of them
 - [x] **CHAT-04**: System manages token budget when injecting file content, truncating if necessary to stay within model context limits
-- [ ] **CHAT-05**: User can edit extracted file content (Markdown editor) before sending to the AI, and the AI uses the edited version
+- [x] **CHAT-05**: User can edit extracted file content (Markdown editor) before sending to the AI, and the AI uses the edited version
 
 ### Skills Integration (SKIL)
 
@@ -122,7 +122,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CHAT-02 | Phase 10 | Complete |
 | CHAT-03 | Phase 10 | Complete |
 | CHAT-04 | Phase 10 | Complete |
-| CHAT-05 | Phase 10 | Pending |
+| CHAT-05 | Phase 10 | Complete |
 | SKIL-01 | Phase 10 | Pending |
 | SKIL-02 | Phase 10 | Pending |
 | SKIL-03 | Phase 10 | Pending |
