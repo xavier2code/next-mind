@@ -178,10 +178,10 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 12-01: Playwright config update (env var baseURL, Docker-aware webServer)
-- [ ] 12-02: Auth fixture and seed script
-- [ ] 12-03: LLM mock via Playwright route interception
-- [ ] 12-04: Health endpoint and phase verification
+- [x] 12-01: Playwright config update (env var baseURL, Docker-aware webServer)
+- [x] 12-02: Auth fixture and seed script
+- [x] 12-03: LLM mock via Playwright route interception
+- [x] 12-04: Health endpoint and phase verification
 
 ### Phase 13: E2E Regression
 **Goal**: v1.0-v1.2 所有核心功能均有对应的 E2E 测试覆盖，测试可在 Docker 环境中稳定运行
@@ -238,7 +238,7 @@ Phases execute in numeric order: 11 → 12 → 13 → 14
 | 9. File Management & Preview | v1.2 | 3/3 | Complete | 2026-03-27 |
 | 10. Chat & Skills Integration | v1.2 | 4/4 | Complete | 2026-03-27 |
 | 11. Docker Environment | v1.3 | 3/4 | In Progress|  |
-| 12. Test Infrastructure | v1.3 | 0/4 | Not started | - |
+| 12. Test Infrastructure | v1.3 | 4/4 | Complete | 2026-03-27 |
 | 13. E2E Regression | v1.3 | 0/4 | Not started | - |
 | 14. Verification & Fixes | v1.3 | 0/4 | Not started | - |
 

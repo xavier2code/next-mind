@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: 全量回归验证
-status: executing
-stopped_at: "Blocked: Docker not installed (11-04)"
-last_updated: "2026-03-27T08:11:38.628Z"
+status: verifying
+stopped_at: Completed 12-04-PLAN.md
+last_updated: "2026-03-27T15:57:38.281Z"
 last_activity: 2026-03-27
 progress:
   total_phases: 4
   completed_phases: 0
   total_plans: 4
-  completed_plans: 3
+  completed_plans: 4
   percent: 0
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 
 Phase: 11 (docker-environment) — EXECUTING
 Plan: 4 of 4
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-03-27
 
 Progress: [░░░░░░░░░░] 0%
@@ -51,6 +51,7 @@ Progress: [░░░░░░░░░░] 0%
 | Phase 11 P01 | 192 | 3 tasks | 5 files |
 | Phase 11 P02 | 78 | 2 tasks | 2 files |
 | Phase 11 P03 | 1 | 3 tasks | 4 files |
+| Phase 12 P04 | 2min | 1 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -67,6 +68,7 @@ Recent decisions affecting current work:
 - [Phase 11]: Removed drizzle/ from .gitignore so migration SQL is tracked in git for Docker entrypoint deployment
 - [Phase 11]: .env.docker is gitignored (not tracked) since users fill in real secrets
 - [Phase 11]: AUTH_SECRET left empty in .env.docker template to prevent accidental use of hardcoded value
+- [Phase 12]: Used wget (BusyBox) for Docker healthcheck on Node-alpine, exact path match for /api/health
 
 ### Pending Todos
 
@@ -82,8 +84,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-27T08:11:38.625Z
-Stopped at: Blocked: Docker not installed (11-04)
+Last session: 2026-03-27T15:57:38.276Z
+Stopped at: Completed 12-04-PLAN.md
 Resume file: None
 
 ---
