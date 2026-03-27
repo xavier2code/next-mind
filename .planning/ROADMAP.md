@@ -155,7 +155,7 @@ Plans:
 | 7. Storage & Upload | v1.2 | 3/3 | Complete | 2026-03-26 |
 | 8. Content Extraction | v1.2 | 4/4 | Complete | 2026-03-26 |
 | 9. File Management & Preview | v1.2 | 2/3 | In progress | - |
-| 10. Chat & Skills Integration | v1.2 | 3/4 | In Progress|  |
+| 10. Chat & Skills Integration | v1.2 | 3/4 | Complete    | 2026-03-27 |
 
 ---
 *Roadmap updated: 2026-03-27*
