@@ -2,7 +2,7 @@
  * Database queries for A2A infrastructure (agents, tasks, workflows)
  */
 import { eq, and, desc } from 'drizzle-orm';
-import { db, workflows, tasks, agents, agentMessages, AgentMessageTypeEnum, type Workflow, type Task, type Agent, type NewWorkflow, type NewTask, type NewAgent, type AgentMessage, type NewAgentMessage } from './schema';
+import { db, workflows, tasks, agents, agentMessages, AgentMessageTypeEnum, files, type Workflow, type Task, type Agent, type NewWorkflow, type NewTask, type NewAgent, type AgentMessage, type NewAgentMessage, type File } from './schema';
 import type { TaskStatus, WorkflowStatus, WorkflowCheckpoint } from './schema';
 
 /**
@@ -388,4 +388,25 @@ export async function getTaskLogs(taskId: string): Promise<LogEntry[]> {
     fromAgent: msg.fromAgent,
     toAgent: msg.toAgent,
   }));
+}
+
+/**
+ * File queries
+ */
+
+/**
+ * Get a file by ID.
+ */
+export async function getFileById(fileId: string): Promise<File | undefined> {
+  const [file] = await db.select().from(files).where(eq(files.id, fileId));
+  return file;
+}
+
+/**
+ * Get all files for a user.
+ */
+export async function getFilesByUser(userId: string): Promise<File[]> {
+  return db.select().from(files)
+    .where(eq(files.userId, userId))
+    .orderBy(desc(files.createdAt));
 }

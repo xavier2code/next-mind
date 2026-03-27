@@ -188,6 +188,31 @@ export const agentMessages = pgTable('agent_message', {
   createdAtIdx: index('agent_message_created_at_idx').on(table.createdAt),
 }));
 
+// Files table - uploaded user files
+export const FileTypeEnum = ['document', 'code', 'data', 'image', 'other'] as const;
+export const FileStatusEnum = ['uploaded', 'processing', 'ready', 'failed'] as const;
+
+export const files = pgTable('file', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  filename: text('filename').notNull(),
+  mimeType: text('mime_type').notNull(),
+  size: integer('size').notNull(),
+  fileType: text('file_type', { enum: FileTypeEnum }).notNull(),
+  storagePath: text('storage_path').notNull(),
+  status: text('status', { enum: FileStatusEnum }).notNull().default('uploaded'),
+  extractedContent: text('extracted_content'),
+  extractedMarkdown: text('extracted_markdown'),
+  classification: text('classification'),
+  errorMessage: text('error_message'),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+}, (table) => ({
+  userIdIdx: index('file_user_id_idx').on(table.userId),
+  fileTypeIdx: index('file_type_idx').on(table.fileType),
+  statusIdx: index('file_status_idx').on(table.status),
+}));
+
 // Type exports
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -205,3 +230,5 @@ export type Workflow = typeof workflows.$inferSelect;
 export type NewWorkflow = typeof workflows.$inferInsert;
 export type AgentMessage = typeof agentMessages.$inferSelect;
 export type NewAgentMessage = typeof agentMessages.$inferInsert;
+export type File = typeof files.$inferSelect;
+export type NewFile = typeof files.$inferInsert;
