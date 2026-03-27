@@ -2,9 +2,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { useFileDetail } from '@/hooks/use-file-detail';
 
-// Mock fetch globally
+// Mock fetch using vi.fn to avoid cross-test pollution in parallel runs
 const mockFetch = vi.fn();
-vi.stubGlobal('fetch', mockFetch);
+beforeEach(() => {
+  mockFetch.mockReset();
+  vi.stubGlobal('fetch', mockFetch);
+});
 
 const mockFileDetail = {
   id: 'file-1',
@@ -20,9 +23,6 @@ const mockFileDetail = {
 };
 
 describe('useFileDetail', () => {
-  beforeEach(() => {
-    mockFetch.mockReset();
-  });
 
   it('returns expected state shape', () => {
     const { result } = renderHook(() => useFileDetail(null));

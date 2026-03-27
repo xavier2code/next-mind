@@ -2,9 +2,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { useFileList } from '@/hooks/use-file-list';
 
-// Mock fetch globally
+// Mock fetch using vi.fn to avoid cross-test pollution in parallel runs
 const mockFetch = vi.fn();
-vi.stubGlobal('fetch', mockFetch);
+beforeEach(() => {
+  mockFetch.mockReset();
+  vi.stubGlobal('fetch', mockFetch);
+});
 
 const mockFiles = [
   {
@@ -37,9 +40,6 @@ const mockResponse = {
 };
 
 describe('useFileList', () => {
-  beforeEach(() => {
-    mockFetch.mockReset();
-  });
 
   it('returns expected state shape', async () => {
     mockFetch.mockResolvedValueOnce({
