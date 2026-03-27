@@ -18,7 +18,7 @@
 
 ### 测试基础设施
 
-- [ ] **TINF-01**: Playwright 配置支持通过环境变量覆盖 baseURL（Docker 环境 vs 本地）
+- [x] **TINF-01**: Playwright 配置支持通过环境变量覆盖 baseURL（Docker 环境 vs 本地）
 - [ ] **TINF-02**: 提供 auth fixture，支持 E2E 测试中快速获取已认证会话
 - [ ] **TINF-03**: LLM API 调用可被 mock（Playwright route.fulfill 或类似机制），无需真实 API key 即可运行测试
 - [ ] **TINF-04**: 提供 seed 脚本，可在 Docker 环境中创建测试用户和基础数据
@@ -87,7 +87,7 @@ Deferred to future milestones.
 | DOCK-06 | Phase 11 | Complete |
 | DOCK-07 | Phase 11 | Complete |
 | DOCK-08 | Phase 11 | Complete |
-| TINF-01 | Phase 12 | Pending |
+| TINF-01 | Phase 12 | Complete |
 | TINF-02 | Phase 12 | Pending |
 | TINF-03 | Phase 12 | Pending |
 | TINF-04 | Phase 12 | Pending |
