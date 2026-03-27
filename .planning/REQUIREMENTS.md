@@ -79,46 +79,46 @@ Deferred to future milestones.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DOCK-01 | — | Pending |
-| DOCK-02 | — | Pending |
-| DOCK-03 | — | Pending |
-| DOCK-04 | — | Pending |
-| DOCK-05 | — | Pending |
-| DOCK-06 | — | Pending |
-| DOCK-07 | — | Pending |
-| DOCK-08 | — | Pending |
-| TINF-01 | — | Pending |
-| TINF-02 | — | Pending |
-| TINF-03 | — | Pending |
-| TINF-04 | — | Pending |
-| TINF-05 | — | Pending |
-| TINF-06 | — | Pending |
-| V10-01 | — | Pending |
-| V10-02 | — | Pending |
-| V10-03 | — | Pending |
-| V10-04 | — | Pending |
-| V10-05 | — | Pending |
-| V11-01 | — | Pending |
-| V11-02 | — | Pending |
-| V11-03 | — | Pending |
-| V11-04 | — | Pending |
-| V11-05 | — | Pending |
-| V12-01 | — | Pending |
-| V12-02 | — | Pending |
-| V12-03 | — | Pending |
-| V12-04 | — | Pending |
-| V12-05 | — | Pending |
-| RPT-01 | — | Pending |
-| RPT-02 | — | Pending |
-| RPT-03 | — | Pending |
-| RPT-04 | — | Pending |
-| RPT-05 | — | Pending |
+| DOCK-01 | Phase 11 | Pending |
+| DOCK-02 | Phase 11 | Pending |
+| DOCK-03 | Phase 11 | Pending |
+| DOCK-04 | Phase 11 | Pending |
+| DOCK-05 | Phase 11 | Pending |
+| DOCK-06 | Phase 11 | Pending |
+| DOCK-07 | Phase 11 | Pending |
+| DOCK-08 | Phase 11 | Pending |
+| TINF-01 | Phase 12 | Pending |
+| TINF-02 | Phase 12 | Pending |
+| TINF-03 | Phase 12 | Pending |
+| TINF-04 | Phase 12 | Pending |
+| TINF-05 | Phase 12 | Pending |
+| TINF-06 | Phase 11 | Pending |
+| V10-01 | Phase 13 | Pending |
+| V10-02 | Phase 13 | Pending |
+| V10-03 | Phase 13 | Pending |
+| V10-04 | Phase 13 | Pending |
+| V10-05 | Phase 13 | Pending |
+| V11-01 | Phase 13 | Pending |
+| V11-02 | Phase 13 | Pending |
+| V11-03 | Phase 13 | Pending |
+| V11-04 | Phase 13 | Pending |
+| V11-05 | Phase 13 | Pending |
+| V12-01 | Phase 13 | Pending |
+| V12-02 | Phase 13 | Pending |
+| V12-03 | Phase 13 | Pending |
+| V12-04 | Phase 13 | Pending |
+| V12-05 | Phase 13 | Pending |
+| RPT-01 | Phase 14 | Pending |
+| RPT-02 | Phase 14 | Pending |
+| RPT-03 | Phase 14 | Pending |
+| RPT-04 | Phase 14 | Pending |
+| RPT-05 | Phase 14 | Pending |
 
 **Coverage:**
 - v1.3 requirements: 30 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 30
+- Mapped to phases: 30/30
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-27*
-*Last updated: 2026-03-27 after initial definition*
+*Last updated: 2026-03-27 after roadmap creation*

@@ -5,9 +5,15 @@
 - **v1.0 MVP** — Phases 1-2 (shipped 2026-03-25)
 - **v1.1 A2A 协作** — Phases 3-6 (shipped 2026-03-26)
 - **v1.2 文件处理** — Phases 7-10 (shipped 2026-03-27)
-- **v2.0** — Future (planned)
+- **v1.3 全量回归验证** — Phases 11-14 (in progress)
 
 ## Phases
+
+**Phase Numbering:**
+- Integer phases (1, 2, 3): Planned milestone work
+- Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
+
+Decimal phases appear between their surrounding integers in numeric order.
 
 <details>
 <summary>v1.0 MVP (Phases 1-2) — SHIPPED 2026-03-25</summary>
@@ -130,7 +136,94 @@ Plans:
 
 </details>
 
+### v1.3 全量回归验证 (In Progress)
+
+**Milestone Goal:** 搭建 Docker 容器化验证环境，对 v1.0-v1.2 所有功能进行全量回归验证，产出验证报告并修复发现的问题
+
+- [ ] **Phase 11: Docker Environment** - 容器化部署环境搭建（Dockerfile + compose + 迁移修复）
+- [ ] **Phase 12: Test Infrastructure** - E2E 测试基础设施（Playwright 配置、auth fixture、LLM mock、seed）
+- [ ] **Phase 13: E2E Regression** - v1.0-v1.2 全功能 E2E 回归测试
+- [ ] **Phase 14: Verification & Fixes** - 验证报告产出与缺陷修复
+
+## Phase Details
+
+### Phase 11: Docker Environment
+**Goal**: 开发者可以通过 `docker compose up` 一键启动完整的 Next.js + PostgreSQL 环境，容器内自动完成数据库迁移
+**Depends on**: Phase 10
+**Requirements**: DOCK-01, DOCK-02, DOCK-03, DOCK-04, DOCK-05, DOCK-06, DOCK-07, DOCK-08, TINF-06
+**Success Criteria** (what must be TRUE):
+  1. `docker compose up` 启动后 PostgreSQL 和 Next.js 两个容器均进入 healthy/running 状态
+  2. 容器启动后数据库自动执行 Drizzle 迁移，所有 v1.0-v1.2 表结构存在
+  3. 浏览器访问 localhost:3000 可正常加载登录页面
+  4. unstorage 上传文件在容器重启后仍然存在（volume 持久化）
+  5. Docker 镜像大小合理（standalone 输出，~200MB 量级）
+**Plans**: TBD
+
+Plans:
+- [ ] 11-01: Standalone output config and Drizzle migration regeneration
+- [ ] 11-02: Multi-stage Dockerfile with .dockerignore
+- [ ] 11-03: docker-compose.yml, entrypoint script, .env.docker
+- [ ] 11-04: Phase verification (docker compose up end-to-end)
+
+### Phase 12: Test Infrastructure
+**Goal**: E2E 测试可在 Docker 环境中运行，具备认证会话复用、LLM 响应 mock、测试数据初始化能力
+**Depends on**: Phase 11
+**Requirements**: TINF-01, TINF-02, TINF-03, TINF-04, TINF-05
+**Success Criteria** (what must be TRUE):
+  1. Playwright 测试可通过环境变量 `PLAYWRIGHT_BASE_URL` 切换本地/Docker 目标
+  2. E2E 测试中可通过 auth fixture 获取已认证会话，无需手动登录
+  3. 聊天 E2E 测试可 mock LLM API 响应，无需真实 API key 即可运行
+  4. `npm run db:seed` 在 Docker 环境中创建测试用户和基础数据
+  5. `/api/health` 返回应用状态和数据库连通性（docker-compose healthcheck 使用）
+**Plans**: TBD
+
+Plans:
+- [ ] 12-01: Playwright config update (env var baseURL, Docker-aware webServer)
+- [ ] 12-02: Auth fixture and seed script
+- [ ] 12-03: LLM mock via Playwright route interception
+- [ ] 12-04: Health endpoint and phase verification
+
+### Phase 13: E2E Regression
+**Goal**: v1.0-v1.2 所有核心功能均有对应的 E2E 测试覆盖，测试可在 Docker 环境中稳定运行
+**Depends on**: Phase 12
+**Requirements**: V10-01, V10-02, V10-03, V10-04, V10-05, V11-01, V11-02, V11-03, V11-04, V11-05, V12-01, V12-02, V12-03, V12-04, V12-05
+**Success Criteria** (what must be TRUE):
+  1. 用户注册/登录流程可通过 E2E 测试端到端验证
+  2. 发送聊天消息可收到 mock LLM 流式响应（无需真实 API key）
+  3. MCP bash 工具可执行允许列表内命令并返回结果
+  4. Skills 系统可调用预定义技能；审批流程可触发并完成批准/拒绝
+  5. Agent 任务分解、WaveScheduler 调度、工作流控制（暂停/恢复/取消）均可通过测试验证
+  6. 文件上传（小文件 + 大文件流式）、内容提取、文件管理页面、文件内容注入对话均可通过 E2E 测试验证
+**Plans**: TBD
+
+Plans:
+- [ ] 13-01: E2E tests for v1.0 features (auth, chat, MCP, skills, approval)
+- [ ] 13-02: E2E tests for v1.1 features (agent decomposition, scheduler, workflow control, status persistence)
+- [ ] 13-03: E2E tests for v1.2 features (file upload, extraction, management, chat injection)
+- [ ] 13-04: Phase verification (all tests passing in Docker)
+
+### Phase 14: Verification & Fixes
+**Goal**: 产出 v1.0-v1.2 每个功能的 PASS/FAIL 验证报告，修复所有 FAIL 项，确保现有单元测试全部通过
+**Depends on**: Phase 13
+**Requirements**: RPT-01, RPT-02, RPT-03, RPT-04, RPT-05
+**Success Criteria** (what must be TRUE):
+  1. v1.0 验证报告列出所有核心功能的 PASS/FAIL 状态
+  2. v1.1 验证报告列出所有核心功能的 PASS/FAIL 状态
+  3. v1.2 验证报告列出所有核心功能的 PASS/FAIL 状态
+  4. 所有 FAIL 项有对应修复，修复后测试通过
+  5. 现有全部单元测试在 Docker 环境中通过
+**Plans**: TBD
+
+Plans:
+- [ ] 14-01: v1.0 verification report and fixes
+- [ ] 14-02: v1.1 verification report and fixes
+- [ ] 14-03: v1.2 verification report and fixes
+- [ ] 14-04: Unit test validation and milestone closure
+
 ## Progress
+
+**Execution Order:**
+Phases execute in numeric order: 11 → 12 → 13 → 14
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -144,7 +237,11 @@ Plans:
 | 8. Content Extraction | v1.2 | 4/4 | Complete | 2026-03-26 |
 | 9. File Management & Preview | v1.2 | 3/3 | Complete | 2026-03-27 |
 | 10. Chat & Skills Integration | v1.2 | 4/4 | Complete | 2026-03-27 |
+| 11. Docker Environment | v1.3 | 0/4 | Not started | - |
+| 12. Test Infrastructure | v1.3 | 0/4 | Not started | - |
+| 13. E2E Regression | v1.3 | 0/4 | Not started | - |
+| 14. Verification & Fixes | v1.3 | 0/4 | Not started | - |
 
 ---
 *Roadmap updated: 2026-03-27*
-*Next milestone: TBD*
+*Next phase: Phase 11 — Docker Environment*
