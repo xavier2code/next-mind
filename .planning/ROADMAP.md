@@ -127,7 +127,7 @@ Plans:
 
 Plans:
 - [x] 09-01: Backend API (paginated list, delete) and auto-classification module
-- [ ] 09-02: File table UI with sort/filter/pagination and data hooks
+- [x] 09-02: File table UI with sort/filter/pagination and data hooks
 - [ ] 09-03: Preview panel, page assembly, and sidebar entry
 
 #### Phase 10: Chat & Skills Integration
