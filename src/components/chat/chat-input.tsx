@@ -30,7 +30,11 @@ export function ChatInput({ onSend, modelId, onModelChange, disabled }: ChatInpu
     retryFile,
     clearFiles,
     getUploadedFileIds,
+    setEditedContent,
+    getExtractedMarkdown,
   } = useFileUpload();
+
+  const [editingFileId, setEditingFileId] = useState<string | null>(null);
 
   useEffect(() => {
     if (textareaRef.current) {
@@ -161,8 +165,17 @@ export function ChatInput({ onSend, modelId, onModelChange, disabled }: ChatInpu
                 progress={file.progress}
                 error={file.error}
                 fileType={file.uploadedFile?.fileType}
+                extractedMarkdown={file.extractedMarkdown}
+                isEditing={editingFileId === file.id}
+                editedContent={file.editedContent}
                 onRemove={() => removeFile(file.id)}
                 onRetry={file.status === 'error' ? () => retryFile(file.id) : undefined}
+                onEditStart={(fileId) => setEditingFileId(file.id)}
+                onEditContent={(fileId, content) => {
+                  setEditedContent(file.id, content);
+                  setEditingFileId(null);
+                }}
+                onEditCancel={() => setEditingFileId(null)}
               />
             ))}
           </div>
