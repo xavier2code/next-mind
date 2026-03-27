@@ -2,7 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { TaskStatusIcon, type TaskStatus } from './task-status-icon';
-import { WorkflowControls, type WorkflowStatus } from './workflow-controls';
+import { WorkflowControls } from './workflow-controls';
+import { type WorkflowStatus } from './workflow-status-badge';
 
 export interface TaskInfo {
   id: string;

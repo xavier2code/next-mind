@@ -13,7 +13,7 @@ import {
   type WorkflowControlAction,
 } from '@/lib/agents/workflow-controller';
 import { getWorkflow, getTasksByWorkflow } from '@/lib/db/queries';
-import { auth } from '@/lib/auth';
+import { auth } from '@/auth';
 
 /**
  * POST /api/workflow-control

@@ -226,8 +226,8 @@ ${skillCatalog}`;
 
     // Collect stream chunks
     for await (const chunk of stream) {
-      if (chunk.type === 'text') {
-        responseText += chunk.text;
+      if (chunk.type === 'text_delta') {
+        responseText += chunk.delta;
       }
     }
   } catch (error) {
@@ -464,8 +464,8 @@ ${skillCatalog}`;
     });
 
     for await (const chunk of stream) {
-      if (chunk.type === 'text') {
-        responseText += chunk.text;
+      if (chunk.type === 'text_delta') {
+        responseText += chunk.delta;
       }
     }
   } catch (error) {

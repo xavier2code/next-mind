@@ -137,10 +137,10 @@ async function handleFormDataUpload(
 
   // Fire-and-forget extraction (per D-01)
   extractFile(dbFile.id).catch((error) => {
-    logger.error('upload', 'Extraction failed', error instanceof Error ? error : new Error(String(error)), { fileId: dbFile.id });
+    logger.error('api', 'Extraction failed', error instanceof Error ? error : new Error(String(error)), { fileId: dbFile.id });
   });
 
-  logger.debug('upload', 'File uploaded via formData', { requestId, fileId, filename: file.name });
+  logger.debug('api', 'File uploaded via formData', { requestId, fileId, filename: file.name });
 
   return {
     id: dbFile.id,
@@ -172,7 +172,7 @@ async function handleStreamingUpload(
     storagePath: string;
     status: string;
   }>((resolve, reject) => {
-    const nodeStream = Readable.fromWeb(request.body as ReadableStream);
+    const nodeStream = Readable.fromWeb(request.body as import('stream/web').ReadableStream);
     const headers = Object.fromEntries(request.headers);
 
     const busboy = Busboy({
@@ -252,10 +252,10 @@ async function handleStreamingUpload(
 
         // Fire-and-forget extraction (per D-01)
         extractFile(dbFile.id).catch((error) => {
-          logger.error('upload', 'Extraction failed', error instanceof Error ? error : new Error(String(error)), { fileId: dbFile.id });
+          logger.error('api', 'Extraction failed', error instanceof Error ? error : new Error(String(error)), { fileId: dbFile.id });
         });
 
-        logger.debug('upload', 'File uploaded via streaming', { requestId, fileId, filename });
+        logger.debug('api', 'File uploaded via streaming', { requestId, fileId, filename });
 
         resolve({
           id: dbFile.id,

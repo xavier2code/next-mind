@@ -2,7 +2,8 @@
  * Database queries for A2A infrastructure (agents, tasks, workflows)
  */
 import { eq, and, desc, asc, sql } from 'drizzle-orm';
-import { db, workflows, tasks, agents, agentMessages, AgentMessageTypeEnum, files, conversationFiles, type Workflow, type Task, type Agent, type NewWorkflow, type NewTask, type NewAgent, type AgentMessage, type NewAgentMessage, type File, type NewFile, type ConversationFile, type NewConversationFile } from './schema';
+import { db } from './index';
+import { workflows, tasks, agents, agentMessages, AgentTypeEnum, AgentMessageTypeEnum, FileTypeEnum, FileStatusEnum, files, conversationFiles, type Workflow, type Task, type Agent, type NewWorkflow, type NewTask, type NewAgent, type AgentMessage, type NewAgentMessage, type File, type NewFile, type ConversationFile, type NewConversationFile } from './schema';
 import type { TaskStatus, WorkflowStatus, WorkflowCheckpoint } from './schema';
 
 /**
@@ -183,7 +184,7 @@ export async function getAgent(agentId: string): Promise<Agent | undefined> {
 /**
  * Get all agents of a specific type.
  */
-export async function getAgentsByTypeDb(type: string): Promise<Agent[]> {
+export async function getAgentsByTypeDb(type: typeof AgentTypeEnum[number]): Promise<Agent[]> {
   return db.select().from(agents).where(eq(agents.type, type));
 }
 
@@ -444,10 +445,11 @@ export async function linkFileToConversation(
 }
 
 export async function getFilesByConversation(conversationId: string): Promise<File[]> {
-  return db.select({ file: files })
+  const rows = await db.select({ file: files })
     .from(conversationFiles)
     .innerJoin(files, eq(conversationFiles.fileId, files.id))
     .where(eq(conversationFiles.conversationId, conversationId));
+  return rows.map(r => r.file);
 }
 
 /**

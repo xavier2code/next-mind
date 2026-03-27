@@ -104,7 +104,9 @@ export const auditLogs = pgTable('audit_log', {
 // Enum arrays for Agent types and Task/Workflow statuses
 export const AgentTypeEnum = ['file', 'search', 'code', 'custom'] as const;
 export const TaskStatusEnum = ['pending', 'running', 'completed', 'failed', 'cancelled'] as const;
+export type TaskStatus = typeof TaskStatusEnum[number];
 export const WorkflowStatusEnum = ['pending', 'running', 'pausing', 'paused', 'completed', 'failed', 'cancelled'] as const;
+export type WorkflowStatus = typeof WorkflowStatusEnum[number];
 
 // Agents table - stores agent definitions with their cards
 export const agents = pgTable('agent', {

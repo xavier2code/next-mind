@@ -6,15 +6,15 @@
  *
  * CTRL-01, CTRL-02, CTRL-05: User control over workflow execution.
  */
-import { WaveScheduler, getWaveScheduler } from './scheduler';
-import type { TaskWithDependencies } from './types';
+import { WaveScheduler, getWaveScheduler, type TaskWithDependencies } from './scheduler';
 import {
   updateWorkflowStatus,
   loadCheckpoint,
   getWorkflow,
   getTasksByWorkflow,
 } from '@/lib/db/queries';
-import type { WorkflowStatus } from '@/lib/db/schema';
+import { WorkflowStatusEnum } from '@/lib/db/schema';
+type WorkflowStatus = typeof WorkflowStatusEnum[number];
 
 /**
  * Valid workflow control actions

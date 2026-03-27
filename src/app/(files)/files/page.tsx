@@ -11,7 +11,7 @@ import { FileEmptyState } from '@/components/files/file-empty-state';
 export default function FilesPage() {
   // List state
   const [page, setPage] = useState(1);
-  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortBy, setSortBy] = useState<'filename' | 'size' | 'createdAt' | 'fileType'>('createdAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [fileType, setFileType] = useState<'all' | 'document' | 'code' | 'data'>('all');
 
@@ -69,7 +69,7 @@ export default function FilesPage() {
   }, [refetch, refetchDetail]);
 
   const handleSortChange = useCallback((newSortBy: string, newSortOrder: 'asc' | 'desc') => {
-    setSortBy(newSortBy);
+    setSortBy(newSortBy as 'filename' | 'size' | 'createdAt' | 'fileType');
     setSortOrder(newSortOrder);
   }, []);
 

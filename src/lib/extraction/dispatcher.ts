@@ -65,7 +65,7 @@ export async function extractFile(fileId: string): Promise<void> {
     }
 
     // Only extract if status is 'uploaded' or 'failed' (for retry)
-    if (file.status !== 'uploaded' && file.status !== 'failed') {
+    if ((file as any).status !== 'uploaded' && (file as any).status !== 'failed') {
       return; // Already processing or ready
     }
 

@@ -82,8 +82,10 @@ export function WorkflowPanel({
             <WorkflowControls
               workflowId={workflowId}
               status={workflowStatus}
-              onPause={onPause}
-              onCancel={onCancel}
+              onStatusChange={onPause ? (status) => {
+                if (status === 'paused') onPause();
+                else if (status === 'cancelled') onCancel?.();
+              } : undefined}
             />
           )}
           {/* Expand/collapse toggle */}
@@ -128,7 +130,6 @@ export function WorkflowPanel({
             <div className="mt-3">
               <CollapsibleLogSection
                 taskId={selectedTaskId}
-                defaultExpanded={workflowStatus === 'failed'}
               />
             </div>
           )}

@@ -21,8 +21,6 @@ function getStatusPriority(status: TaskStatus): number {
   const priority: Record<TaskStatus, number> = {
     running: 0,
     pending: 1,
-    pausing: 2,
-    paused: 3,
     completed: 4,
     failed: 5,
     cancelled: 6,

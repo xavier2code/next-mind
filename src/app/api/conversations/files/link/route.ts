@@ -29,8 +29,7 @@ export async function POST(request: NextRequest) {
       action: 'link_file_to_conversation',
       resource: 'conversationFile',
       resourceId: link.id,
-      details: { fileId, conversationId, messageId },
-      clientInfo: getClientInfo(request),
+      metadata: { fileId, conversationId, messageId },
     }).catch(() => {});
 
     return NextResponse.json({ link }, { status: 200 });

@@ -7,7 +7,7 @@ export class ExcelExtractor implements Extractor {
   async extract(buffer: Buffer, filename: string): Promise<ExtractorResult> {
     const ExcelJS = await import('exceljs');
     const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.load(buffer);
+    await workbook.xlsx.load(buffer as any);
 
     // D-09: Only first sheet
     const worksheet = workbook.worksheets[0];
