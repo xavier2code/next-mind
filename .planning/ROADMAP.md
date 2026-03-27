@@ -140,7 +140,7 @@ Plans:
 
 **Milestone Goal:** 搭建 Docker 容器化验证环境，对 v1.0-v1.2 所有功能进行全量回归验证，产出验证报告并修复发现的问题
 
-- [ ] **Phase 11: Docker Environment** - 容器化部署环境搭建（Dockerfile + compose + 迁移修复）
+- [x] **Phase 11: Docker Environment** - 容器化部署环境搭建（Dockerfile + compose + 迁移修复） (completed 2026-03-27)
 - [ ] **Phase 12: Test Infrastructure** - E2E 测试基础设施（Playwright 配置、auth fixture、LLM mock、seed）
 - [ ] **Phase 13: E2E Regression** - v1.0-v1.2 全功能 E2E 回归测试
 - [ ] **Phase 14: Verification & Fixes** - 验证报告产出与缺陷修复
@@ -163,7 +163,7 @@ Plans:
 - [x] 11-01: Standalone output config and Drizzle migration regeneration
 - [x] 11-02: Multi-stage Dockerfile with .dockerignore
 - [x] 11-03: docker-compose.yml, entrypoint script, .env.docker
-- [ ] 11-04: Phase verification (docker compose up end-to-end)
+- [x] 11-04: Phase verification (docker compose up end-to-end)
 
 ### Phase 12: Test Infrastructure
 **Goal**: E2E 测试可在 Docker 环境中运行，具备认证会话复用、LLM 响应 mock、测试数据初始化能力
@@ -237,7 +237,7 @@ Phases execute in numeric order: 11 → 12 → 13 → 14
 | 8. Content Extraction | v1.2 | 4/4 | Complete | 2026-03-26 |
 | 9. File Management & Preview | v1.2 | 3/3 | Complete | 2026-03-27 |
 | 10. Chat & Skills Integration | v1.2 | 4/4 | Complete | 2026-03-27 |
-| 11. Docker Environment | v1.3 | 3/4 | In Progress|  |
+| 11. Docker Environment | v1.3 | 4/4 | Complete    | 2026-03-27 |
 | 12. Test Infrastructure | v1.3 | 0/4 | Not started | - |
 | 13. E2E Regression | v1.3 | 0/4 | Not started | - |
 | 14. Verification & Fixes | v1.3 | 0/4 | Not started | - |
