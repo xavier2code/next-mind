@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.3
 milestone_name: 全量回归验证
 status: executing
-stopped_at: "Completed 12-01-PLAN.md"
-last_updated: "2026-03-28T00:05:00.000Z"
-last_activity: 2026-03-28
+stopped_at: Completed 12-02-PLAN.md
+last_updated: "2026-03-27T18:03:10.617Z"
+last_activity: 2026-03-27
 progress:
   total_phases: 4
-  completed_phases: 0
-  total_plans: 4
-  completed_plans: 1
+  completed_phases: 1
+  total_plans: 8
+  completed_plans: 7
   percent: 6
 ---
 
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 ## Current Position
 
 Phase: 12 (test-infrastructure) — EXECUTING
-Plan: 1 of 4 (complete)
-Status: Plan 12-01 complete
-Last activity: 2026-03-28
+Plan: 2 of 4 (complete)
+Status: Ready to execute
+Last activity: 2026-03-27
 
 Progress: [█░░░░░░░░░] 6%
 
@@ -48,6 +48,7 @@ Progress: [█░░░░░░░░░] 6%
 | 12. Test Infrastructure | 1/4 | In Progress |
 | 13. E2E Regression | 0/4 | Not started |
 | 14. Verification & Fixes | 0/4 | Not started |
+| Phase 12 P02 | 2min | 1 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -65,6 +66,8 @@ Recent decisions affecting current work:
 - [Phase 11]: .env.docker is gitignored (not tracked) since users fill in real secrets
 - [Phase 11]: AUTH_SECRET left empty in .env.docker template to prevent accidental use of hardcoded value
 - [Phase 12]: PLAYWRIGHT_BASE_URL env var controls both baseURL and webServer launch decision
+- [Phase 12]: Seed uses relative imports (not @/ alias) because tsx does not resolve path aliases
+- [Phase 12]: Playwright setup project with testMatch isolates auth.setup.ts from test projects
 
 ### Pending Todos
 
@@ -80,8 +83,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-28T00:05:00.000Z
-Stopped at: Completed 12-01-PLAN.md
+Last session: 2026-03-27T18:03:10.597Z
+Stopped at: Completed 12-02-PLAN.md
 Resume file: None
 
 ---

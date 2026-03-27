@@ -19,9 +19,9 @@
 ### 测试基础设施
 
 - [x] **TINF-01**: Playwright 配置支持通过环境变量覆盖 baseURL（Docker 环境 vs 本地）
-- [ ] **TINF-02**: 提供 auth fixture，支持 E2E 测试中快速获取已认证会话
+- [x] **TINF-02**: 提供 auth fixture，支持 E2E 测试中快速获取已认证会话
 - [ ] **TINF-03**: LLM API 调用可被 mock（Playwright route.fulfill 或类似机制），无需真实 API key 即可运行测试
-- [ ] **TINF-04**: 提供 seed 脚本，可在 Docker 环境中创建测试用户和基础数据
+- [x] **TINF-04**: 提供 seed 脚本，可在 Docker 环境中创建测试用户和基础数据
 - [x] **TINF-05**: /api/health 端点返回应用和数据库连通状态
 - [x] **TINF-06**: Drizzle 迁移文件包含 v1.1 和 v1.2 的所有表结构变更
 
@@ -88,9 +88,9 @@ Deferred to future milestones.
 | DOCK-07 | Phase 11 | Complete |
 | DOCK-08 | Phase 11 | Complete |
 | TINF-01 | Phase 12 | Complete |
-| TINF-02 | Phase 12 | Pending |
+| TINF-02 | Phase 12 | Complete |
 | TINF-03 | Phase 12 | Pending |
-| TINF-04 | Phase 12 | Pending |
+| TINF-04 | Phase 12 | Complete |
 | TINF-05 | Phase 12 | Complete |
 | TINF-06 | Phase 11 | Complete |
 | V10-01 | Phase 13 | Pending |
