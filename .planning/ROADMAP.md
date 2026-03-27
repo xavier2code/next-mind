@@ -157,7 +157,7 @@ Plans:
   3. 浏览器访问 localhost:3000 可正常加载登录页面
   4. unstorage 上传文件在容器重启后仍然存在（volume 持久化）
   5. Docker 镜像大小合理（standalone 输出，~200MB 量级）
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
 - [ ] 11-01: Standalone output config and Drizzle migration regeneration
@@ -175,7 +175,7 @@ Plans:
   3. 聊天 E2E 测试可 mock LLM API 响应，无需真实 API key 即可运行
   4. `npm run db:seed` 在 Docker 环境中创建测试用户和基础数据
   5. `/api/health` 返回应用状态和数据库连通性（docker-compose healthcheck 使用）
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
 - [ ] 12-01: Playwright config update (env var baseURL, Docker-aware webServer)
@@ -194,7 +194,7 @@ Plans:
   4. Skills 系统可调用预定义技能；审批流程可触发并完成批准/拒绝
   5. Agent 任务分解、WaveScheduler 调度、工作流控制（暂停/恢复/取消）均可通过测试验证
   6. 文件上传（小文件 + 大文件流式）、内容提取、文件管理页面、文件内容注入对话均可通过 E2E 测试验证
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
 - [ ] 13-01: E2E tests for v1.0 features (auth, chat, MCP, skills, approval)
@@ -212,7 +212,7 @@ Plans:
   3. v1.2 验证报告列出所有核心功能的 PASS/FAIL 状态
   4. 所有 FAIL 项有对应修复，修复后测试通过
   5. 现有全部单元测试在 Docker 环境中通过
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
 - [ ] 14-01: v1.0 verification report and fixes
