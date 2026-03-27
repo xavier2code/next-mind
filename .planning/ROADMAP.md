@@ -134,8 +134,13 @@ Plans:
 **Goal**: Users can reference files in conversations with AI and agents can process files as registered skills
 **Depends on**: Phase 9
 **Requirements**: CHAT-01, CHAT-02, CHAT-03, CHAT-04, CHAT-05, SKIL-01, SKIL-02, SKIL-03, SKIL-04
-**Plans**: TBD
-**UI hint**: yes
+**Plans**: 4 plans
+
+Plans:
+- [ ] 10-01: File content injection module (types, formatting, truncation)
+- [ ] 10-02: File processing skills (file-extract, file-convert, file-classify, updated file-read/list)
+- [ ] 10-03: Chat UI integration (attachment bar, inline editor, handleSend wiring)
+- [ ] 10-04: Phase verification
 
 ## Progress
 
@@ -150,7 +155,7 @@ Plans:
 | 7. Storage & Upload | v1.2 | 3/3 | Complete | 2026-03-26 |
 | 8. Content Extraction | v1.2 | 4/4 | Complete | 2026-03-26 |
 | 9. File Management & Preview | v1.2 | 2/3 | In progress | - |
-| 10. Chat & Skills Integration | v1.2 | 0/0 | Not started | - |
+| 10. Chat & Skills Integration | v1.2 | 0/4 | Planned | - |
 
 ---
 *Roadmap updated: 2026-03-27*
