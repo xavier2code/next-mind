@@ -128,7 +128,7 @@ Plans:
 Plans:
 - [x] 09-01: Backend API (paginated list, delete) and auto-classification module
 - [x] 09-02: File table UI with sort/filter/pagination and data hooks
-- [ ] 09-03: Preview panel, page assembly, and sidebar entry
+- [ ] 09-03: Preview panel, page assembly, and sidebar entry (in progress)
 
 #### Phase 10: Chat & Skills Integration
 **Goal**: Users can reference files in conversations with AI and agents can process files as registered skills
@@ -149,7 +149,7 @@ Plans:
 | 6. Visibility & Polish | v1.1 | 4/4 | Complete | 2026-03-26 |
 | 7. Storage & Upload | v1.2 | 3/3 | Complete | 2026-03-26 |
 | 8. Content Extraction | v1.2 | 4/4 | Complete | 2026-03-26 |
-| 9. File Management & Preview | v1.2 | 0/3 | Not started | - |
+| 9. File Management & Preview | v1.2 | 2/3 | In progress | - |
 | 10. Chat & Skills Integration | v1.2 | 0/0 | Not started | - |
 
 ---
