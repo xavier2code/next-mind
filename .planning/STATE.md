@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v1.2
 milestone_name: 文件处理
-current_plan: Not started
-status: Milestone complete
-stopped_at: Completed 10-03-PLAN.md
-last_updated: "2026-03-27T03:03:17.376Z"
+current_plan: None
+status: Milestone complete — ready for next milestone
+stopped_at: v1.2 milestone archived
+last_updated: "2026-03-27T10:30:00.000Z"
 progress:
   total_phases: 4
   completed_phases: 4
@@ -17,23 +17,21 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-26)
+See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** 让团队成员通过统一的对话界面，高效处理文件、管理知识、调用工具，完成80%以上的日常工作任务
-**Current focus:** Phase 10 — chat-skills-integration
+**Current focus:** Planning next milestone — use `/gsd:new-milestone`
 
 ## Current Position
 
-Phase: 10
-Plan: 2 of 4
-Current Plan: Not started
-Total Plans in Phase: 4
+Milestone: v1.2 complete
+Next: TBD (use `/gsd:new-milestone`)
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 30 (v1.0: 11, v1.1: 17, v1.2: 3)
+- Total plans completed: 42 (v1.0: 11, v1.1: 17, v1.2: 14)
 
 **By Phase:**
 
@@ -46,61 +44,15 @@ Total Plans in Phase: 4
 | 5. Control & Verification | 4 | Complete |
 | 6. Visibility & Polish | 4 | Complete |
 | 7. Storage & Upload | 3 | Complete |
-
-**v1.2 Phases (planned):**
-
-| Phase | Requirements | Status |
-|-------|-------------|--------|
-| 7. Storage & Upload | 10 | Complete |
-| 8. Content Extraction | 9 | Planned (4 plans) |
-| 9. File Management & Preview | 5 | Planned (3 plans) |
-| 10. Chat & Skills Integration | 9 | Not started |
-
-**Recent Trend:**
-
-| Phase 07 P01 | 295 min | 5 tasks | 19 files |
-| Phase 07 P02 | 2 min | 2 tasks | 4 files |
-| Phase 07 P03 | 4 min | 3 tasks | 7 files |
-| Phase 08 P01 | 2 | 3 tasks | 9 files |
-| Phase 08 P02 | 5 | 3 tasks | 9 files |
-| Phase 08 P03 | 172 | 2 tasks | 10 files |
-| Phase 08 P04 | 2 | 3 tasks | 6 files |
-| Phase 09 P02 | 4 | 2 tasks | 12 files |
-| Phase 10 P03 | 8 | 3 tasks | 10 files |
+| 8. Content Extraction | 4 | Complete |
+| 9. File Management & Preview | 3 | Complete |
+| 10. Chat & Skills Integration | 4 | Complete |
 
 ## Accumulated Context
 
 ### Decisions
 
 Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
-
-- [v1.2]: Abstract storage layer (unstorage) for local/cloud switchability
-- [v1.2]: Streaming uploads via busboy for files >10MB
-- [v1.2]: Async content extraction (fire-and-forget after upload)
-- [v1.2]: Client-side content injection for chat integration (zero changes to streaming chat API)
-- [v1.2]: Strategy pattern per file type for extraction
-- [Phase 07]: Storage key format {userId}/{fileId}/{filename} for tenant isolation and path traversal prevention
-- [Phase 07]: S3 driver loaded dynamically via require() to avoid bundling when using local storage
-- [Phase 07]: XMLHttpRequest over fetch for upload progress tracking (fetch lacks upload progress events)
-- [Phase 07]: Counter-based dragleave approach prevents flicker when dragging over child elements
-- [Phase 07]: Error chip auto-fade after 5 seconds to reduce visual clutter
-- [Phase 07]: Progress rounded to nearest 5% for smoother visual updates
-- [Phase 07]: onSend signature extended with optional fileIds parameter for backward compatibility
-- [Phase 08]: Sub-heading pattern check ordered before ALL-CAPS in textToMarkdown to distinguish numbered sub-headings from plain ALL-CAPS headings
-- [Phase 08]: mammoth conversion warnings embedded as HTML comments in extractedMarkdown per D-10 for transparent conversion loss tracking
-- [Phase 08]: Dynamic import() for all parsing libraries (papaparse, exceljs) per D-04
-- [Phase 08]: Dual-format output for data files: Markdown table + JSON string per D-07
-- [Phase 08]: Created types.ts and table-formatter.ts from Plan 01 spec due to parallel execution (Rule 3)
-- [Phase 08]: Extraction dispatcher uses mimeType-based strategy routing with 30s timeout and semaphore concurrency limit of 2
-- [Phase 08]: Fire-and-forget extraction trigger from upload route with logAudit lifecycle events (start/complete/failed)
-- [Phase 08]: Auto-fade gated on onRetry prop: upload errors auto-fade, extraction errors persist per 08-UI-SPEC
-- [Phase 08]: Extraction failure mapped to error status in PendingFile with Extraction failed message
-- [Phase 09]: Hand-built HTML table wrappers instead of shadcn Table (Radix-based, incompatible with base-nova)
-- [Phase 09]: Column definitions use factory function fileColumns(callbacks) to pass onSelectFile/onDeleteFile without prop drilling
-- [Phase 10]: Extended onSend signature to pass editedContents Map from ChatInput to page handleSend
-- [Phase 10]: Plain button elements for Save/Cancel in FileChip editor (no shadcn import in leaf component)
-- [Phase 10]: ChatInput manages editingFileId state for single-file edit enforcement
 
 ### Pending Todos
 
@@ -108,15 +60,14 @@ None yet.
 
 ### Blockers/Concerns
 
-- **mammoth.js Turbopack compatibility**: Next.js issue #72863 documents incompatibility. Must verify before Phase 8 planning whether this is still a blocker or if a workaround exists.
-- **busboy + Next.js 16 App Router**: Streaming upload pattern needs prototyping to verify chunk handling and progress events work correctly.
-- **Deployment target**: Self-hosted vs Vercel serverless determines upload strategy. Self-hosted can use POST /api/files with multipart; Vercel has a 4.5MB body limit requiring presigned URLs.
+- **mammoth.js Turbopack compatibility**: Resolved — dynamic import() workaround used
+- **busboy + Next.js 16 App Router**: Resolved — streaming upload working
+- **Deployment target**: Still TBD — self-hosted vs Vercel serverless
 
 ## Session Continuity
 
-Last session: 2026-03-27T02:24:30.025Z
-Stopped at: Completed 10-03-PLAN.md
-Resume file: None
+Last session: 2026-03-27
+Status: v1.2 milestone archived, ready for next milestone
 
 ---
-*State updated: 2026-03-27 for v1.2 roadmap — Phase 9 File Management & Preview planned*
+*State updated: 2026-03-27 after v1.2 milestone completion*

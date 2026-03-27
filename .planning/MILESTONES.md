@@ -1,5 +1,37 @@
 # Milestones
 
+## v1.2 文件处理 (Shipped: 2026-03-27)
+
+**Phases completed:** 4 phases, 14 plans, 30 tasks
+
+**Key accomplishments:**
+
+- File storage schema with Drizzle ORM (files + conversationFiles tables), unstorage abstraction layer with local/S3 driver selection, and file CRUD queries
+- File upload API with dual transport strategy (formData for <10MB, busboy streaming for >=10MB) and server-side magic byte validation
+- FileChip component with 4-state display (pending/uploading/uploaded/error), drag-and-drop ChatInput zone with overlay, useFileUpload hook with XHR progress tracking, and Paperclip attachment button
+- Strategy pattern type contracts, PDF extractor via unpdf + rule-based Markdown, DOCX extractor via mammoth + turndown with D-10 warning annotations
+- Three extractor classes implementing the Extractor interface with dynamic imports, dual-format data output, and 1000-row limits with warning messages.
+- Extraction dispatcher with mimeType-based strategy routing, 30-second timeout, concurrency semaphore, fire-and-forget upload trigger, and authenticated status/retry API endpoints.
+- Polling hook with 2s interval drives FileChip through processing spinner, ready checkmark, or failed error states after file upload
+- Paginated file list API with server-side sort/filter, file detail/delete endpoints with ownership checks and storage cleanup, and JSON content-based auto-classification correcting file types during extraction
+- 1. [Rule 1 - Bug] Pre-existing file-chip test expected wrong formatSize output
+- 1. [Rule 1 - Bug] Fixed parallel test pollution in hook tests
+- Pure utility module
+- 1. [Rule 3 - Blocking] Missing files table in schema.ts
+- File content injection pipeline wired into chat UI with inline Markdown editor on FileChip, attachment bar on user messages, and fire-and-forget file-conversation linking via new POST endpoint
+
+### Known Gaps
+
+12/28 requirements unchecked in REQUIREMENTS.md (code implemented but checkboxes not updated):
+- UPLD-01/02/05/06, EXTR-03/04/05, MGMT-04, SKIL-01/02/03/04
+
+**Archives:**
+
+- `.planning/milestones/v1.2-ROADMAP.md`
+- `.planning/milestones/v1.2-REQUIREMENTS.md`
+
+---
+
 ## v1.1 A2A 协作 (Shipped: 2026-03-26)
 
 **Phases completed:** 4 phases, 17 plans, 35 tasks
